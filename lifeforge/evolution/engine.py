@@ -47,10 +47,12 @@ class EvolutionEngine:
         archive: MapElitesArchive | None = None,
         mutators: list[ScenarioMutator] | None = None,
         seed: int = 42,
+        delay: float = 0.0,
     ) -> None:
         self.runner = runner or SandboxRunner()
         self.archive = archive or MapElitesArchive(bins=(4, 4, 4))
         self.rng = random.Random(seed)
+        self.delay = delay
 
         self.environmental_mutators: list[ScenarioMutator] = [
             PriceVolatilityMutator(),
@@ -176,6 +178,10 @@ class EvolutionEngine:
             crit = " [🔴 CRITICAL]" if trace.critical_failure else ""
             mut_desc = ", ".join(child_mutations[-2:]) if child_mutations else "none"
             print(f"  [Gen {gen:2d}/{generations}] {status_icon}{crit} | Mutations: {mut_desc}")
+
+            if self.delay > 0 and gen < generations:
+                import time
+                time.sleep(self.delay)
 
         all_elites = self.archive.get_elites()
         critical_count = len(self.archive.get_critical_failures())

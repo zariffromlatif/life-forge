@@ -168,44 +168,64 @@ class LLMAgent(AgentInterface):
         user_msg = _observation_to_user_msg(observation, step)
         self._messages.append({"role": "user", "content": user_msg})
 
-        # Call the LLM
+        # Prepare LLM call parameters
+        kwargs: dict[str, Any] = {
+            "model": self.config.model,
+            "messages": self._messages,
+            "max_tokens": self.config.max_tokens,
+            "timeout": self.config.timeout,
+            **self.config.extra_params,
+        }
+        # Gemini 3+ deprecates temperature parameter in favor of system prompt guidance
+        if "gemini-3" not in self.config.model.lower():
+            kwargs["temperature"] = self.config.temperature
+
         try:
-            kwargs: dict[str, Any] = {
-                "model": self.config.model,
-                "messages": self._messages,
-                "max_tokens": self.config.max_tokens,
-                "timeout": self.config.timeout,
-                **self.config.extra_params,
-            }
-            # Gemini 3+ deprecates temperature parameter in favor of system prompt guidance
-            if "gemini-3" not in self.config.model.lower():
-                kwargs["temperature"] = self.config.temperature
+            import tenacity  # noqa: F401
+            kwargs["num_retries"] = self.config.max_retries
+        except ImportError:
+            pass
+        if self.config.api_base:
+            kwargs["api_base"] = self.config.api_base
+        if self.config.api_key:
+            kwargs["api_key"] = self.config.api_key
 
+        if self._tool_schemas:
+            kwargs["tools"] = self._tool_schemas
+            kwargs["tool_choice"] = "auto"
+
+        # Call the LLM with automatic rate limit backoff
+        response = None
+        max_rate_limit_retries = 3
+        for attempt in range(max_rate_limit_retries):
             try:
-                import tenacity  # noqa: F401
-                kwargs["num_retries"] = self.config.max_retries
-            except ImportError:
-                pass
-            if self.config.api_base:
-                kwargs["api_base"] = self.config.api_base
-            if self.config.api_key:
-                kwargs["api_key"] = self.config.api_key
+                response = self._litellm.completion(**kwargs)
+                self.cost_tracker.record(response)
+                break
+            except Exception as exc:
+                err_str = str(exc)
+                is_rate_limit = (
+                    "429" in err_str
+                    or "rate_limit" in err_str.lower()
+                    or "resource_exhausted" in err_str.lower()
+                    or "quota" in err_str.lower()
+                )
+                if is_rate_limit and attempt < max_rate_limit_retries - 1:
+                    import time
+                    match = re.search(r"retry in (\d+(?:\.\d+)?)s", err_str, re.IGNORECASE)
+                    sleep_time = float(match.group(1)) + 1.5 if match else (15.0 * (attempt + 1))
+                    sleep_time = min(sleep_time, 45.0)
+                    print(f"\n  ⏳ [Rate Limit: {self.config.model}] Quota reached (Free Tier). Pausing {sleep_time:.1f}s for quota to replenish...")
+                    time.sleep(sleep_time)
+                    continue
 
-            if self._tool_schemas:
-                kwargs["tools"] = self._tool_schemas
-                kwargs["tool_choice"] = "auto"
-
-            response = self._litellm.completion(**kwargs)
-            self.cost_tracker.record(response)
-
-        except Exception as exc:
-            print(f"\n  ⚠️  [LLM Error: {self.config.model}]: {exc}")
-            logger.error("LLM API call failed: %s", exc)
-            return AgentAction(
-                action_type="finish",
-                thought=f"LLM API error: {exc}",
-                message=f"Agent terminated due to API error: {exc}",
-            )
+                print(f"\n  ⚠️  [LLM Error: {self.config.model}]: {exc}")
+                logger.error("LLM API call failed: %s", exc)
+                return AgentAction(
+                    action_type="finish",
+                    thought=f"LLM API error: {exc}",
+                    message=f"Agent terminated due to API error: {exc}",
+                )
 
         # Parse response
         choice = response.choices[0]

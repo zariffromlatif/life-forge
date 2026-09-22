@@ -112,7 +112,8 @@ def cmd_test(args: argparse.Namespace) -> None:
         print(f"  Seed:         {args.seed}")
 
     # Run evolution
-    engine = EvolutionEngine(seed=args.seed)
+    delay = getattr(args, "delay", 0.0)
+    engine = EvolutionEngine(seed=args.seed, delay=delay)
     seed_state = WorldState.default_purchasing_world()
 
     print(f"\n  Running evolutionary search ({args.scenarios} generations)...")
@@ -213,6 +214,7 @@ def main() -> None:
     test_parser.add_argument("--temperature", type=float, default=0.0, help="LLM temperature")
     test_parser.add_argument("--agent-name", type=str, default=None, help="Agent identifier")
     test_parser.add_argument("--scenarios", type=int, default=100, help="Number of evolutionary generations")
+    test_parser.add_argument("--delay", type=float, default=0.0, help="Delay in seconds between generations (useful for free tier API rate limits)")
     test_parser.add_argument("--seed", type=int, default=42, help="Random seed")
     test_parser.add_argument("--out", type=str, default="results/agent_evolution_report.md", help="Output report path")
     test_parser.add_argument("--json", action="store_true", help="Also generate JSON report")
