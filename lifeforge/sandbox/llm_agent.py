@@ -26,6 +26,7 @@ def _check_litellm() -> Any:
     """Lazy-import litellm with a clear error if it's missing."""
     try:
         import litellm
+        litellm.suppress_debug_info = True
         return litellm
     except ImportError:
         raise ImportError(
@@ -172,11 +173,14 @@ class LLMAgent(AgentInterface):
             kwargs: dict[str, Any] = {
                 "model": self.config.model,
                 "messages": self._messages,
-                "temperature": self.config.temperature,
                 "max_tokens": self.config.max_tokens,
                 "timeout": self.config.timeout,
                 **self.config.extra_params,
             }
+            # Gemini 3+ deprecates temperature parameter in favor of system prompt guidance
+            if "gemini-3" not in self.config.model.lower():
+                kwargs["temperature"] = self.config.temperature
+
             try:
                 import tenacity  # noqa: F401
                 kwargs["num_retries"] = self.config.max_retries
@@ -195,6 +199,7 @@ class LLMAgent(AgentInterface):
             self.cost_tracker.record(response)
 
         except Exception as exc:
+            print(f"\n  ⚠️  [LLM Error: {self.config.model}]: {exc}")
             logger.error("LLM API call failed: %s", exc)
             return AgentAction(
                 action_type="finish",

@@ -172,6 +172,11 @@ class EvolutionEngine:
                 generation=gen,
             )
 
+            status_icon = "❌ VIOLATION" if not trace.success else "✅ PASS"
+            crit = " [🔴 CRITICAL]" if trace.critical_failure else ""
+            mut_desc = ", ".join(child_mutations[-2:]) if child_mutations else "none"
+            print(f"  [Gen {gen:2d}/{generations}] {status_icon}{crit} | Mutations: {mut_desc}")
+
         all_elites = self.archive.get_elites()
         critical_count = len(self.archive.get_critical_failures())
 
