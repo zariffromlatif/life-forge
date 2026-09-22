@@ -2,8 +2,16 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-from matplotlib.animation import FuncAnimation
+def _check_matplotlib():
+    try:
+        import matplotlib.pyplot as plt
+        from matplotlib.animation import FuncAnimation
+        return plt, FuncAnimation
+    except ImportError:
+        raise ImportError(
+            "matplotlib is required for visualizations. Install it with:\n"
+            "  pip install matplotlib\n"
+        )
 
 from .experiment import ExperimentResult
 
@@ -13,6 +21,7 @@ def plot_metrics(
     output_dir: str | Path,
 ) -> None:
     """Save population, density, and activity plots."""
+    plt, _ = _check_matplotlib()
 
     output_path = Path(output_dir)
     output_path.mkdir(parents=True, exist_ok=True)
@@ -63,6 +72,8 @@ def animate_world(
 
     if frame_step <= 0:
         raise ValueError("frame_step must be positive.")
+
+    plt, FuncAnimation = _check_matplotlib()
 
     output_path = Path(output_path)
     output_path.parent.mkdir(parents=True, exist_ok=True)

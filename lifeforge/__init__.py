@@ -49,7 +49,11 @@ from .experiment import (
     run_experiment,
     save_result,
 )
-from .visualization import plot_metrics, animate_world
+try:
+    from .visualization import plot_metrics, animate_world
+except ImportError:
+    plot_metrics = None  # type: ignore
+    animate_world = None  # type: ignore
 from .temporal import (
     TemporalSummary,
     find_extinction_time,
