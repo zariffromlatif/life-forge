@@ -183,42 +183,6 @@ def cmd_mcp_serve(args: argparse.Namespace) -> None:
         sys.exit(1)
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="LIFE FORGE: Evolutionary AI Agent Flight Simulator")
-    subparsers = parser.add_subparsers(dest="command", required=True)
-
-    # Run command
-    run_parser = subparsers.add_parser("run", help="Run a single universe simulation")
-    run_parser.add_argument("--substrate", choices=["elementary", "totalistic"], default="totalistic")
-    run_parser.add_argument("--rule", type=int, default=110, help="ECA rule number (0-255)")
-    run_parser.add_argument("--width", type=int, default=50)
-    run_parser.add_argument("--height", type=int, default=50)
-    run_parser.add_argument("--steps", type=int, default=100)
-    run_parser.add_argument("--density", type=float, default=0.20)
-    run_parser.add_argument("--seed", type=int, default=42)
-
-    # Survey command
-    survey_parser = subparsers.add_parser("survey", help="Survey random universes and log to database")
-    survey_parser.add_argument("--count", type=int, default=50)
-    survey_parser.add_argument("--steps", type=int, default=150)
-    survey_parser.add_argument("--width", type=int, default=40)
-    survey_parser.add_argument("--height", type=int, default=40)
-    survey_parser.add_argument("--db", type=str, default="results/survey_experiments.jsonl")
-    survey_parser.add_argument("--seed", type=int, default=1000)
-
-    # Test command — evolutionary red-teaming
-    test_parser = subparsers.add_parser("test", help="Run evolutionary red-teaming against an agent")
-    test_parser.add_argument("--model", type=str, default=None, help="LLM model (e.g. gemini/gemini-2.0-flash, ollama/llama3.1:8b, gpt-4o-mini)")
-    test_parser.add_argument("--api-key", type=str, default=None, help="API key for cloud model (or set GEMINI_API_KEY/OPENAI_API_KEY)")
-    test_parser.add_argument("--api-base", type=str, default=None, help="API base URL (e.g. http://localhost:11434 for local Ollama)")
-    test_parser.add_argument("--temperature", type=float, default=0.0, help="LLM temperature")
-    test_parser.add_argument("--agent-name", type=str, default=None, help="Agent identifier")
-    test_parser.add_argument("--scenarios", type=int, default=100, help="Number of evolutionary generations")
-    test_parser.add_argument("--delay", type=float, default=0.0, help="Delay in seconds between generations (useful for free tier API rate limits)")
-    test_parser.add_argument("--seed", type=int, default=42, help="Random seed")
-    test_parser.add_argument("--out", type=str, default="results/agent_evolution_report.md", help="Output report path")
-    test_parser.add_argument("--json", action="store_true", help="Also generate JSON report")
-    test_parser.add_argument("--hardened", action="store_true", help="Test a hardened (non-vulnerable) agent")
 
 def cmd_compare(args: argparse.Namespace) -> None:
     """Compare multiple agent evaluation reports side-by-side."""
