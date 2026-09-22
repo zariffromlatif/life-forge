@@ -175,9 +175,13 @@ class LLMAgent(AgentInterface):
                 "temperature": self.config.temperature,
                 "max_tokens": self.config.max_tokens,
                 "timeout": self.config.timeout,
-                "num_retries": self.config.max_retries,
                 **self.config.extra_params,
             }
+            try:
+                import tenacity  # noqa: F401
+                kwargs["num_retries"] = self.config.max_retries
+            except ImportError:
+                pass
             if self.config.api_base:
                 kwargs["api_base"] = self.config.api_base
             if self.config.api_key:

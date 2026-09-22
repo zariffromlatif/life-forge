@@ -12,10 +12,10 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-llm = ["litellm>=1.40"]
+llm = ["litellm>=1.40", "tenacity>=8.2"]
 mcp = ["mcp>=1.0"]
 viz = ["matplotlib>=3.8"]
-all = ["litellm>=1.40", "mcp>=1.0", "matplotlib>=3.8"]
+all = ["litellm>=1.40", "tenacity>=8.2", "mcp>=1.0", "matplotlib>=3.8"]
 
 [project.scripts]
 lifeforge = "lifeforge.cli.main:main"
