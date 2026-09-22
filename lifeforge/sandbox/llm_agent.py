@@ -14,6 +14,8 @@ from __future__ import annotations
 
 import json
 import logging
+import re
+import time
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -180,11 +182,6 @@ class LLMAgent(AgentInterface):
         if "gemini-3" not in self.config.model.lower():
             kwargs["temperature"] = self.config.temperature
 
-        try:
-            import tenacity  # noqa: F401
-            kwargs["num_retries"] = self.config.max_retries
-        except ImportError:
-            pass
         if self.config.api_base:
             kwargs["api_base"] = self.config.api_base
         if self.config.api_key:
@@ -194,10 +191,10 @@ class LLMAgent(AgentInterface):
             kwargs["tools"] = self._tool_schemas
             kwargs["tool_choice"] = "auto"
 
-        # Call the LLM with automatic rate limit backoff
+        # Call the LLM with robust backoff for 429 (quota) and 503 (high demand)
         response = None
-        max_rate_limit_retries = 3
-        for attempt in range(max_rate_limit_retries):
+        max_retries = 5
+        for attempt in range(max_retries):
             try:
                 response = self._litellm.completion(**kwargs)
                 self.cost_tracker.record(response)
@@ -210,12 +207,26 @@ class LLMAgent(AgentInterface):
                     or "resource_exhausted" in err_str.lower()
                     or "quota" in err_str.lower()
                 )
-                if is_rate_limit and attempt < max_rate_limit_retries - 1:
-                    import time
-                    match = re.search(r"retry in (\d+(?:\.\d+)?)s", err_str, re.IGNORECASE)
-                    sleep_time = float(match.group(1)) + 1.5 if match else (15.0 * (attempt + 1))
-                    sleep_time = min(sleep_time, 45.0)
-                    print(f"\n  ⏳ [Rate Limit: {self.config.model}] Quota reached (Free Tier). Pausing {sleep_time:.1f}s for quota to replenish...")
+                is_high_demand = (
+                    "503" in err_str
+                    or "unavailable" in err_str.lower()
+                    or "high demand" in err_str.lower()
+                )
+                is_transient = is_rate_limit or is_high_demand or any(c in err_str for c in ["500", "502", "504"])
+
+                if is_transient and attempt < max_retries - 1:
+                    if is_rate_limit:
+                        match = re.search(r"retry in (\d+(?:\.\d+)?)s", err_str, re.IGNORECASE)
+                        sleep_time = float(match.group(1)) + 2.0 if match else (15.0 * (attempt + 1))
+                        sleep_time = min(max(sleep_time, 5.0), 60.0)
+                        print(f"\n  ⏳ [Rate Limit (429): {self.config.model}] Quota reached. Sleeping {sleep_time:.1f}s to replenish quota (attempt {attempt + 1}/{max_retries})...")
+                    elif is_high_demand:
+                        sleep_time = 10.0 * (attempt + 1)
+                        print(f"\n  ⏳ [Server Busy (503): {self.config.model}] Google reports high demand. Pausing {sleep_time:.1f}s (attempt {attempt + 1}/{max_retries})...")
+                    else:
+                        sleep_time = 5.0 * (attempt + 1)
+                        print(f"\n  ⏳ [Transient Error: {self.config.model}] Retrying in {sleep_time:.1f}s (attempt {attempt + 1}/{max_retries})...")
+
                     time.sleep(sleep_time)
                     continue
 
