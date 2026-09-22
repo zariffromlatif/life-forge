@@ -4,12 +4,20 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lifeforge"
-version = "0.1.0"
-description = "A research framework for artificial life and cellular automata."
+version = "0.2.0"
+description = "Evolutionary AI Agent Flight Simulator — discover zero-day failures in autonomous agents."
 requires-python = ">=3.13"
 dependencies = [
     "numpy",
 ]
+
+[project.optional-dependencies]
+llm = ["litellm>=1.40"]
+mcp = ["mcp>=1.0"]
+all = ["litellm>=1.40", "mcp>=1.0"]
+
+[project.scripts]
+lifeforge = "lifeforge.cli.main:main"
 
 [tool.setuptools.packages.find]
 include = ["lifeforge*"]

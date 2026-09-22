@@ -1,4 +1,6 @@
 from pathlib import Path
+from lifeforge import plot_metrics
+from lifeforge import animate_world
 
 from lifeforge import (
     ConwayRule,
@@ -28,6 +30,18 @@ def main() -> None:
     save_result(
         result=result,
         output_dir=output_dir,
+    )
+
+    plot_metrics(
+    result=result,
+    output_dir=output_dir,
+    )
+
+    animate_world(
+    result=result,
+    output_path=output_dir / "world.mp4",
+    frame_step=5,
+    interval=40,
     )
 
     print(f"Experiment: {config.name}")
