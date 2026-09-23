@@ -474,7 +474,8 @@
       color: #fbbf24;
     }
 
-    .niche-crit {
+    .niche-crit,
+    .niche-critical {
       background: rgba(239, 68, 68, 0.18);
       border-color: rgba(239, 68, 68, 0.45);
       color: #f87171;
@@ -1123,7 +1124,10 @@
 
       (appState.mapElites || []).forEach(cell => {
         const div = document.createElement('div');
-        div.className = `niche-cell niche-${cell.status}`;
+        const isCrit = cell.status === 'critical' || cell.status === 'crit';
+        const isHigh = cell.status === 'high';
+        const statusClass = isCrit ? 'niche-critical' : (isHigh ? 'niche-high' : (cell.status === 'pass' ? 'niche-pass' : 'niche-unexplored'));
+        div.className = `niche-cell ${statusClass}`;
         div.innerText = cell.count > 0 ? `${cell.count}` : (cell.status === 'pass' ? '[OK]' : '-');
         div.title = `Adversarial Intensity: ${cell.adversarial_intensity} | Volatility: ${cell.volatility_index}`;
         div.onclick = () => inspectNicheCell(cell, div);
@@ -1138,7 +1142,8 @@
       const details = document.getElementById('niche-details-text');
       const list = document.getElementById('niche-findings-list');
 
-      const statusTag = cell.status === 'crit'
+      const isCrit = cell.status === 'critical' || cell.status === 'crit';
+      const statusTag = isCrit
         ? '<span class="tag-badge tag-crit">[CRITICAL EXPLOIT]</span>'
         : (cell.status === 'high' ? '<span class="tag-badge tag-high">[HIGH RISK TRAP]</span>' : '<span class="tag-badge tag-pass">[RESILIENT PASS]</span>');
 
@@ -1150,14 +1155,23 @@
       if (cell.findings && cell.findings.length > 0) {
         list.innerHTML = cell.findings.map(f => `
           <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 6px; padding: 12px; margin-bottom: 8px;">
-            <div style="color: var(--accent-cyan); font-family: var(--font-mono); font-size: 11px;">${f.agent}</div>
-            <strong style="font-size: 13px;">${f.title}</strong>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <span style="color: var(--accent-cyan); font-family: var(--font-mono); font-size: 11px;">${f.agent}</span>
+              <button class="btn" style="padding: 2px 8px; font-size: 11px;" onclick="searchAndSwitchToFinding('${f.title.replace(/'/g, "\\'")}')">Inspect Trace</button>
+            </div>
+            <strong style="font-size: 13px; display: block; margin-top: 4px;">${f.title}</strong>
             <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px; font-family: var(--font-mono);">Class: ${f.category}</div>
           </div>
         `).join('');
       } else {
         list.innerHTML = '<p style="font-size: 12px; color: var(--text-muted); margin-top: 10px;">Zero vulnerabilities triggered in this environmental niche.</p>';
       }
+    }
+
+    function searchAndSwitchToFinding(title) {
+      selectTab('findings');
+      document.getElementById('finding-search-input').value = title;
+      filterFindings();
     }
 
     function setSeverityFilter(sev) {
@@ -1212,6 +1226,10 @@
               <span style="font-size: 11px; color: var(--text-muted); align-self: center; font-family: var(--font-mono);">Minimal Causal Triggers:</span>
               ${triggers}
             </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 12px; margin-bottom: 4px;">
+              <span style="font-size: 11px; font-family: var(--font-mono); color: var(--text-muted); text-transform: uppercase;">Step-by-Step Tool Trace</span>
+              <button class="btn" style="padding: 2px 8px; font-size: 11px;" onclick="copyTraceToClipboard(this)">Copy Trace JSON</button>
+            </div>
             <div class="trace-display"><pre>${traceJson}</pre></div>
             <div class="remediation-panel">
               <strong>Architectural Remediation Recommendation:</strong> ${f.recommendation || 'Enforce sandboxed isolation boundaries.'}
@@ -1224,6 +1242,20 @@
       if (matches === 0) {
         container.innerHTML = '<p style="color: var(--text-muted); padding: 20px; text-align: center;">No vulnerability findings match the active search and severity criteria.</p>';
       }
+    }
+
+    function copyTraceToClipboard(btn) {
+      const tracePre = btn.parentElement.nextElementSibling.querySelector('pre');
+      if (!tracePre) return;
+      navigator.clipboard.writeText(tracePre.innerText).then(() => {
+        const originalText = btn.innerText;
+        btn.innerText = 'Copied!';
+        btn.style.borderColor = 'var(--accent-emerald)';
+        setTimeout(() => {
+          btn.innerText = originalText;
+          btn.style.borderColor = '';
+        }, 1500);
+      });
     }
 
     async function triggerCASimulation() {
@@ -1274,6 +1306,11 @@
     // Auto-fetch on page ready
     window.addEventListener('DOMContentLoaded', () => {
       fetchDashboardData();
+      triggerCASimulation();
+    });
+
+    window.addEventListener('resize', () => {
+      renderShowdownChart();
     });
   </script>
 </body>
