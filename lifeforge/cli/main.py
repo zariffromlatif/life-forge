@@ -285,6 +285,85 @@ def cmd_compare(args: argparse.Namespace) -> None:
         print(output_text.encode("ascii", errors="replace").decode("ascii"))
 
 
+def cmd_eval(args: argparse.Namespace) -> None:
+    """Evaluate a user-defined agent via file specification or HTTP webhook."""
+    from lifeforge.evolution.engine import EvolutionEngine
+    from lifeforge.reporting.analyzer import CausalAnalyzer
+    from lifeforge.reporting.report import ReportGenerator
+    from lifeforge.sandbox.http_agent import HTTPAgentAdapter
+    from lifeforge.sandbox.loader import load_agent_from_spec
+    from lifeforge.sandbox.world_state import WorldState
+
+    print("=" * 60)
+    print("  LIFE FORGE -- Universal Agent Evaluation Harness")
+    print("=" * 60)
+
+    # 1. Resolve agent
+    if getattr(args, "target", None):
+        agent = load_agent_from_spec(args.target, name=args.agent_name)
+        print(f"\n  Target:       {args.target}")
+        print(f"  Agent Name:   {agent.name}")
+        print(f"  Agent Type:   {type(agent).__name__}")
+    elif getattr(args, "endpoint", None):
+        agent = HTTPAgentAdapter(
+            endpoint=args.endpoint,
+            reset_endpoint=args.reset_endpoint,
+            name=args.agent_name or "RemoteHTTPAgent",
+            timeout=args.timeout,
+        )
+        print(f"\n  Webhook URL:  {args.endpoint}")
+        print(f"  Reset URL:    {args.reset_endpoint or 'None'}")
+        print(f"  Agent Name:   {agent.name}")
+    else:
+        print("\n  [FAIL] Either --target or --endpoint must be specified.")
+        sys.exit(1)
+
+    print(f"  Scenarios:    {args.scenarios}")
+    print(f"  Seed:         {args.seed}")
+
+    # 2. Run evolution
+    delay = getattr(args, "delay", 0.0)
+    engine = EvolutionEngine(seed=args.seed, delay=delay)
+    seed_state = WorldState.default_purchasing_world()
+
+    print(f"\n  Running evolutionary search ({args.scenarios} generations)...")
+    summary = engine.run(agent, seed_state, generations=args.scenarios)
+
+    print(f"\n  Evaluations:      {summary.total_evaluations}")
+    print(f"  Archive Coverage: {summary.archive_coverage * 100:.1f}%")
+    print(f"  Elites:           {summary.elites_count}")
+    print(f"  Critical Fails:   {summary.critical_failures_count}")
+    print(f"  Failure Modes:    {summary.novel_failure_modes}")
+
+    # 3. Generate diagnostic reports
+    analyzer = CausalAnalyzer()
+    diagnostics = analyzer.analyze(agent, summary, seed_state)
+
+    report = ReportGenerator.generate_markdown(diagnostics)
+
+    out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    out_path.write_text(report, encoding="utf-8")
+    print(f"\n  Report saved to: {out_path}")
+
+    if args.json:
+        json_path = out_path.with_suffix(".json")
+        json_path.write_text(
+            json.dumps(diagnostics.to_dict() if hasattr(diagnostics, "to_dict") else diagnostics.__dict__, indent=2, default=str),
+            encoding="utf-8",
+        )
+        print(f"  JSON report:  {json_path}")
+
+    # 4. Gating
+    if getattr(args, "fail_on_critical", False) and summary.critical_failures_count > 0:
+        print(f"\n  [FAIL] GATING FAILED: {summary.critical_failures_count} critical vulnerabilities discovered.")
+        sys.exit(1)
+    elif summary.critical_failures_count > 0:
+        print(f"\n  [CRITICAL] {summary.critical_failures_count} critical vulnerabilities discovered.")
+    else:
+        print("\n  [OK] Evaluation passed with 0 critical vulnerabilities.")
+
+
 def cmd_ui(args: argparse.Namespace) -> None:
     """Launch the interactive LIFE FORGE Web Dashboard."""
     from lifeforge.dashboard.server import start_dashboard
@@ -345,6 +424,20 @@ def main() -> None:
     ui_parser.add_argument("--port", type=int, default=8000, help="Port to serve dashboard on (default: 8000)")
     ui_parser.add_argument("--no-browser", action="store_true", help="Do not open browser automatically")
 
+    # Eval command -- universal bring-your-own-agent evaluation
+    eval_parser = subparsers.add_parser("eval", help="Evaluate a user-defined agent via Python spec or HTTP webhook")
+    eval_parser.add_argument("--target", type=str, default=None, help="Target Python specifier (e.g. agent.py:my_agent or module:AgentClass)")
+    eval_parser.add_argument("--endpoint", type=str, default=None, help="HTTP webhook URL to receive observations (e.g. http://localhost:5000/act)")
+    eval_parser.add_argument("--reset-endpoint", type=str, default=None, help="Optional HTTP reset URL for episode initialization")
+    eval_parser.add_argument("--timeout", type=float, default=30.0, help="HTTP request timeout in seconds (default: 30.0)")
+    eval_parser.add_argument("--agent-name", type=str, default=None, help="Custom identifier for the evaluated agent")
+    eval_parser.add_argument("--scenarios", type=int, default=30, help="Number of evolutionary generations (default: 30)")
+    eval_parser.add_argument("--delay", type=float, default=0.0, help="Delay in seconds between generations")
+    eval_parser.add_argument("--seed", type=int, default=42, help="Random seed for deterministic exploration (default: 42)")
+    eval_parser.add_argument("--out", type=str, default="results/eval_report.md", help="Output markdown report path")
+    eval_parser.add_argument("--json", action="store_true", help="Also generate structured JSON diagnostic report")
+    eval_parser.add_argument("--fail-on-critical", action="store_true", help="Exit with code 1 if critical zero-day vulnerabilities are discovered")
+
     args = parser.parse_args()
     if args.command == "run":
         cmd_run(args)
@@ -352,6 +445,8 @@ def main() -> None:
         cmd_survey(args)
     elif args.command == "test":
         cmd_test(args)
+    elif args.command == "eval":
+        cmd_eval(args)
     elif args.command == "compare":
         cmd_compare(args)
     elif args.command == "mcp-serve":

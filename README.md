@@ -2,7 +2,7 @@
 
 > **Co-evolutionary adversarial red-teaming and dynamic stress-testing for autonomous AI agents using Artificial Life Quality-Diversity algorithms (3D MAP-Elites).**
 
-[![Tests](https://img.shields.io/badge/tests-79%20passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-88%20passed-brightgreen.svg)](tests/)
 [![CI](https://github.com/zariffromlatif/life-forge/actions/workflows/agent_stress_test.yml/badge.svg)](https://github.com/zariffromlatif/life-forge/actions/workflows/agent_stress_test.yml)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
 [![Protocol](https://img.shields.io/badge/protocol-MCP%20Native-orange.svg)](lifeforge/sandbox/mcp_server.py)
@@ -184,7 +184,23 @@ python -m lifeforge.cli test --model gpt-4o-mini --scenarios 20 --out results/gp
 
 ---
 
-### 5. Head-to-Head Model Showdown Comparison
+### 5. Evaluate Your Own Agent via Python Spec or Webhook (`lifeforge eval`)
+Evaluate your existing agent pipelines (LangGraph, CrewAI, AutoGen, or custom microservices) with a single command:
+
+```bash
+# Evaluate a Python agent class, instance, or callable:
+python -m lifeforge.cli eval --target path/to/my_agent.py:MyAgentClass --scenarios 30 --out results/my_agent_report.md --json
+
+# Evaluate any remote or containerized agent via HTTP webhook:
+python -m lifeforge.cli eval --endpoint http://localhost:5050/act --reset-endpoint http://localhost:5050/reset --scenarios 30
+
+# Enforce CI/CD gating (fails build with exit code 1 if critical zero-days are found):
+python -m lifeforge.cli eval --target my_agent.py:agent --scenarios 25 --fail-on-critical
+```
+
+---
+
+### 6. Head-to-Head Model Showdown Comparison
 Compare two or more evaluation reports side-by-side to crown the security winner:
 
 ```bash
@@ -193,7 +209,7 @@ python -m lifeforge.cli compare results/local_qwen_report.json results/local_lla
 
 ---
 
-### 6. Run as an MCP Server (Claude Desktop & Cursor)
+### 7. Run as an MCP Server (Claude Desktop & Cursor)
 Expose LIFE FORGE as a live MCP tool server:
 
 ```bash
@@ -214,7 +230,7 @@ Add to your `claude_desktop_config.json`:
 
 ---
 
-### 7. Scientific Cellular Automata Laboratory
+### 8. Scientific Cellular Automata Laboratory
 Simulate candidate universes and compute quantitative MODES complexity vectors:
 
 ```bash
@@ -303,7 +319,7 @@ lifeforge/
 │   └── report.py               # Markdown and JSON executive audit generator
 │
 └── cli/                        # Unified Command-Line Interface
-    └── main.py                 # Commands: run, survey, test, compare, mcp-serve, ui
+    └── main.py                 # Commands: run, survey, test, eval, compare, mcp-serve, ui
 ```
 
 ---
@@ -314,7 +330,7 @@ LIFE FORGE maintains an extensive test suite verifying algorithm determinism, to
 
 ```bash
 pytest -v
-# 79 passed in 1.15s
+# 88 passed in 4.10s
 ```
 
 ---
@@ -324,6 +340,7 @@ pytest -v
 Check the [`examples/`](examples/) directory for self-contained, runnable Python integration scripts:
 * [`examples/quickstart_stress_test.py`](examples/quickstart_stress_test.py): Programmatically execute an evolutionary red-teaming search and generate audit reports.
 * [`examples/custom_agent_evaluation.py`](examples/custom_agent_evaluation.py): Plug custom Python agent state machines, LangChain, or CrewAI agents directly into the simulation sandbox.
+* [`examples/webhook_agent_server.py`](examples/webhook_agent_server.py): Standalone mock agent HTTP server ready for webhook evaluation.
 
 ---
 

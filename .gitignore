@@ -9,6 +9,7 @@ env/
 .mypy_cache/
 .ipynb_checkpoints/
 *.egg-info/
+.agents/
 
 # Generated experiment output
 results/*
