@@ -5,10 +5,40 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "lifeforge"
 version = "0.2.0"
-description = "Evolutionary AI Agent Flight Simulator -- discover zero-day failures in autonomous agents."
+description = "Autonomous AI Agent Flight Simulator -- co-evolutionary adversarial red-teaming and stress-testing via 3D MAP-Elites."
+readme = "README.md"
 requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Zarif Latif", email = "102543743+zariffromlatif@users.noreply.github.com"}
+]
+keywords = [
+    "ai-agents",
+    "red-teaming",
+    "llm-security",
+    "evolutionary-computation",
+    "map-elites",
+    "artificial-life",
+    "cellular-automata",
+    "model-context-protocol",
+    "mcp",
+    "ai-safety"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Topic :: Security",
+]
 dependencies = [
-    "numpy",
+    "numpy>=1.24.0",
 ]
 
 [project.optional-dependencies]
@@ -16,6 +46,13 @@ llm = ["litellm>=1.40", "tenacity>=8.2"]
 mcp = ["mcp>=1.0"]
 viz = ["matplotlib>=3.8"]
 all = ["litellm>=1.40", "tenacity>=8.2", "mcp>=1.0", "matplotlib>=3.8"]
+dev = ["pytest>=8.0", "ruff>=0.4", "mypy>=1.10"]
+
+[project.urls]
+Homepage = "https://github.com/zariffromlatif/life-forge"
+Repository = "https://github.com/zariffromlatif/life-forge.git"
+Issues = "https://github.com/zariffromlatif/life-forge/issues"
+Documentation = "https://github.com/zariffromlatif/life-forge#readme"
 
 [project.scripts]
 lifeforge = "lifeforge.cli.main:main"

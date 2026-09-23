@@ -303,7 +303,7 @@ lifeforge/
 │   └── report.py               # Markdown and JSON executive audit generator
 │
 └── cli/                        # Unified Command-Line Interface
-    └── main.py                 # Commands: run, survey, test, compare, mcp-serve
+    └── main.py                 # Commands: run, survey, test, compare, mcp-serve, ui
 ```
 
 ---
@@ -314,11 +314,21 @@ LIFE FORGE maintains an extensive test suite verifying algorithm determinism, to
 
 ```bash
 pytest -v
-# 75 passed in 1.78s
+# 79 passed in 1.15s
 ```
 
 ---
 
-## License
+## Examples & Programmatic API
 
-MIT License. See [LICENSE](LICENSE) for details.
+Check the [`examples/`](examples/) directory for self-contained, runnable Python integration scripts:
+* [`examples/quickstart_stress_test.py`](examples/quickstart_stress_test.py): Programmatically execute an evolutionary red-teaming search and generate audit reports.
+* [`examples/custom_agent_evaluation.py`](examples/custom_agent_evaluation.py): Plug custom Python agent state machines, LangChain, or CrewAI agents directly into the simulation sandbox.
+
+---
+
+## License & Citation
+
+Licensed under the [MIT License](LICENSE).
+
+If you use LIFE FORGE in your research or evaluations, please cite using [CITATION.cff](CITATION.cff).

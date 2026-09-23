@@ -1,0 +1,20 @@
+cff-version: 1.2.0
+message: "If you use LIFE FORGE in your research or evaluations, please cite it as below."
+title: "LIFE FORGE: The Autonomous Flight Simulator for AI Agents"
+version: 0.2.0
+date-released: 2026-03-23
+authors:
+  - family-names: "Latif"
+    given-names: "Zarif"
+repository-code: "https://github.com/zariffromlatif/life-forge"
+url: "https://github.com/zariffromlatif/life-forge"
+keywords:
+  - "ai-agents"
+  - "red-teaming"
+  - "llm-security"
+  - "quality-diversity"
+  - "map-elites"
+  - "artificial-life"
+  - "cellular-automata"
+  - "modes-framework"
+license: "MIT"
