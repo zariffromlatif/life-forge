@@ -38,7 +38,7 @@ def select_representative_rules(
     """
     Select rules distributed across density/activity space.
 
-    We use a 4 × 4 target grid over the observed
+    We use a 4 x 4 target grid over the observed
     [density, activity] space.
     """
 
@@ -228,11 +228,11 @@ def main() -> None:
         writer.writeheader()
         writer.writerows(results)
 
-    print("LIFE FORGE — Experiment 003")
-    print("────────────────────────────")
+    print("LIFE FORGE -- Experiment 003")
+    print("----------------------------")
     print(f"Rules selected: {len(candidates)}")
     print("Control:        Conway B3/S23")
-    print("Grid:           50 × 50")
+    print("Grid:           50 x 50")
     print("Generations:    2000")
     print("World seed:     42")
     print()

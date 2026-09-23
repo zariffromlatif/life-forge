@@ -1,4 +1,4 @@
-"""MCP Server — exposes the LIFE FORGE sandbox as a Model Context Protocol server.
+"""MCP Server -- exposes the LIFE FORGE sandbox as a Model Context Protocol server.
 
 This allows any MCP-compatible client (Claude Desktop, Cursor, LangGraph agents,
 custom MCP clients) to connect to the sandbox and interact with the simulated
@@ -74,11 +74,11 @@ class LifeForgeMCPServer:
     """LIFE FORGE sandbox exposed as an MCP-compatible tool server.
 
     This is the core server implementation. It handles:
-    1. Tool listing — publishes all registered sandbox tools
-    2. Tool execution — dispatches calls against the sandbox WorldState
-    3. State management — maintains deterministic state across calls
-    4. Trace recording — logs every call for post-hoc analysis
-    5. Optional mutation — can inject adversarial perturbations mid-session
+    1. Tool listing -- publishes all registered sandbox tools
+    2. Tool execution -- dispatches calls against the sandbox WorldState
+    3. State management -- maintains deterministic state across calls
+    4. Trace recording -- logs every call for post-hoc analysis
+    5. Optional mutation -- can inject adversarial perturbations mid-session
 
     The server can be used standalone (via the JSON-RPC handler methods)
     or wrapped with the MCP SDK's stdio/SSE transports.
@@ -213,7 +213,7 @@ class LifeForgeMCPServer:
                     arguments=params.get("arguments"),
                 )
             elif method == "notifications/initialized":
-                # Client acknowledgement — no response needed
+                # Client acknowledgement -- no response needed
                 return {}
             else:
                 return {

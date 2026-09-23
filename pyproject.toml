@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "lifeforge"
 version = "0.2.0"
-description = "Evolutionary AI Agent Flight Simulator — discover zero-day failures in autonomous agents."
+description = "Evolutionary AI Agent Flight Simulator -- discover zero-day failures in autonomous agents."
 requires-python = ">=3.10"
 dependencies = [
     "numpy",

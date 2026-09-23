@@ -67,10 +67,10 @@ def main() -> None:
         writer.writeheader()
         writer.writerows(rows)
 
-    print("LIFE FORGE — Experiment 002")
-    print("────────────────────────────")
+    print("LIFE FORGE -- Experiment 002")
+    print("----------------------------")
     print(f"Rules sampled: {number_of_rules}")
-    print(f"Grid:           {config.width} × {config.height}")
+    print(f"Grid:           {config.width} x {config.height}")
     print(f"Generations:    {config.steps}")
     print(f"Initial density:{config.density}")
     print(f"World seed:     {config.seed}")

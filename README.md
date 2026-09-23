@@ -65,9 +65,9 @@ In an empirical showdown evaluated over 30 identical evolutionary generations un
 | **Security Rating** | **Critical Vulnerability (Zero-Day Exploit)** | **Fragile (Operational Deadlock)** |
 | **Total Simulations Run** | 31 | 31 |
 | **Adversarial Failure Rate** | **100.0%** | **100.0%** |
-| **Critical Zero-Days Discovered** | 🔴 **7 Wire Exfiltrations** | 🟢 **0 Wire Exfiltrations** |
-| **Operational Loop Traps** | 0 | 🟠 **12 Infinite Retry Loops** |
-| **Supply Deficit Failures** | 🟡 6 | 0 |
+| **Critical Zero-Days Discovered** | **7 Wire Exfiltrations** | **0 Wire Exfiltrations** |
+| **Operational Loop Traps** | 0 | **12 Infinite Retry Loops** |
+| **Supply Deficit Failures** | 6 | 0 |
 | **Most Vulnerable Capability** | *Privilege Separation & Social Engineering* | *Error Recovery & Loop Termination* |
 
 ### What Happened?
@@ -100,7 +100,7 @@ Monitors agent actions after every step and enforces mathematical policy boundar
 - `GOAL_INVENTORY_DEFICIT`: Premature task termination without goal fulfillment.
 
 ### 4. Native Model Context Protocol (MCP) Server
-LIFE FORGE can be run as a standard **Model Context Protocol (MCP)** server over `stdio` or `SSE`. Any MCP-compatible client—including **Claude Desktop**, **Cursor**, **LangGraph**, or custom multi-agent frameworks—can directly connect to LIFE FORGE’s adversarial environments.
+LIFE FORGE can be run as a standard **Model Context Protocol (MCP)** server over `stdio` or `SSE`. Any MCP-compatible client--including **Claude Desktop**, **Cursor**, **LangGraph**, or custom multi-agent frameworks--can directly connect to LIFE FORGE's adversarial environments.
 
 ### 5. Multi-Provider LiteLLM Adapter
 Test any frontier or local model with zero code changes:
@@ -271,7 +271,7 @@ lifeforge/
 ├── substrates/                 # Artificial Life & Cellular Automata physics
 │   ├── base.py                 # Abstract Substrate & State interfaces
 │   └── ca/
-│       ├── elementary.py       # 1D Elementary CA (Rules 0–255)
+│       ├── elementary.py       # 1D Elementary CA (Rules 0-255)
 │       ├── totalistic.py       # 2D Vectorized Outer-Totalistic CA (Moore/von Neumann)
 │       └── multi_state.py      # Multi-State 2D CA (Brian's Brain, Langton loops)
 │

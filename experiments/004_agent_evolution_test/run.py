@@ -27,7 +27,7 @@ OUTPUT_DIR = Path("results/004_agent_evolution_test")
 def main() -> None:
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
     print("=" * 70)
-    print(" LIFE FORGE — Agent Evolution Test (The Flight Simulator for AI)")
+    print(" LIFE FORGE -- Agent Evolution Test (The Flight Simulator for AI)")
     print("=" * 70)
 
     # 1. Initialize customer agent
@@ -53,9 +53,9 @@ def main() -> None:
     # 3. Launch LIFE FORGE Evolutionary Red-Teaming
     print("\n[3] Launching LIFE FORGE Evolutionary Simulation Engine...")
     print("    Running 3D MAP-Elites co-adaptation over:")
-    print("      • Adversarial Prompt Injection Intensity")
-    print("      • Supply-Chain Scarcity & Market Volatility")
-    print("      • Enterprise Budget Constraints")
+    print("      * Adversarial Prompt Injection Intensity")
+    print("      * Supply-Chain Scarcity & Market Volatility")
+    print("      * Enterprise Budget Constraints")
 
     engine = EvolutionEngine(seed=42)
     summary = engine.run(agent, clean_world, generations=75)
@@ -73,12 +73,12 @@ def main() -> None:
     paths = ReportGenerator.save(metrics, OUTPUT_DIR)
 
     print(f"\n    Report generated:")
-    print(f"      • Markdown: {paths['markdown']}")
-    print(f"      • JSON:     {paths['json']}")
+    print(f"      * Markdown: {paths['markdown']}")
+    print(f"      * JSON:     {paths['json']}")
 
     # 5. Print Executive Findings
     print("\n" + "=" * 70)
-    print(" AGENT EVOLUTION REPORT — EXECUTIVE SUMMARY")
+    print(" AGENT EVOLUTION REPORT -- EXECUTIVE SUMMARY")
     print("=" * 70)
     print(f" Target Agent:          {metrics.agent_name}")
     print(f" Generalization Status: {metrics.generalization_rating}")
@@ -89,7 +89,7 @@ def main() -> None:
     print("-" * 70)
     print(" Discovered Failure Categories:")
     for cat, count in sorted(metrics.failure_mode_breakdown.items(), key=lambda x: x[1], reverse=True):
-        print(f"   • {cat:<30}: {count} occurrences")
+        print(f"   * {cat:<30}: {count} occurrences")
 
     print("-" * 70)
     print(" Key Causal Findings:")

@@ -1,10 +1,10 @@
-"""LLM Agent Adapter — wraps any frontier model as a LIFE FORGE AgentInterface.
+"""LLM Agent Adapter -- wraps any frontier model as a LIFE FORGE AgentInterface.
 
 Uses LiteLLM as the unified gateway so a single adapter covers:
-  - OpenAI (gpt-4o, gpt-4o-mini, o3-mini, …)
-  - Anthropic (claude-sonnet-4-20250514, claude-3.5-haiku, …)
-  - Google (gemini-2.5-pro, gemini-2.0-flash, …)
-  - Local (ollama/*, vllm/*, …)
+  - OpenAI (gpt-4o, gpt-4o-mini, o3-mini, ...)
+  - Anthropic (claude-sonnet-4-20250514, claude-3.5-haiku, ...)
+  - Google (gemini-2.5-pro, gemini-2.0-flash, ...)
+  - Local (ollama/*, vllm/*, ...)
 
 The adapter converts the sandbox tool schemas into the model's native
 function-call format, marshals each observation into a user message, and
@@ -266,7 +266,7 @@ class LLMAgent(AgentInterface):
                 thought=getattr(message, "content", None) or f"Calling {tool_name}",
             )
 
-        # No tool call — the model is finishing
+        # No tool call -- the model is finishing
         content = getattr(message, "content", "") or ""
         return AgentAction(
             action_type="finish",
@@ -302,7 +302,7 @@ class LLMSandboxRunner:
 
     def __init__(
         self,
-        runner: Any = None,  # SandboxRunner — uses Any to avoid circular import
+        runner: Any = None,  # SandboxRunner -- uses Any to avoid circular import
     ) -> None:
         # Lazy import to avoid circular dependency
         from .oracle import SandboxRunner

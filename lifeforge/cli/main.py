@@ -233,7 +233,7 @@ def cmd_compare(args: argparse.Namespace) -> None:
     lines.append("| **Scenarios Explored** | " + " | ".join([f"{r.get('scenarios_generated', 0):,}" for r in reports]) + " |")
     lines.append("| **Baseline Success Rate** | " + " | ".join([f"{r.get('success_rate', 0.0)}%" for r in reports]) + " |")
     lines.append("| **Adversarial Failure Rate** | " + " | ".join([f"**{r.get('failure_rate', 0.0)}%**" for r in reports]) + " |")
-    lines.append("| **Critical Vulnerabilities** | " + " | ".join([f"🔴 **{r.get('critical_failures', 0)}**" for r in reports]) + " |")
+    lines.append("| **Critical Vulnerabilities** | " + " | ".join([f"**{r.get('critical_failures', 0)}**" for r in reports]) + " |")
     lines.append("| **Novel Failure Modes** | " + " | ".join([f"{r.get('novel_failure_modes_count', 0)}" for r in reports]) + " |")
     lines.append("| **Most Vulnerable Capability** | " + " | ".join([f"*{r.get('most_vulnerable_capability', 'N/A')}*" for r in reports]) + " |")
 
@@ -254,7 +254,7 @@ def cmd_compare(args: argparse.Namespace) -> None:
         row = [f"`{cat}`"]
         for r in reports:
             cnt = r.get("failure_mode_breakdown", {}).get(cat, 0)
-            sev = "🔴 " if "UNAUTHORIZED" in cat else ("🟠 " if "LOOP" in cat or "BUDGET" in cat else "🟡 ")
+            sev = "[CRITICAL] " if "UNAUTHORIZED" in cat else ("[HIGH] " if "LOOP" in cat or "BUDGET" in cat else "[MEDIUM] ")
             row.append(f"{sev}{cnt}" if cnt > 0 else "0")
         lines.append("| " + " | ".join(row) + " |")
 
@@ -270,7 +270,7 @@ def cmd_compare(args: argparse.Namespace) -> None:
         f"Demonstrated superior resilience with only **{winner.get('critical_failures', 0)} critical vulnerabilities** "
         f"and an adversarial failure rate of **{winner.get('failure_rate', 0.0)}%** under identical evolutionary pressures.",
         "",
-        "*LIFE FORGE — The Flight Simulator for AI Agents*",
+        "*LIFE FORGE -- The Flight Simulator for AI Agents*",
     ])
 
     output_text = "\n".join(lines)
@@ -315,7 +315,7 @@ def main() -> None:
     survey_parser.add_argument("--db", type=str, default="results/survey_experiments.jsonl")
     survey_parser.add_argument("--seed", type=int, default=1000)
 
-    # Test command — evolutionary red-teaming
+    # Test command -- evolutionary red-teaming
     test_parser = subparsers.add_parser("test", help="Run evolutionary red-teaming against an agent")
     test_parser.add_argument("--model", type=str, default=None, help="LLM model (e.g. gemini/gemini-2.0-flash, ollama/llama3.1:8b, gpt-4o-mini)")
     test_parser.add_argument("--api-key", type=str, default=None, help="API key for cloud model (or set GEMINI_API_KEY/OPENAI_API_KEY)")
@@ -329,7 +329,7 @@ def main() -> None:
     test_parser.add_argument("--json", action="store_true", help="Also generate JSON report")
     test_parser.add_argument("--hardened", action="store_true", help="Test a hardened (non-vulnerable) agent")
 
-    # Compare command — head-to-head model comparison
+    # Compare command -- head-to-head model comparison
     compare_parser = subparsers.add_parser("compare", help="Compare multiple agent evaluation reports")
     compare_parser.add_argument("reports", nargs="+", help="Paths to JSON report files")
     compare_parser.add_argument("--out", type=str, default="results/HEAD_TO_HEAD_SHOWDOWN.md", help="Output comparison path")
@@ -340,7 +340,7 @@ def main() -> None:
     mcp_parser.add_argument("--adversarial", action="store_true", help="Enable adversarial mutations during session")
     mcp_parser.add_argument("--mutation-rate", type=float, default=0.3, help="Probability of mutation per tool call")
 
-    # UI command — interactive visual web dashboard
+    # UI command -- interactive visual web dashboard
     ui_parser = subparsers.add_parser("ui", help="Launch interactive visual web dashboard")
     ui_parser.add_argument("--port", type=int, default=8000, help="Port to serve dashboard on (default: 8000)")
     ui_parser.add_argument("--no-browser", action="store_true", help="Do not open browser automatically")

@@ -39,7 +39,7 @@ def main() -> None:
     seed = 42
 
     print("=" * 80)
-    print(" LIFE FORGE — Experiment 001: MODES Classification of Wolfram Classes")
+    print(" LIFE FORGE -- Experiment 001: MODES Classification of Wolfram Classes")
     print("=" * 80)
 
     results = []

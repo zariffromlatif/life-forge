@@ -28,7 +28,10 @@ def find_results_dir(preferred_dir: str | Path = "results") -> Path:
     return p.resolve()
 
 
-def get_all_reports(results_dir: str | Path = "results") -> list[dict[str, Any]]:
+def get_all_reports(
+    results_dir: str | Path = "results",
+    agent_filter: str | None = None,
+) -> list[dict[str, Any]]:
     """Scan and parse all JSON reports in the results directory."""
     target_dir = find_results_dir(results_dir)
     reports: list[dict[str, Any]] = []
@@ -39,6 +42,9 @@ def get_all_reports(results_dir: str | Path = "results") -> list[dict[str, Any]]
             with json_file.open("r", encoding="utf-8") as f:
                 data = json.load(f)
                 if isinstance(data, dict) and "agent_name" in data:
+                    name = data["agent_name"]
+                    if agent_filter and agent_filter.lower() not in name.lower():
+                        continue
                     data["_file_name"] = json_file.name
                     data["_file_path"] = str(json_file)
                     reports.append(data)
@@ -125,11 +131,14 @@ class LifeForgeDashboardHandler(http.server.BaseHTTPRequestHandler):
     def do_GET(self) -> None:
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
+        query = urllib.parse.parse_qs(parsed_url.query)
+        agent_filter = query.get("agent", [None])[0]
 
         if path == "/api/reports":
-            self.send_json_response(get_all_reports(self.results_dir))
+            reports = get_all_reports(self.results_dir, agent_filter=agent_filter)
+            self.send_json_response(reports)
         elif path == "/api/summary":
-            reports = get_all_reports(self.results_dir)
+            reports = get_all_reports(self.results_dir, agent_filter=agent_filter)
             self.send_json_response(get_aggregate_summary(reports))
         elif path == "/api/showdown":
             reports = get_all_reports(self.results_dir)
@@ -138,14 +147,27 @@ class LifeForgeDashboardHandler(http.server.BaseHTTPRequestHandler):
                 "summary": get_aggregate_summary(reports),
             })
         elif path == "/api/map_elites":
-            reports = get_all_reports(self.results_dir)
+            reports = get_all_reports(self.results_dir, agent_filter=agent_filter)
             self.send_json_response(get_map_elites_grid_data(reports))
         elif path == "/api/modes/simulate":
             # Real-time CA MODES simulation
-            query = urllib.parse.parse_qs(parsed_url.query)
             rule = int(query.get("rule", [110])[0])
             steps = min(int(query.get("steps", [50])[0]), 100)
             self.handle_modes_simulation(rule, steps)
+        elif path == "/api/export":
+            filename = query.get("file", ["MODEL_SHOWDOWN.md"])[0]
+            target_file = find_results_dir(self.results_dir) / filename
+            if target_file.exists() and target_file.is_file():
+                content = target_file.read_bytes()
+                mime = "application/json" if target_file.suffix == ".json" else "text/markdown"
+                self.send_response(200)
+                self.send_header("Content-Type", f"{mime}; charset=utf-8")
+                self.send_header("Content-Disposition", f"attachment; filename=\"{target_file.name}\"")
+                self.send_header("Content-Length", str(len(content)))
+                self.end_headers()
+                self.wfile.write(content)
+            else:
+                self.send_error(404, "Report file not found")
         elif path in ("/", "/index.html"):
             self.serve_static_file(STATIC_DIR / "index.html", "text/html")
         else:

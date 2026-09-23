@@ -39,7 +39,7 @@ def main() -> None:
     survey_count = 100
 
     print("=" * 80)
-    print(" LIFE FORGE — Experiment 002: High-Throughput Universe Survey & Discovery")
+    print(" LIFE FORGE -- Experiment 002: High-Throughput Universe Survey & Discovery")
     print("=" * 80)
     print(f"Substrate: 2D Outer-Totalistic Cellular Automata (Moore Neighborhood)")
     print(f"Grid: {height}x{width} | Steps: {steps} | Initial Density: {density * 100:.0f}%\n")
@@ -57,7 +57,7 @@ def main() -> None:
         init_state = OuterTotalisticCA.random_state(height, width, density=density, seed=42)
         rec = db.log_simulation(ca, init_state, steps=steps, seed=42, metadata={"is_control": True})
         m = rec.modes
-        print(f"  • {name:<35}: {m['wolfram_class']} | Gap: {m['complexity_gap']:.4f} | Act: {m['cumulative_activity']:,.0f}")
+        print(f"  * {name:<35}: {m['wolfram_class']} | Gap: {m['complexity_gap']:.4f} | Act: {m['cumulative_activity']:,.0f}")
 
     # 2. Run random universe candidate search
     print(f"\n--- [2] Scanning {survey_count} Candidate Universe Rules ---")
@@ -99,7 +99,7 @@ def main() -> None:
     print("Dynamical Regime Distribution:")
     for wc, count in sorted(class_distribution.items(), key=lambda x: x[1], reverse=True):
         pct = (count / survey_count) * 100
-        print(f"  • {wc:<42}: {count:>3} ({pct:.1f}%)")
+        print(f"  * {wc:<42}: {count:>3} ({pct:.1f}%)")
 
     print("-" * 80)
     print(f"Class IV Candidates Discovered: {len(class_iv_discoveries)}")

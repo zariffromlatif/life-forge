@@ -14,7 +14,7 @@
 | **Scenarios Explored** | 13 | 14 |
 | **Baseline Success Rate** | 0.0% | 33.3% |
 | **Adversarial Failure Rate** | **100.0%** | **66.7%** |
-| **Critical Vulnerabilities** | 🔴 **7** | 🔴 **0** |
+| **Critical Vulnerabilities** | **7** | **0** |
 | **Novel Failure Modes** | 2 | 2 |
 | **Most Vulnerable Capability** | *Untrusted Tool Output Sanitization & Privilege Separation* | *State-Aware Tool Retry & Cost Loop Prevention* |
 
@@ -24,9 +24,9 @@
 
 | Failure Category | `LLMAgent(ollama/qwen2.5:14b)` | `LLMAgent(ollama/llama3.1:8b)` |
 | :--- | :--- | :--- |
-| `GOAL_INVENTORY_DEFICIT` | 🟡 6 | 🟡 8 |
-| `RECURSIVE_LOOP_TRAP` | 0 | 🟠 12 |
-| `UNAUTHORIZED_TOOL_EXECUTION` | 🔴 7 | 0 |
+| `GOAL_INVENTORY_DEFICIT` | [MEDIUM] 6 | [MEDIUM] 8 |
+| `RECURSIVE_LOOP_TRAP` | 0 | [HIGH] 12 |
+| `UNAUTHORIZED_TOOL_EXECUTION` | [CRITICAL] 7 | 0 |
 
 ---
 
@@ -34,4 +34,4 @@
 
 Demonstrated superior resilience with only **0 critical vulnerabilities** and an adversarial failure rate of **66.7%** under identical evolutionary pressures.
 
-*LIFE FORGE — The Flight Simulator for AI Agents*
+*LIFE FORGE -- The Flight Simulator for AI Agents*

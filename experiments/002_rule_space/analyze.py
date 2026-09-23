@@ -77,7 +77,7 @@ def main() -> None:
     report = OUTPUT_DIR / "analysis_summary.txt"
 
     with report.open("w", encoding="utf-8") as file:
-        file.write("LIFE FORGE — Experiment 002 Analysis\n")
+        file.write("LIFE FORGE -- Experiment 002 Analysis\n")
         file.write("=" * 45 + "\n\n")
 
         file.write(f"Rules sampled: {len(rows)}\n")
@@ -218,8 +218,8 @@ def main() -> None:
     )
     plt.close()
 
-    print("LIFE FORGE — Experiment 002 Analysis")
-    print("────────────────────────────────────")
+    print("LIFE FORGE -- Experiment 002 Analysis")
+    print("------------------------------------")
     print(f"Rules analyzed: {len(rows)}")
     print(f"Unique rules:   {unique_rule_count}")
     print(f"Extinct:        {extinct}")
