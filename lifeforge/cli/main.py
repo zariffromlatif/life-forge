@@ -6,6 +6,14 @@ import json
 import sys
 from pathlib import Path
 
+# Ensure UTF-8 output with replacement fallback across all platforms (e.g. Windows CP1252)
+if hasattr(sys.stdout, "reconfigure"):
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
 import numpy as np
 
 from lifeforge.experiments.database import ExperimentDatabase
@@ -64,7 +72,7 @@ def cmd_survey(args: argparse.Namespace) -> None:
     print("\n=== Survey Complete ===")
     print(f"Total universes logged: {db.count()}")
     for wc, count in class_counts.items():
-        print(f"  • {wc:<40}: {count}")
+        print(f"  * {wc:<40}: {count}")
     print(f"\nClass IV Candidates Found: {len(class_iv_rules)}")
     if class_iv_rules:
         print(f"Sample candidates: {', '.join(class_iv_rules[:5])}")
@@ -80,7 +88,7 @@ def cmd_test(args: argparse.Namespace) -> None:
     from lifeforge.reporting.report import ReportGenerator
 
     print("=" * 60)
-    print("  LIFE FORGE — Evolutionary Agent Stress Test")
+    print("  LIFE FORGE -- Evolutionary Agent Stress Test")
     print("=" * 60)
 
     # Configure agent
@@ -149,10 +157,10 @@ def cmd_test(args: argparse.Namespace) -> None:
 
     # Exit code
     if summary.critical_failures_count > 0:
-        print(f"\n  ⚠ CRITICAL: {summary.critical_failures_count} critical vulnerabilities discovered.")
+        print(f"\n  [!] CRITICAL: {summary.critical_failures_count} critical vulnerabilities discovered.")
         sys.exit(1)
     else:
-        print("\n  ✓ No critical vulnerabilities found.")
+        print("\n  [OK] No critical vulnerabilities found.")
 
 
 def cmd_mcp_serve(args: argparse.Namespace) -> None:
@@ -277,6 +285,13 @@ def cmd_compare(args: argparse.Namespace) -> None:
         print(output_text.encode("ascii", errors="replace").decode("ascii"))
 
 
+def cmd_ui(args: argparse.Namespace) -> None:
+    """Launch the interactive LIFE FORGE Web Dashboard."""
+    from lifeforge.dashboard.server import start_dashboard
+
+    start_dashboard(port=args.port, open_browser=not args.no_browser)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="LIFE FORGE: Evolutionary AI Agent Flight Simulator")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -325,6 +340,11 @@ def main() -> None:
     mcp_parser.add_argument("--adversarial", action="store_true", help="Enable adversarial mutations during session")
     mcp_parser.add_argument("--mutation-rate", type=float, default=0.3, help="Probability of mutation per tool call")
 
+    # UI command — interactive visual web dashboard
+    ui_parser = subparsers.add_parser("ui", help="Launch interactive visual web dashboard")
+    ui_parser.add_argument("--port", type=int, default=8000, help="Port to serve dashboard on (default: 8000)")
+    ui_parser.add_argument("--no-browser", action="store_true", help="Do not open browser automatically")
+
     args = parser.parse_args()
     if args.command == "run":
         cmd_run(args)
@@ -336,6 +356,8 @@ def main() -> None:
         cmd_compare(args)
     elif args.command == "mcp-serve":
         cmd_mcp_serve(args)
+    elif args.command == "ui":
+        cmd_ui(args)
 
 
 if __name__ == "__main__":

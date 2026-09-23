@@ -1,0 +1,897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LIFE FORGE — AI Agent Flight Simulator Dashboard</title>
+  <style>
+    :root {
+      --bg-dark: #070b14;
+      --bg-card: #0e1626;
+      --bg-card-hover: #142036;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --accent-cyan: #00f2fe;
+      --accent-blue: #3b82f6;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --accent-red: #ef4444;
+      --accent-purple: #8b5cf6;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      --font-mono: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, Courier, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: var(--font-family);
+      line-height: 1.5;
+      padding-bottom: 60px;
+    }
+
+    /* Container */
+    .container {
+      max-width: 1300px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Header */
+    header {
+      background: rgba(14, 22, 38, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      padding: 16px 0;
+    }
+
+    .header-content {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .logo-badge {
+      background: linear-gradient(135deg, #00f2fe, #4facfe);
+      color: #070b14;
+      font-weight: 800;
+      font-size: 14px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      letter-spacing: 1px;
+    }
+
+    .brand-title {
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(16, 185, 129, 0.1);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: var(--accent-green);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.3); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn:hover {
+      background: var(--bg-card-hover);
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    .btn-primary {
+      background: linear-gradient(135deg, #00f2fe, #0284c7);
+      color: #070b14;
+      border: none;
+      font-weight: 600;
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+
+    /* KPI Grid */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 16px;
+      margin: 28px 0;
+    }
+
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 20px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .kpi-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 4px;
+      height: 100%;
+      background: var(--accent-cyan);
+    }
+
+    .kpi-card.crit::before { background: var(--accent-red); }
+    .kpi-card.warn::before { background: var(--accent-amber); }
+    .kpi-card.success::before { background: var(--accent-green); }
+
+    .kpi-label {
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .kpi-value {
+      font-size: 32px;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      display: flex;
+      align-items: baseline;
+      gap: 6px;
+    }
+
+    .kpi-sub {
+      color: var(--text-muted);
+      font-size: 12px;
+      margin-top: 6px;
+    }
+
+    /* Navigation Tabs */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 24px;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 12px 18px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      position: relative;
+      transition: color 0.2s;
+    }
+
+    .tab-btn:hover {
+      color: var(--text-main);
+    }
+
+    .tab-btn.active {
+      color: var(--accent-cyan);
+    }
+
+    .tab-btn.active::after {
+      content: "";
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 8px var(--accent-cyan);
+    }
+
+    /* Tab Content */
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+    }
+
+    /* Cards & Panels */
+    .card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 24px;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .card-title {
+      font-size: 16px;
+      font-weight: 700;
+      letter-spacing: 0.3px;
+    }
+
+    /* Model Showdown Table */
+    .table-container {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    th {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+      font-family: var(--font-mono);
+      text-transform: uppercase;
+    }
+
+    .badge-crit { background: rgba(239, 68, 68, 0.15); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .badge-warn { background: rgba(245, 158, 11, 0.15); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.3); }
+    .badge-pass { background: rgba(16, 185, 129, 0.15); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.3); }
+
+    .progress-bar-wrap {
+      width: 100%;
+      background: rgba(255, 255, 255, 0.08);
+      height: 8px;
+      border-radius: 4px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      border-radius: 4px;
+    }
+
+    /* MAP-Elites Grid */
+    .map-grid-container {
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .map-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 10px;
+      max-width: 600px;
+      margin: 16px 0;
+    }
+
+    .grid-cell {
+      aspect-ratio: 1;
+      border-radius: 8px;
+      border: 1px solid var(--border-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      background: rgba(255, 255, 255, 0.02);
+      padding: 6px;
+      text-align: center;
+    }
+
+    .grid-cell:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    }
+
+    .cell-pass { background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.4); color: #34d399; }
+    .cell-high { background: rgba(245, 158, 11, 0.15); border-color: rgba(245, 158, 11, 0.4); color: #fbbf24; }
+    .cell-critical { background: rgba(239, 68, 68, 0.2); border-color: rgba(239, 68, 68, 0.5); color: #f87171; }
+    .cell-unexplored { opacity: 0.3; }
+
+    /* Findings / Deep Dive Cards */
+    .finding-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 16px;
+      transition: border-color 0.2s;
+    }
+
+    .finding-card:hover {
+      border-color: rgba(255, 255, 255, 0.15);
+    }
+
+    .finding-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+
+    .finding-title {
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .finding-agent {
+      font-family: var(--font-mono);
+      color: var(--accent-cyan);
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .tag-list {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin: 10px 0;
+    }
+
+    .tag {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: var(--text-muted);
+    }
+
+    .trace-box {
+      background: #040711;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      padding: 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      margin-top: 12px;
+      color: #cbd5e1;
+      overflow-x: auto;
+    }
+
+    .remediation-box {
+      margin-top: 12px;
+      background: rgba(59, 130, 246, 0.08);
+      border-left: 3px solid var(--accent-blue);
+      padding: 10px 14px;
+      font-size: 13px;
+      color: #bfdbfe;
+    }
+
+    /* CA Lab */
+    .ca-canvas-wrap {
+      display: flex;
+      justify-content: center;
+      background: #03060c;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px;
+      margin: 16px 0;
+    }
+
+    canvas {
+      image-rendering: pixelated;
+      max-width: 100%;
+    }
+
+    .ca-controls {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    select, input[type="range"] {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      color: var(--text-main);
+      padding: 8px 12px;
+      border-radius: 6px;
+      font-size: 13px;
+    }
+
+    /* Print Styles */
+    @media print {
+      body { background: #fff; color: #000; }
+      header, .tabs, .btn, .ca-controls { display: none; }
+      .tab-panel { display: block !important; }
+      .card, .finding-card, .kpi-card { border: 1px solid #ddd; background: #fff; color: #000; }
+      .kpi-value, .brand-title { color: #000; }
+      .trace-box { background: #f8f8f8; color: #111; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="container header-content">
+      <div class="brand">
+        <div class="logo-badge">LIFE FORGE</div>
+        <div class="brand-title">Agent Flight Simulator</div>
+        <div class="status-pill">
+          <span class="pulse-dot"></span>
+          Flight Simulator Ready
+        </div>
+      </div>
+      <div class="header-actions">
+        <button class="btn" onclick="fetchData()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          Refresh
+        </button>
+        <button class="btn btn-primary" onclick="window.print()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><path d="M6 14h12v8H6z"/></svg>
+          Export Audit Dossier
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="container">
+
+    <!-- KPI Strip -->
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-label">Total Agent Simulations</div>
+        <div class="kpi-value" id="kpi-evals">--</div>
+        <div class="kpi-sub">Across evolutionary generations</div>
+      </div>
+      <div class="kpi-card crit">
+        <div class="kpi-label">Zero-Day Vulnerabilities</div>
+        <div class="kpi-value" id="kpi-crit">--</div>
+        <div class="kpi-sub">Unauthorized financial tool calls</div>
+      </div>
+      <div class="kpi-card warn">
+        <div class="kpi-label">Adversarial Failure Rate</div>
+        <div class="kpi-value" id="kpi-fail-rate">--%</div>
+        <div class="kpi-sub">Under targeted co-evolution</div>
+      </div>
+      <div class="kpi-card success">
+        <div class="kpi-label">Frontier Models Audited</div>
+        <div class="kpi-value" id="kpi-models">--</div>
+        <div class="kpi-sub">Open-weight & cloud providers</div>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('showdown')">📊 Model Showdown Matrix</button>
+      <button class="tab-btn" onclick="switchTab('map-elites')">🗺️ 3D MAP-Elites Behavior Space</button>
+      <button class="tab-btn" onclick="switchTab('findings')">🔍 Exploit Traces & Root Causes</button>
+      <button class="tab-btn" onclick="switchTab('ca-lab')">🧬 CA & MODES Complexity Lab</button>
+    </div>
+
+    <!-- Tab 1: Showdown -->
+    <div id="tab-showdown" class="tab-panel active">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Head-to-Head Frontier Model Security Comparison</div>
+          <span class="badge badge-pass" id="winner-badge">Winner: Evaluating...</span>
+        </div>
+        <div class="table-container">
+          <table id="showdown-table">
+            <thead>
+              <tr>
+                <th>Model / Agent</th>
+                <th>Security Rating</th>
+                <th>Simulations</th>
+                <th>Critical Vulnerabilities</th>
+                <th>Adversarial Failure Rate</th>
+                <th>Primary Failure Mode</th>
+              </tr>
+            </thead>
+            <tbody id="showdown-tbody">
+              <tr><td colspan="6" style="text-align: center;">Loading benchmark reports...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: MAP-Elites -->
+    <div id="tab-map-elites" class="tab-panel">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">3D MAP-Elites Behavior Space Projection</div>
+          <span style="color: var(--text-muted); font-size: 13px;">Adversarial Intensity × Market Turbulence</span>
+        </div>
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 12px;">
+          Quality-Diversity search maps agent behavior across environmental niches. Green cells represent resilient behavior, amber indicates operational deadlock loops, and red represents critical security breaches (e.g. wire transfer exfiltration).
+        </p>
+
+        <div style="display: flex; gap: 40px; flex-wrap: wrap; align-items: flex-start;">
+          <div>
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px;">
+              ▲ Price Volatility & Scarcity (0 to 4)
+            </div>
+            <div class="map-grid" id="map-grid"></div>
+            <div style="font-size: 12px; font-weight: 600; color: var(--text-muted); text-align: center;">
+              Adversarial Prompt Intensity (0 to 4) ▶
+            </div>
+          </div>
+
+          <div style="flex: 1; min-width: 280px;" id="cell-detail-card">
+            <div class="card" style="background: rgba(255,255,255,0.02); margin-bottom: 0;">
+              <div class="card-title" style="margin-bottom: 8px;">Niche Cell Inspector</div>
+              <p style="font-size: 13px; color: var(--text-muted);" id="cell-detail-text">
+                Hover or click any cell in the behavior space to inspect the exact evolutionary mutations and failure modes discovered in that niche.
+              </p>
+              <div id="cell-detail-findings" style="margin-top: 12px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: Exploit Traces -->
+    <div id="tab-findings" class="tab-panel">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Discovered Failure Modes & Minimal Causal Triggers</div>
+          <div style="font-size: 12px; color: var(--text-muted);">Extracted by Causal Counterfactual Isolation</div>
+        </div>
+        <div id="findings-container">Loading exploit traces...</div>
+      </div>
+    </div>
+
+    <!-- Tab 4: CA & MODES Lab -->
+    <div id="tab-ca-lab" class="tab-panel">
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Cellular Automata & MODES Scientific Engine</div>
+          <span class="badge badge-pass" id="ca-wolfram-class">Class IV Candidate</span>
+        </div>
+        <p style="color: var(--text-muted); font-size: 13px; margin-bottom: 16px;">
+          The underlying complexity engine of LIFE FORGE models computational universes and measures Open-Ended Evolution via Bedau-Packard activity, Shannon entropy, and bit-packed LZW compressibility.
+        </p>
+
+        <div class="ca-controls">
+          <label style="font-size: 13px; font-weight: 600;">Rule:
+            <select id="ca-rule-select" onchange="runCASimulation()">
+              <option value="110" selected>Rule 110 (Turing Complete / Class IV)</option>
+              <option value="30">Rule 30 (Chaotic / Class III)</option>
+              <option value="90">Rule 90 (Sierpinski Fractal / Class II)</option>
+              <option value="184">Rule 184 (Traffic Flow / Class II)</option>
+              <option value="22">Rule 22 (Complex Pattern / Class III)</option>
+            </select>
+          </label>
+
+          <label style="font-size: 13px; font-weight: 600;">Steps:
+            <input type="range" id="ca-steps" min="20" max="80" value="50" onchange="runCASimulation()">
+            <span id="ca-steps-val" style="font-family: var(--font-mono); margin-left: 6px;">50</span>
+          </label>
+
+          <button class="btn btn-primary" onclick="runCASimulation()">Generate Universe</button>
+        </div>
+
+        <div class="ca-canvas-wrap">
+          <canvas id="ca-canvas" width="610" height="300"></canvas>
+        </div>
+
+        <div class="kpi-grid" style="margin-bottom: 0;">
+          <div class="kpi-card" style="padding: 14px;">
+            <div class="kpi-label">Complexity Gap</div>
+            <div class="kpi-value" id="ca-metric-gap" style="font-size: 20px;">--</div>
+          </div>
+          <div class="kpi-card" style="padding: 14px;">
+            <div class="kpi-label">Shannon Entropy</div>
+            <div class="kpi-value" id="ca-metric-entropy" style="font-size: 20px;">--</div>
+          </div>
+          <div class="kpi-card" style="padding: 14px;">
+            <div class="kpi-label">LZW Compressibility</div>
+            <div class="kpi-value" id="ca-metric-comp" style="font-size: 20px;">--</div>
+          </div>
+          <div class="kpi-card" style="padding: 14px;">
+            <div class="kpi-label">Cumulative Activity</div>
+            <div class="kpi-value" id="ca-metric-act" style="font-size: 20px;">--</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let currentData = { reports: [], summary: {}, map_elites: [] };
+
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+
+      const activeBtn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+      if (activeBtn) activeBtn.classList.add('active');
+
+      const panel = document.getElementById('tab-' + tabId);
+      if (panel) panel.classList.add('active');
+
+      if (tabId === 'ca-lab') {
+        runCASimulation();
+      }
+    }
+
+    async function fetchData() {
+      try {
+        const [repRes, sumRes, mapRes] = await Promise.all([
+          fetch('/api/reports'),
+          fetch('/api/summary'),
+          fetch('/api/map_elites')
+        ]);
+
+        const reports = await repRes.json();
+        const summary = await sumRes.json();
+        const mapElites = await mapRes.json();
+
+        currentData = { reports, summary, map_elites: mapElites };
+        renderDashboard();
+      } catch (err) {
+        console.error('Failed to load dashboard data:', err);
+      }
+    }
+
+    function renderDashboard() {
+      const { reports, summary, map_elites } = currentData;
+
+      // Render KPIs
+      document.getElementById('kpi-evals').innerText = (summary.total_evaluations || 0).toLocaleString();
+      document.getElementById('kpi-crit').innerText = summary.total_critical_vulnerabilities || 0;
+      document.getElementById('kpi-fail-rate').innerText = (summary.average_adversarial_failure_rate || 0) + '%';
+      document.getElementById('kpi-models').innerText = summary.total_models_audited || 0;
+
+      // Render Showdown Table
+      const tbody = document.getElementById('showdown-tbody');
+      tbody.innerHTML = '';
+
+      if (!reports || reports.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No audit reports found in results/</td></tr>';
+      } else {
+        // Sort by lowest critical failures then lowest failure rate
+        const sorted = [...reports].sort((a, b) => {
+          if ((a.critical_failures || 0) !== (b.critical_failures || 0)) {
+            return (a.critical_failures || 0) - (b.critical_failures || 0);
+          }
+          return (a.failure_rate || 0) - (b.failure_rate || 0);
+        });
+
+        const winner = sorted[0];
+        document.getElementById('winner-badge').innerText = `Winner: ${winner.agent_name}`;
+
+        sorted.forEach((r, idx) => {
+          const tr = document.createElement('tr');
+          const isWinner = idx === 0;
+          const critBadge = r.critical_failures > 0
+            ? `<span class="badge badge-crit">🔴 ${r.critical_failures} CRITICAL</span>`
+            : `<span class="badge badge-pass">0 CRITICAL</span>`;
+
+          const rateColor = r.failure_rate > 80 ? 'var(--accent-red)' : (r.failure_rate > 40 ? 'var(--accent-amber)' : 'var(--accent-green)');
+
+          tr.innerHTML = `
+            <td>
+              <strong style="color: var(--accent-cyan); font-family: var(--font-mono);">${r.agent_name}</strong>
+              ${isWinner ? '<span class="badge badge-pass" style="margin-left: 8px;">DEFENDER WINNER</span>' : ''}
+            </td>
+            <td><span class="badge ${r.critical_failures > 0 ? 'badge-crit' : 'badge-warn'}">${r.generalization_rating || 'Audited'}</span></td>
+            <td>${(r.total_evaluations || 0).toLocaleString()}</td>
+            <td>${critBadge}</td>
+            <td style="min-width: 140px;">
+              <span style="font-weight: 700; color: ${rateColor};">${r.failure_rate}%</span>
+              <div class="progress-bar-wrap">
+                <div class="progress-bar-fill" style="width: ${r.failure_rate}%; background: ${rateColor};"></div>
+              </div>
+            </td>
+            <td style="color: var(--text-muted); font-size: 13px;">${r.most_vulnerable_capability || 'N/A'}</td>
+          `;
+          tbody.appendChild(tr);
+        });
+      }
+
+      // Render MAP-Elites Grid
+      const grid = document.getElementById('map-grid');
+      grid.innerHTML = '';
+      (map_elites || []).forEach(cell => {
+        const div = document.createElement('div');
+        div.className = `grid-cell cell-${cell.status}`;
+        div.innerText = cell.count > 0 ? `${cell.count}` : (cell.status === 'pass' ? '✓' : '·');
+        div.title = `Adv: ${cell.adversarial_intensity}, Vol: ${cell.volatility_index} (${cell.status})`;
+        div.onclick = () => showCellDetails(cell);
+        grid.appendChild(div);
+      });
+
+      // Render Findings
+      const container = document.getElementById('findings-container');
+      container.innerHTML = '';
+      let totalFindings = 0;
+
+      reports.forEach(r => {
+        (r.findings || []).forEach(f => {
+          totalFindings++;
+          const card = document.createElement('div');
+          card.className = 'finding-card';
+          const sevClass = f.severity === 'CRITICAL' ? 'badge-crit' : (f.severity === 'HIGH' ? 'badge-warn' : 'badge-pass');
+
+          const triggers = (f.minimal_causal_trigger || []).map(t => `<span class="tag">${t}</span>`).join('');
+          const traceContent = JSON.stringify(f.trace_snippet || [], null, 2);
+
+          card.innerHTML = `
+            <div class="finding-top">
+              <div>
+                <div class="finding-agent">${r.agent_name}</div>
+                <div class="finding-title">${f.title}</div>
+              </div>
+              <span class="badge ${sevClass}">${f.severity}</span>
+            </div>
+            <p style="color: var(--text-muted); font-size: 13.5px;">${f.description}</p>
+            <div class="tag-list">
+              <span style="font-size: 11px; color: var(--text-muted); align-self: center;">Minimal Triggers:</span>
+              ${triggers}
+            </div>
+            <div class="trace-box"><pre>${traceContent}</pre></div>
+            <div class="remediation-box">
+              <strong>Architectural Remediation:</strong> ${f.recommendation || 'Enforce sandboxing and prompt/tool separation.'}
+            </div>
+          `;
+          container.appendChild(card);
+        });
+      });
+
+      if (totalFindings === 0) {
+        container.innerHTML = '<p style="color: var(--text-muted);">No policy violations or vulnerabilities recorded.</p>';
+      }
+    }
+
+    function showCellDetails(cell) {
+      const detailText = document.getElementById('cell-detail-text');
+      const detailFindings = document.getElementById('cell-detail-findings');
+
+      detailText.innerHTML = `
+        <strong>Niche Coordinates:</strong> Adversarial Intensity: <code>${cell.adversarial_intensity}</code> | Market Volatility: <code>${cell.volatility_index}</code><br>
+        <strong>Status:</strong> <span class="badge badge-${cell.status === 'critical' ? 'crit' : (cell.status === 'high' ? 'warn' : 'pass')}">${cell.status.toUpperCase()}</span>
+      `;
+
+      if (cell.findings && cell.findings.length > 0) {
+        detailFindings.innerHTML = cell.findings.map(f => `
+          <div style="background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; margin-bottom: 8px;">
+            <div style="color: var(--accent-cyan); font-family: var(--font-mono); font-size: 11px;">${f.agent}</div>
+            <strong style="font-size: 13px;">${f.title}</strong>
+            <div style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">Category: ${f.category}</div>
+          </div>
+        `).join('');
+      } else {
+        detailFindings.innerHTML = '<p style="font-size: 12px; color: var(--text-muted); margin-top: 8px;">No vulnerabilities in this environmental niche.</p>';
+      }
+    }
+
+    async function runCASimulation() {
+      const rule = document.getElementById('ca-rule-select').value;
+      const steps = document.getElementById('ca-steps').value;
+      document.getElementById('ca-steps-val').innerText = steps;
+
+      try {
+        const res = await fetch(`/api/modes/simulate?rule=${rule}&steps=${steps}`);
+        const data = await res.json();
+
+        // Render Canvas
+        const canvas = document.getElementById('ca-canvas');
+        const ctx = canvas.getContext('2d');
+        const grid = data.grid;
+        if (!grid || grid.length === 0) return;
+
+        const rows = grid.length;
+        const cols = grid[0].length;
+        canvas.width = cols * 8;
+        canvas.height = rows * 6;
+
+        ctx.fillStyle = '#03060c';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        for (let r = 0; r < rows; r++) {
+          for (let c = 0; c < cols; c++) {
+            if (grid[r][c] === 1) {
+              ctx.fillStyle = '#00f2fe';
+              ctx.fillRect(c * 8, r * 6, 7, 5);
+            }
+          }
+        }
+
+        // Render MODES metrics
+        document.getElementById('ca-wolfram-class').innerText = data.wolfram_class || 'Class IV';
+        document.getElementById('ca-metric-gap').innerText = data.complexity_gap;
+        document.getElementById('ca-metric-entropy').innerText = data.shannon_entropy;
+        document.getElementById('ca-metric-comp').innerText = data.compressibility;
+        document.getElementById('ca-metric-act').innerText = (data.cumulative_activity || 0).toLocaleString();
+      } catch (err) {
+        console.error('CA simulation failed:', err);
+      }
+    }
+
+    // Auto-fetch on load
+    window.addEventListener('DOMContentLoaded', () => {
+      fetchData();
+    });
+  </script>
+</body>
+</html>

@@ -219,18 +219,18 @@ class LLMAgent(AgentInterface):
                         match = re.search(r"retry in (\d+(?:\.\d+)?)s", err_str, re.IGNORECASE)
                         sleep_time = float(match.group(1)) + 2.0 if match else (15.0 * (attempt + 1))
                         sleep_time = min(max(sleep_time, 5.0), 60.0)
-                        print(f"\n  ⏳ [Rate Limit (429): {self.config.model}] Quota reached. Sleeping {sleep_time:.1f}s to replenish quota (attempt {attempt + 1}/{max_retries})...")
+                        print(f"\n  [*] [Rate Limit (429): {self.config.model}] Quota reached. Sleeping {sleep_time:.1f}s to replenish quota (attempt {attempt + 1}/{max_retries})...")
                     elif is_high_demand:
                         sleep_time = 10.0 * (attempt + 1)
-                        print(f"\n  ⏳ [Server Busy (503): {self.config.model}] Google reports high demand. Pausing {sleep_time:.1f}s (attempt {attempt + 1}/{max_retries})...")
+                        print(f"\n  [*] [Server Busy (503): {self.config.model}] Google reports high demand. Pausing {sleep_time:.1f}s (attempt {attempt + 1}/{max_retries})...")
                     else:
                         sleep_time = 5.0 * (attempt + 1)
-                        print(f"\n  ⏳ [Transient Error: {self.config.model}] Retrying in {sleep_time:.1f}s (attempt {attempt + 1}/{max_retries})...")
+                        print(f"\n  [*] [Transient Error: {self.config.model}] Retrying in {sleep_time:.1f}s (attempt {attempt + 1}/{max_retries})...")
 
                     time.sleep(sleep_time)
                     continue
 
-                print(f"\n  ⚠️  [LLM Error: {self.config.model}]: {exc}")
+                print(f"\n  [!] [LLM Error: {self.config.model}]: {exc}")
                 logger.error("LLM API call failed: %s", exc)
                 return AgentAction(
                     action_type="finish",

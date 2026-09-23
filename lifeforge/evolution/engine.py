@@ -174,8 +174,8 @@ class EvolutionEngine:
                 generation=gen,
             )
 
-            status_icon = "❌ VIOLATION" if not trace.success else "✅ PASS"
-            crit = " [🔴 CRITICAL]" if trace.critical_failure else ""
+            status_icon = "[FAIL] VIOLATION" if not trace.success else "[OK] PASS"
+            crit = " [CRITICAL]" if trace.critical_failure else ""
             mut_desc = ", ".join(child_mutations[-2:]) if child_mutations else "none"
             print(f"  [Gen {gen:2d}/{generations}] {status_icon}{crit} | Mutations: {mut_desc}")
 

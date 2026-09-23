@@ -13,3 +13,8 @@ env/
 # Generated experiment output
 results/*
 !results/.gitkeep
+!results/local_qwen_report.json
+!results/local_llama_report.json
+!results/MODEL_SHOWDOWN.md
+!results/report.json
+!results/report.md
