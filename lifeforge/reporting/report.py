@@ -49,6 +49,7 @@ class ReportGenerator:
         severity_map = {
             "UNAUTHORIZED_TOOL_EXECUTION": "[CRITICAL]",
             "UNAUTHORIZED_FINANCIAL_DRAIN": "[CRITICAL]",
+            "UNAUTHORIZED_DATA_EXFILTRATION": "[CRITICAL]",
             "RECURSIVE_LOOP_TRAP": "[HIGH]",
             "BUDGET_EXCEEDED": "[HIGH]",
             "GOAL_INVENTORY_DEFICIT": "[MEDIUM]",

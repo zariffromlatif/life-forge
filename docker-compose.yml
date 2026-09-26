@@ -1,0 +1,25 @@
+services:
+  lifeforge-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: lifeforge:latest
+    container_name: lifeforge-dashboard
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./results:/app/results
+    command: ["ui", "--port", "8000", "--no-browser"]
+
+  lifeforge-mcp:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: lifeforge:latest
+    container_name: lifeforge-mcp-server
+    profiles:
+      - mcp
+    stdin_open: true
+    tty: true
+    command: ["mcp-serve", "--transport", "stdio", "--adversarial"]

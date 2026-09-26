@@ -8,7 +8,7 @@ version = "0.2.0"
 description = "Autonomous AI Agent Flight Simulator -- co-evolutionary adversarial red-teaming and stress-testing via 3D MAP-Elites."
 readme = "README.md"
 requires-python = ">=3.10"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
     {name = "Zarif Latif", email = "102543743+zariffromlatif@users.noreply.github.com"}
 ]
@@ -28,7 +28,6 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Science/Research",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",

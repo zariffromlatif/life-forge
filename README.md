@@ -2,7 +2,7 @@
 
 > **Co-evolutionary adversarial red-teaming and dynamic stress-testing for autonomous AI agents using Artificial Life Quality-Diversity algorithms (3D MAP-Elites).**
 
-[![Tests](https://img.shields.io/badge/tests-88%20passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-89%20passed-brightgreen.svg)](tests/)
 [![CI](https://github.com/zariffromlatif/life-forge/actions/workflows/agent_stress_test.yml/badge.svg)](https://github.com/zariffromlatif/life-forge/actions/workflows/agent_stress_test.yml)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
 [![Protocol](https://img.shields.io/badge/protocol-MCP%20Native-orange.svg)](lifeforge/sandbox/mcp_server.py)
@@ -246,6 +246,20 @@ python -m lifeforge.cli survey --count 100 --steps 150 --db results/survey.jsonl
 
 ---
 
+### 9. Docker Container Deployment
+Run the complete LIFE FORGE environment inside an isolated Docker container with zero host dependencies:
+
+```bash
+# Launch interactive web dashboard on http://localhost:8000
+docker compose up lifeforge-ui
+
+# Or run ad-hoc agent flight simulation
+docker build -t lifeforge:latest .
+docker run --rm -v ${PWD}/results:/app/results lifeforge test --scenarios 30 --out results/docker_report.md --json
+```
+
+---
+
 ## Continuous CI/CD Integration (GitHub Action Gatekeeper)
 
 Prevent vulnerable, exfiltrating, or deadlocking agents from ever reaching production. Add the turnkey **LIFE FORGE GitHub Action** (`action.yml`) to any repository in 4 lines of YAML:
@@ -342,7 +356,7 @@ LIFE FORGE maintains an extensive test suite verifying algorithm determinism, to
 
 ```bash
 pytest -v
-# 88 passed in 4.10s
+# 89 passed in 4.21s
 ```
 
 ---
