@@ -72,3 +72,31 @@ jobs:
             results/*.md
             results/*.json
             results/*.jsonl
+
+  action-gatekeeper-dogfooding:
+    name: Turnkey GitHub Action (Dogfooding)
+    runs-on: ubuntu-latest
+    needs: test-suite
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Test Composite Action (Dogfooding)
+        uses: ./
+        with:
+          target: "examples/custom_agent_evaluation.py:MyCustomProcurementAgent"
+          scenarios: 15
+          seed: 42
+          fail-on-critical: "true"
+          comment-on-pr: "false"
+          report-path: "results/action_dogfood_audit.md"
+
+      - name: Upload Dogfood Report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lifeforge-action-dogfood-report
+          path: |
+            results/action_dogfood_audit.md
+            results/action_dogfood_audit.json
+

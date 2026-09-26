@@ -347,9 +347,10 @@ def cmd_eval(args: argparse.Namespace) -> None:
     print(f"\n  Report saved to: {out_path}")
 
     if args.json:
+        from dataclasses import asdict
         json_path = out_path.with_suffix(".json")
         json_path.write_text(
-            json.dumps(diagnostics.to_dict() if hasattr(diagnostics, "to_dict") else diagnostics.__dict__, indent=2, default=str),
+            json.dumps(asdict(diagnostics), indent=2, default=str),
             encoding="utf-8",
         )
         print(f"  JSON report:  {json_path}")

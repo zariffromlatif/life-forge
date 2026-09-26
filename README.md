@@ -246,39 +246,51 @@ python -m lifeforge.cli survey --count 100 --steps 150 --db results/survey.jsonl
 
 ---
 
-## Continuous CI/CD Integration
+## Continuous CI/CD Integration (GitHub Action Gatekeeper)
 
-Prevent vulnerable or deadlocking agents from reaching production. Add LIFE FORGE to your GitHub repository workflow:
+Prevent vulnerable, exfiltrating, or deadlocking agents from ever reaching production. Add the turnkey **LIFE FORGE GitHub Action** (`action.yml`) to any repository in 4 lines of YAML:
 
 ```yaml
-# .github/workflows/agent_stress_test.yml
-name: AI Agent Stress Test
+# .github/workflows/agent_guard.yml
+name: AI Agent Gatekeeper
 on: [push, pull_request]
 
 jobs:
-  red-team:
+  gatekeeper:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write  # Allows posting audit summary to PR review
+
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - name: Run LIFE FORGE Flight Simulation
+        uses: zariffromlatif/life-forge@main
         with:
-          python-version: "3.12"
-
-      - name: Install LIFE FORGE
-        run: pip install -e ".[all]"
-
-      - name: Run Evolutionary Stress Test
-        run: |
-          python -m lifeforge.cli test --scenarios 30 --out results/ci_report.md --json
-
-      - name: Upload Audit Report
-        uses: actions/upload-artifact@v4
-        with:
-          name: agent-evolution-report
-          path: results/ci_report.md
+          target: "src/agent.py:my_agent"     # Python agent class, instance, or callable
+          scenarios: 30                       # Number of evolutionary scenarios
+          fail-on-critical: "true"            # Block PR if zero-day exploits are discovered
+          comment-on-pr: "true"               # Post audit table directly to PR review
 ```
 
+### Action Configuration Matrix
+
+| Input | Description | Default |
+| :--- | :--- | :--- |
+| `target` | Python agent specifier (e.g. `src/agent.py:my_agent`) | `""` |
+| `endpoint` | HTTP webhook URL for Dockerized / remote microservice agents | `""` |
+| `reset-endpoint`| Optional HTTP reset URL for external microservice agents | `""` |
+| `scenarios` | Number of evolutionary generations to simulate | `30` |
+| `seed` | Deterministic random seed for reproducible exploration | `42` |
+| `fail-on-critical` | Exit with code 1 and block build if critical vulnerabilities found | `'true'` |
+| `comment-on-pr` | Post an executive audit table directly into PR review comments | `'true'` |
+| `report-path` | Output path for generated Markdown audit report | `results/lifeforge_audit.md` |
+| `github-token` | GitHub token for PR comments and summaries | `${{ github.token }}` |
+
+See [`examples/ci_agent_workflow.yml`](examples/ci_agent_workflow.yml) for a complete copy-paste workflow.
+
 ---
+
 
 ## Repository Architecture
 

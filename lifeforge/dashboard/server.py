@@ -94,6 +94,8 @@ def get_map_elites_grid_data(reports: list[dict[str, Any]]) -> list[dict[str, An
             # Match findings by causal triggers
             for r in reports:
                 for f in r.get("findings", []):
+                    if not isinstance(f, dict):
+                        continue
                     triggers = f.get("minimal_causal_trigger", [])
                     matches_adv = any("injection" in t or "spoofed" in t for t in triggers)
                     matches_vol = any("volatility" in t or "scarcity" in t for t in triggers)

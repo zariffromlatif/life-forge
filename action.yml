@@ -1,0 +1,142 @@
+name: "LIFE FORGE AI Agent Flight Simulator"
+description: "Autonomous evolutionary red-teaming and dynamic stress-testing gatekeeper for AI agents via 3D MAP-Elites."
+author: "Zarif Latif"
+branding:
+  icon: "shield"
+  color: "cyan"
+
+inputs:
+  target:
+    description: "Target Python agent specifier (e.g. src/agent.py:my_agent or module:AgentClass)"
+    required: false
+    default: ""
+  endpoint:
+    description: "HTTP webhook URL to receive observations for external/Dockerized agents"
+    required: false
+    default: ""
+  reset-endpoint:
+    description: "Optional HTTP reset URL for external microservice agents"
+    required: false
+    default: ""
+  timeout:
+    description: "HTTP request timeout in seconds"
+    required: false
+    default: "30.0"
+  agent-name:
+    description: "Custom identifier for the evaluated agent"
+    required: false
+    default: ""
+  scenarios:
+    description: "Number of evolutionary generations to simulate"
+    required: false
+    default: "30"
+  delay:
+    description: "Delay in seconds between generations"
+    required: false
+    default: "0.0"
+  seed:
+    description: "Deterministic random seed"
+    required: false
+    default: "42"
+  fail-on-critical:
+    description: "Whether to fail the step (exit code 1) if critical zero-days are discovered"
+    required: false
+    default: "true"
+  report-path:
+    description: "Output file path for the Markdown audit report"
+    required: false
+    default: "results/lifeforge_audit.md"
+  json:
+    description: "Whether to also generate a structured JSON diagnostic report"
+    required: false
+    default: "true"
+  comment-on-pr:
+    description: "Whether to post an executive audit table as a PR comment"
+    required: false
+    default: "true"
+  github-token:
+    description: "GitHub token for commenting on PRs and uploading summaries"
+    required: false
+    default: ${{ github.token }}
+
+outputs:
+  report-path:
+    description: "Path to the generated Markdown audit report"
+    value: ${{ inputs.report-path }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.12"
+
+    - name: Install LIFE FORGE
+      shell: bash
+      run: |
+        python -m pip install --upgrade pip
+        if [ -f "${{ github.action_path }}/pyproject.toml" ]; then
+          pip install "${{ github.action_path }}"
+        else
+          pip install git+https://github.com/zariffromlatif/life-forge.git
+        fi
+
+    - name: Run LIFE FORGE Agent Evaluation
+      id: run-eval
+      shell: bash
+      run: |
+        CMD="python -m lifeforge.cli eval --scenarios ${{ inputs.scenarios }} --seed ${{ inputs.seed }} --delay ${{ inputs.delay }} --out ${{ inputs.report-path }}"
+        
+        if [ -n "${{ inputs.target }}" ]; then
+          CMD="$CMD --target ${{ inputs.target }}"
+        fi
+        
+        if [ -n "${{ inputs.endpoint }}" ]; then
+          CMD="$CMD --endpoint ${{ inputs.endpoint }}"
+        fi
+        
+        if [ -n "${{ inputs.reset-endpoint }}" ]; then
+          CMD="$CMD --reset-endpoint ${{ inputs.reset-endpoint }}"
+        fi
+        
+        if [ -n "${{ inputs.timeout }}" ]; then
+          CMD="$CMD --timeout ${{ inputs.timeout }}"
+        fi
+        
+        if [ -n "${{ inputs.agent-name }}" ]; then
+          CMD="$CMD --agent-name ${{ inputs.agent-name }}"
+        fi
+        
+        if [ "${{ inputs.json }}" = "true" ]; then
+          CMD="$CMD --json"
+        fi
+        
+        if [ "${{ inputs.fail-on-critical }}" = "true" ]; then
+          CMD="$CMD --fail-on-critical"
+        fi
+        
+        echo "[*] Executing: $CMD"
+        $CMD
+
+    - name: Publish Summary to GitHub Step Summary
+      if: always()
+      shell: bash
+      run: |
+        if [ -f "${{ inputs.report-path }}" ]; then
+          echo "## LIFE FORGE Flight Simulation Audit" >> $GITHUB_STEP_SUMMARY
+          cat "${{ inputs.report-path }}" >> $GITHUB_STEP_SUMMARY
+        fi
+
+    - name: Post PR Review Comment
+      if: always()
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: |
+        if [ "${{ inputs.comment-on-pr }}" = "true" ] && [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ -f "${{ inputs.report-path }}" ] && [ -n "${{ github.event.pull_request.number }}" ]; then
+            echo "[*] Posting audit report to PR #${{ github.event.pull_request.number }}..."
+            gh pr comment "${{ github.event.pull_request.number }}" --body-file "${{ inputs.report-path }}" || echo "[WARN] PR comment step failed or token lacks write permission."
+          fi
+        fi

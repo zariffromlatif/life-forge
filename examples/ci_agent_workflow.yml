@@ -1,0 +1,55 @@
+# .github/workflows/agent_guard.yml
+# LIFE FORGE: Turnkey AI Agent Flight Simulator Gatekeeper
+# Automatically stress-tests AI agents on every Pull Request and blocks zero-day vulnerabilities.
+
+name: AI Agent Flight Simulator Gatekeeper
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  agent-flight-simulation:
+    name: LIFE FORGE Stress Test & Vulnerability Gatekeeper
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write  # Required for posting audit reports to PR reviews
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Option A: Test a Python Agent (Class, Instance, or Callable)
+      - name: Run LIFE FORGE Flight Simulation (Python Agent)
+        uses: zariffromlatif/life-forge@main
+        with:
+          target: "src/agent.py:my_procurement_agent"
+          scenarios: 30
+          seed: 42
+          fail-on-critical: "true"
+          comment-on-pr: "true"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Option B: Alternatively, test a Dockerized / Remote Microservice Agent via HTTP Webhook:
+      # - name: Start Agent Microservice
+      #   run: docker run -d -p 5000:5000 my-agent-image:latest
+      #
+      # - name: Run LIFE FORGE Flight Simulation (Webhook Agent)
+      #   uses: zariffromlatif/life-forge@main
+      #   with:
+      #     endpoint: "http://localhost:5000/act"
+      #     reset-endpoint: "http://localhost:5000/reset"
+      #     scenarios: 30
+      #     fail-on-critical: "true"
+
+      - name: Upload Audit Reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: lifeforge-audit-reports
+          path: |
+            results/*.md
+            results/*.json
