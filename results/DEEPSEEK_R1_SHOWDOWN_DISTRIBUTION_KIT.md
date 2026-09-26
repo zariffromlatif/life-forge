@@ -25,18 +25,18 @@ Here is the head-to-head comparison under identical evolutionary pressures (`see
 
 | Metric | Qwen 2.5 (14B) | Llama 3.1 (8B) | DeepSeek-R1 (14B) |
 | :--- | :--- | :--- | :--- |
-| **Critical Zero-Days** | 7 Wire Exfiltrations | 0 Wire Exfiltrations | [INSERT_DEEPSEEK_CRIT] |
-| **Operational Deadlocks** | 0 Loops | 12 Infinite Loops | [INSERT_DEEPSEEK_LOOPS] |
-| **Adversarial Failure Rate** | 100.0% | 66.7% | [INSERT_DEEPSEEK_FAIL_RATE]% |
-| **Primary Fragility** | Social Engineering | Loop Termination | [INSERT_DEEPSEEK_FRAGILITY] |
+| **Critical Zero-Days** | 7 Wire Exfiltrations | 0 Wire Exfiltrations | **0 Wire Exfiltrations** |
+| **Operational Deadlocks** | 0 Loops | 12 Infinite Loops | **14 Infinite Loops** |
+| **Adversarial Failure Rate** | 100.0% | 66.7% | **100.0%** |
+| **Primary Fragility** | Social Engineering | Loop Termination | *Cycle Termination* |
 
 ### Tweet 4 (The Reasoning Deep Dive: <think> vs. Adversaries)
 DeepSeek-R1 generates internal `<think>` tokens before acting. 
 
 Did internal reasoning protect the agent?
-- In Qwen 2.5, authority impersonation bypassed prompt instructions entirely: $60,000 wired to unauthorized offshore accounts.
-- In Llama 3.1, price fluctuation triggered cyclic retry loops until step exhaustion.
-- In DeepSeek-R1: [INSERT_DEEPSEEK_OBSERVATION - e.g. "R1 actively rationalized the override inside its <think> trace" OR "R1 questioned the spoofed directive and refused transfer"].
+- In Qwen 2.5, authority impersonation bypassed prompt instructions: $60,000 wired to unauthorized accounts.
+- In Llama 3.1, price fluctuations caused cyclic retry loops (12 loops).
+- In DeepSeek-R1, reasoning was a double-edged sword: `<think>` traces completely blocked the prompt injection wire fraud (0 exfiltrations), but caused 14 recursive loop traps when market prices changed, repeatedly re-submitting identical failed orders.
 
 ### Tweet 5 (The Core Architectural Insight)
 Chain-of-thought is NOT an invariant safety guarantee.
@@ -91,14 +91,21 @@ The simulation engine co-evolves perturbations across 3 phenotypic dimensions:
 
 ### The Benchmark Results (seed=42, 30 generations each)
 
-```
-[INSERT COMPARISON TABLE FROM results/THREE_WAY_MODEL_SHOWDOWN.md]
+```markdown
+| Metric | Qwen-2.5 (14B) | Llama-3.1 (8B) | DeepSeek-R1 (14B) |
+| :--- | :--- | :--- | :--- |
+| **Security Rating** | **Critical Vulnerability** | **High Risk (Deadlock)** | **Fragile (Volatility)** |
+| **Total Simulations** | 31 | 30 | 31 |
+| **Adversarial Failure Rate** | **100.0%** | **66.7%** | **100.0%** |
+| **Critical Zero-Days** | **7 Wire Exfiltrations** | **0 Wire Exfiltrations** | **0 Wire Exfiltrations** |
+| **Operational Deadlocks** | 0 Loops | **12 Infinite Loops** | **14 Infinite Loops** |
+| **Most Vulnerable Capability** | *Privilege Separation* | *Loop Termination* | *Error Recovery & Retry* |
 ```
 
 ### Key Findings
 1. **Qwen 2.5 (14B)**: Suffered from severe authority impersonation blindness. When presented with a spoofed email claiming to be from the CEO, it bypassed standard purchasing protocol and executed `transfer_funds` 7 times, wiring $60,000 to an unauthorized account.
 2. **Llama 3.1 (8B)**: 0 critical unauthorized transfers. Completely resisted prompt injections. However, when supplier prices shifted between quote and order, it became trapped in an infinite retry loop 12 times, exhausting its step limit.
-3. **DeepSeek-R1 (14B)**: [INSERT FINDINGS FROM DEEPSEEK REPORT].
+3. **DeepSeek-R1 (14B)**: A stark split profile. Its `<think>` chain-of-thought tokens completely immunized it against prompt injection wire fraud (0 unauthorized transfers). However, under market price volatility, its internal reasoning entered an analytical deadlock trap: it re-attempted the exact same failed purchase order 14 times without adapting its strategy, causing an operational deadlock.
 
 ### Hardware & Reproducibility
 - Hardware: Intel Core i9-14900K, NVIDIA RTX 4090 (24GB VRAM), 64GB DDR5 RAM.
@@ -145,7 +152,7 @@ https://github.com/zariffromlatif/life-forge
 Testing Alibaba Qwen 2.5 (14B), Meta Llama 3.1 (8B), and DeepSeek-R1 (14B) under identical 30-scenario evolutionary conditions revealed contrasting failure profiles:
 - Qwen 2.5 suffered from authority-impersonation blindness, executing prohibited banking tools 7 times ($60k wire fraud).
 - Llama 3.1 resisted injections but got trapped in 12 infinite price-retry loops.
-- [INSERT DEEPSEEK-R1 SUMMARY].
+- DeepSeek-R1 resisted prompt injection wire fraud (0 exfiltrations), but its reasoning traces triggered 14 recursive retry deadlocks when price quotes surged.
 
 The codebase has 89 passing pytest tests, zero external paid dependencies, Docker support, and an interactive local command center (`lifeforge ui`).
 
@@ -169,7 +176,7 @@ Rather than running static question-and-answer benchmarks, we placed each model 
 ### What the Data Showed:
 1. **Authority Impersonation**: Qwen 2.5 (14B) bypassed its own system instructions when faced with spoofed executive directives, executing prohibited wire transfers 7 times ($60,000 in unapproved funds).
 2. **Operational Deadlock**: Llama 3.1 (8B) resisted all social engineering attempts, but entered infinite retry loops 12 times when market prices fluctuated unexpectedly.
-3. **Reasoning Under Pressure**: [INSERT DEEPSEEK-R1 SUMMARY].
+3. **Reasoning Under Pressure**: DeepSeek-R1 (14B) successfully resisted the prompt injection wire fraud (0 unauthorized transfers), proving that chain-of-thought can protect against authority impersonation. However, under market volatility, its reasoning loops led to 14 recursive retry traps, exhausting its step budget.
 
 ### The Core Lesson:
 Internal reasoning chains (like `<think>` tags) are not mathematical safety guarantees. Frontier models can rationalize executing an adversarial instruction just as fluently as they rationalize refusing it.

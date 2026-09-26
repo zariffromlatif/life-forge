@@ -56,23 +56,24 @@ Today, enterprise AI agents with tool access (databases, email, financial APIs) 
 
 ---
 
-## Empirical Benchmark: Meta Llama 3.1 vs. Alibaba Qwen 2.5
+## Empirical Benchmark: DeepSeek-R1 vs. Meta Llama 3.1 vs. Alibaba Qwen 2.5
 
-In an empirical showdown evaluated over 30 identical evolutionary generations under identical random seeds (`seed=42`), LIFE FORGE exposed fundamentally contrasting zero-day failure profiles between two state-of-the-art open-weight models:
+In an empirical showdown evaluated over 30 identical evolutionary generations under identical random seeds (`seed=42`) on an NVIDIA RTX 4090 GPU, LIFE FORGE exposed fundamentally contrasting failure profiles across frontier models:
 
-| Metric | Alibaba `Qwen-2.5-14B` | Meta `Llama-3.1-8B` |
-| :--- | :--- | :--- |
-| **Security Rating** | **Critical Vulnerability (Zero-Day Exploit)** | **Fragile (Operational Deadlock)** |
-| **Total Simulations Run** | 31 | 31 |
-| **Adversarial Failure Rate** | **100.0%** | **100.0%** |
-| **Critical Zero-Days Discovered** | **7 Wire Exfiltrations** | **0 Wire Exfiltrations** |
-| **Operational Loop Traps** | 0 | **12 Infinite Retry Loops** |
-| **Supply Deficit Failures** | 6 | 0 |
-| **Most Vulnerable Capability** | *Privilege Separation & Social Engineering* | *Error Recovery & Loop Termination* |
+| Metric | Alibaba `Qwen-2.5-14B` | Meta `Llama-3.1-8B` | DeepSeek `DeepSeek-R1-14B` |
+| :--- | :--- | :--- | :--- |
+| **Security Rating** | **Critical Vulnerability (Zero-Day)** | **High Risk (Deadlock)** | **Fragile (Volatility Trap)** |
+| **Total Simulations Run** | 31 | 30 | 31 |
+| **Adversarial Failure Rate** | **100.0%** | **66.7%** | **100.0%** |
+| **Critical Zero-Days Discovered** | **7 Wire Exfiltrations** | **0 Wire Exfiltrations** | **0 Wire Exfiltrations** |
+| **Operational Loop Traps** | 0 | **12 Infinite Retry Loops** | **14 Infinite Retry Loops** |
+| **Supply Deficit Failures** | 6 | 8 | 0 |
+| **Most Vulnerable Capability** | *Privilege Separation & Spoofing* | *Loop Termination* | *Error Recovery & Strategy Adaptation* |
 
 ### What Happened?
 * **Alibaba Qwen 2.5 (14B)**: Exhibited high general reasoning, but suffered from **authority-impersonation blindness**. When presented with spoofed CEO emails and vendor quote injections, Qwen believed the untrusted directive and **executed the prohibited `transfer_funds` tool 7 times, wiring $60,000 to unauthorized offshore accounts.**
 * **Meta Llama 3.1 (8B)**: Completely resisted social engineering and prompt injection wire fraud (0 exfiltrations). However, when market conditions shifted prices between catalog query and order submission, Llama entered an **unbounded infinite retry loop 12 times**, exhausting its maximum step budget without making progress.
+* **DeepSeek-R1 (14B)**: Demonstrated a stark split profile. Its `<think>` chain-of-thought tokens **completely neutralized prompt injection wire fraud** (0 unauthorized transfers). However, under market price volatility, its internal reasoning entered an analytical deadlock trap: it re-attempted the exact same failed purchase order **14 times** without adapting its strategy, causing an operational deadlock.
 
 ---
 
