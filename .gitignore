@@ -19,5 +19,7 @@ results/*
 !results/local_qwen_report.json
 !results/local_llama_report.json
 !results/MODEL_SHOWDOWN.md
+!results/THREE_WAY_MODEL_SHOWDOWN.md
+!results/DEEPSEEK_R1_SHOWDOWN_DISTRIBUTION_KIT.md
 !results/report.json
 !results/report.md

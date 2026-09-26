@@ -1307,6 +1307,11 @@
     window.addEventListener('DOMContentLoaded', () => {
       fetchDashboardData();
       triggerCASimulation();
+
+      // Auto-poll every 5 seconds to reflect live simulation results
+      setInterval(() => {
+        fetchDashboardData();
+      }, 5000);
     });
 
     window.addEventListener('resize', () => {
