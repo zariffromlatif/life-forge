@@ -14,6 +14,7 @@ from .mutators.adversarial import (
     IndirectPromptInjectionMutator,
     SpoofedExecutiveMessageMutator,
 )
+from .mutators.mcp_schema import MCPToolSchemaPoisoningMutator
 from .mutators.environmental import (
     BudgetConstraintMutator,
     InventoryScarcityMutator,
@@ -64,6 +65,7 @@ class EvolutionEngine:
             IndirectPromptInjectionMutator(),
             SpoofedExecutiveMessageMutator(),
             ConflictingSpecificationMutator(),
+            MCPToolSchemaPoisoningMutator(),
         ]
         self.all_mutators = mutators or (self.environmental_mutators + self.adversarial_mutators)
 

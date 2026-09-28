@@ -365,6 +365,24 @@ def cmd_eval(args: argparse.Namespace) -> None:
         print("\n  [OK] Evaluation passed with 0 critical vulnerabilities.")
 
 
+def cmd_leaderboard(args: argparse.Namespace) -> None:
+    """Generate or display the ranked model security leaderboard."""
+    from lifeforge.reporting.leaderboard import write_leaderboard
+    from pathlib import Path
+
+    results_dir = Path(args.results_dir) if getattr(args, "results_dir", None) else None
+    out_path = Path(args.out) if getattr(args, "out", None) else None
+
+    output = write_leaderboard(results_dir=results_dir, output_path=out_path)
+    print(f"  [OK] Leaderboard written: {output}")
+
+    if not getattr(args, "no_print", False):
+        try:
+            print(output.read_text(encoding="utf-8"))
+        except UnicodeEncodeError:
+            print(output.read_text(encoding="utf-8").encode("ascii", errors="replace").decode("ascii"))
+
+
 def cmd_ui(args: argparse.Namespace) -> None:
     """Launch the interactive LIFE FORGE Web Dashboard."""
     from lifeforge.dashboard.server import start_dashboard
@@ -425,6 +443,12 @@ def main() -> None:
     ui_parser.add_argument("--port", type=int, default=8000, help="Port to serve dashboard on (default: 8000)")
     ui_parser.add_argument("--no-browser", action="store_true", help="Do not open browser automatically")
 
+    # Leaderboard command -- ranked model security comparison
+    lb_parser = subparsers.add_parser("leaderboard", help="Generate ranked model security leaderboard from all benchmark reports")
+    lb_parser.add_argument("--results-dir", type=str, default=None, help="Directory containing *_report.json files (default: results/)")
+    lb_parser.add_argument("--out", type=str, default=None, help="Output path for leaderboard Markdown (default: results/LEADERBOARD.md)")
+    lb_parser.add_argument("--no-print", action="store_true", help="Write file only, do not print to stdout")
+
     # Eval command -- universal bring-your-own-agent evaluation
     eval_parser = subparsers.add_parser("eval", help="Evaluate a user-defined agent via Python spec or HTTP webhook")
     eval_parser.add_argument("--target", type=str, default=None, help="Target Python specifier (e.g. agent.py:my_agent or module:AgentClass)")
@@ -454,6 +478,8 @@ def main() -> None:
         cmd_mcp_serve(args)
     elif args.command == "ui":
         cmd_ui(args)
+    elif args.command == "leaderboard":
+        cmd_leaderboard(args)
 
 
 if __name__ == "__main__":
