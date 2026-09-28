@@ -18,8 +18,11 @@ results/*
 !results/.gitkeep
 !results/local_qwen_report.json
 !results/local_llama_report.json
+!results/local_deepseek_r1_report.json
+!results/local_deepseek_r1_report.md
 !results/MODEL_SHOWDOWN.md
 !results/THREE_WAY_MODEL_SHOWDOWN.md
 !results/DEEPSEEK_R1_SHOWDOWN_DISTRIBUTION_KIT.md
 !results/report.json
 !results/report.md
+!results/LEADERBOARD.md
