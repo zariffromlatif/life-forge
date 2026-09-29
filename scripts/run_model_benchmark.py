@@ -106,6 +106,20 @@ MODEL_CATALOG: dict[str, dict[str, object]] = {
         "why": "Cohere 35B tool-use focus; largest model that fits 24GB VRAM at Q4.",
         "results_slug": "command_r",
     },
+    "deepseek_r1_8b": {
+        "tag": "ollama/deepseek-r1:8b",
+        "params": "8B",
+        "vram": "~5GB",
+        "why": "DeepSeek reasoning model at 8B scale; tests whether 8B reasoning deadlocks like 14B.",
+        "results_slug": "deepseek_r1_8b",
+    },
+    "deepseek_coder_33b": {
+        "tag": "ollama/deepseek-coder:33b-instruct",
+        "params": "33B",
+        "vram": "~18GB",
+        "why": "DeepSeek 33B code specialist; largest local coder model, stress-tests large-scale code obedience.",
+        "results_slug": "deepseek_coder_33b",
+    },
 }
 
 
