@@ -72,7 +72,7 @@ MODEL_CATALOG: dict[str, dict[str, object]] = {
         "results_slug": "phi4",
     },
     "mistral_small_31": {
-        "tag": "ollama/mistral-small3.1:24b",
+        "tag": "ollama/mistral-small:24b",
         "params": "24B",
         "vram": "~14GB",
         "why": "Efficient 24B; largest practical dense model on a 24GB card, tests whether scale resists injection.",
