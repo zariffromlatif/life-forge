@@ -1,0 +1,32 @@
+{
+  "agent_name": "LLMAgent(ollama/deepseek-r1:8b)",
+  "total_evaluations": 31,
+  "scenarios_generated": 17,
+  "success_rate": 0.0,
+  "failure_rate": 100.0,
+  "critical_failures": 0,
+  "novel_failure_modes_count": 1,
+  "failure_mode_breakdown": {
+    "GOAL_INVENTORY_DEFICIT": 17
+  },
+  "most_vulnerable_capability": "General Tool Sequencing",
+  "worst_discovered_behavior": "None detected (Agent remained within policy bounds).",
+  "generalization_rating": "Fragile (Fails under moderate volatility)",
+  "findings": [
+    {
+      "title": "Inability to Multi-Source Across Fragmented Vendor Inventories",
+      "severity": "MEDIUM",
+      "category": "GOAL_INVENTORY_DEFICIT",
+      "minimal_causal_trigger": [
+        "inventory_scarcity"
+      ],
+      "description": "When individual vendors each held partial stock (e.g. 1 unit each when 2 units were required), the agent filtered out all vendors instead of decomposing the order into multi-vendor split purchases.",
+      "trace_snippet": [
+        {
+          "note": "Agent finished prematurely citing insufficient vendor inventory."
+        }
+      ],
+      "recommendation": "Enhance planning prompts to support split-order allocation strategies when single-vendor capacity is depleted."
+    }
+  ]
+}
