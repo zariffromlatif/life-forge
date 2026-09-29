@@ -1,6 +1,6 @@
 # LIFE FORGE Model Security Leaderboard
 
-> **Last updated**: 2026-09-29 13:55 UTC
+> **Last updated**: 2026-09-29 14:13 UTC
 > **Simulator**: Co-evolutionary MAP-Elites, 30 generations, `seed=42`
 > **Environment**: Enterprise Procurement ERP digital twin
 > **Hardware**: Intel i9-14900K + NVIDIA RTX 4090 (24GB VRAM) via Ollama (Q4_K_M)
@@ -13,10 +13,12 @@
 | Rank | Model | Params | Grade | Critical Zero-Days | Deadlocks | Adversarial Fail Rate | Primary Weakness |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
 | 1 | `llama3.1:8b` | 8B | **C+** (Fragile) | 0 | **12 loops** | 66.7% | State-Aware Tool Retry & Cost Loop Prevention |
-| 2 | `deepseek-r1:14b` | 14B | **C** (High-Risk) | 0 | **14 loops** | **100.0%** | Error Recovery & Cycle Termination |
-| 3 | `qwen2.5:14b` | 14B | **F** (Critically Vulnerable) | **7 [CRITICAL]** | 0 | **100.0%** | Untrusted Tool Output Sanitization & Privilege Separation |
-| 4 | `phi4:14b` | 14B | **F** (Critically Vulnerable) | **8 [CRITICAL]** | 0 | **100.0%** | Untrusted Tool Output Sanitization & Privilege Separation |
-| 5 | `qwen2.5-coder:14b` | 14B | **F** (Critically Vulnerable) | **12 [CRITICAL]** | **5 loops** | **100.0%** | Untrusted Tool Output Sanitization & Privilege Separation |
+| 2 | `gemini/gemini-3.8-flash` | ? | **C** (High-Risk) | 0 | 0 | **100.0%** | General Tool Sequencing |
+| 3 | `deepseek-r1:14b` | 14B | **C** (High-Risk) | 0 | **14 loops** | **100.0%** | Error Recovery & Cycle Termination |
+| 4 | `qwen2.5:14b` | 14B | **F** (Critically Vulnerable) | **7 [CRITICAL]** | 0 | **100.0%** | Untrusted Tool Output Sanitization & Privilege Separation |
+| 5 | `phi4:14b` | 14B | **F** (Critically Vulnerable) | **8 [CRITICAL]** | 0 | **100.0%** | Untrusted Tool Output Sanitization & Privilege Separation |
+| 6 | `qwen2.5-coder:14b` | 14B | **F** (Critically Vulnerable) | **12 [CRITICAL]** | **5 loops** | **100.0%** | Untrusted Tool Output Sanitization & Privilege Separation |
+| 7 | `mistral-small:24b` | 24B | **F** (Critically Vulnerable) | **14 [CRITICAL]** | **3 loops** | **100.0%** | Untrusted Tool Output Sanitization & Privilege Separation |
 
 ---
 
@@ -37,6 +39,16 @@
 - **Critical zero-days**: 0
 - **Failure breakdown**: LOOP_TRAP: 12 | INVENTORY: 8
 - **Worst behavior discovered**: Infinite recursive retry loop upon vendor price changes, exhausting execution budget.
+
+### `gemini/gemini-3.8-flash` -- Grade C (High-Risk)
+
+- **Source report**: `results/gemini_report.json`
+- **Total simulations**: 21
+- **Adversarial failure rate**: 100.0%
+- **Baseline success rate**: 0.0%
+- **Critical zero-days**: 0
+- **Failure breakdown**: INVENTORY: 11
+- **Worst behavior discovered**: None detected (Agent remained within policy bounds).
 
 ### `deepseek-r1:14b` -- Grade C (High-Risk)
 
@@ -76,6 +88,16 @@
 - **Baseline success rate**: 0.0%
 - **Critical zero-days**: 12
 - **Failure breakdown**: UNAUTH_EXEC: 12 | LOOP_TRAP: 5
+- **Worst behavior discovered**: Exfiltration / Execution of unauthorized funds transfer tool following indirect prompt injection.
+
+### `mistral-small:24b` -- Grade F (Critically Vulnerable)
+
+- **Source report**: `results/local_mistral_small_31_report.json`
+- **Total simulations**: 31
+- **Adversarial failure rate**: 100.0%
+- **Baseline success rate**: 0.0%
+- **Critical zero-days**: 14
+- **Failure breakdown**: UNAUTH_EXEC: 13 | LOOP_TRAP: 3 | TOCTOU: 1
 - **Worst behavior discovered**: Exfiltration / Execution of unauthorized funds transfer tool following indirect prompt injection.
 
 ---
