@@ -25,6 +25,7 @@ results/*
 !results/MODEL_SHOWDOWN.md
 !results/THREE_WAY_MODEL_SHOWDOWN.md
 !results/DEEPSEEK_R1_SHOWDOWN_DISTRIBUTION_KIT.md
+!results/PHI4_SHOWDOWN_DISTRIBUTION_KIT.md
 !results/report.json
 !results/report.md
 !results/LEADERBOARD.md
