@@ -120,9 +120,19 @@ def cmd_test(args: argparse.Namespace) -> None:
         print(f"  Seed:         {args.seed}")
 
     # Run evolution
+    domain = _resolve_domain(getattr(args, "domain", None))
+    if domain is not None:
+        print(f"  Domain:       {domain.name} ({domain.title})")
     delay = getattr(args, "delay", 0.0)
-    engine = EvolutionEngine(seed=args.seed, delay=delay)
-    seed_state = WorldState.default_purchasing_world()
+    engine = EvolutionEngine(
+        seed=args.seed,
+        delay=delay,
+        frontier_mutators=getattr(args, "frontier", False),
+    )
+    seed_state = domain.build_world() if domain is not None else WorldState.default_purchasing_world()
+    runner = domain.build_runner() if domain is not None else None
+    if runner is not None:
+        engine.runner = runner
 
     print(f"\n  Running evolutionary search ({args.scenarios} generations)...")
     summary = engine.run(agent, seed_state, generations=args.scenarios)
@@ -134,7 +144,7 @@ def cmd_test(args: argparse.Namespace) -> None:
     print(f"  Failure Modes:    {summary.novel_failure_modes}")
 
     # Generate report
-    analyzer = CausalAnalyzer()
+    analyzer = CausalAnalyzer(runner=runner) if runner is not None else CausalAnalyzer()
     diagnostics = analyzer.analyze(agent, summary, seed_state)
 
     report = ReportGenerator.generate_markdown(diagnostics)
@@ -390,6 +400,296 @@ def cmd_ui(args: argparse.Namespace) -> None:
     start_dashboard(port=args.port, open_browser=not args.no_browser)
 
 
+def _resolve_domain(name: str | None):
+    """Resolve a scenario domain by name, or None for the built-in default.
+
+    ``procurement`` is registered, so naming it explicitly returns a domain
+    whose world and policies match the historical default and whose run is
+    reproducible against the published leaderboard.
+    """
+    if not name:
+        return None
+    from lifeforge.sandbox.domains import get_domain
+
+    return get_domain(name)
+
+
+def cmd_domains(args: argparse.Namespace) -> None:
+    """List the registered scenario domains and what each one tests."""
+    from lifeforge.sandbox.domains import DOMAIN_REGISTRY, get_domain
+
+    print("=" * 72)
+    print("  LIFE FORGE -- Scenario Domains")
+    print("=" * 72)
+
+    names = [args.name] if getattr(args, "name", None) else sorted(DOMAIN_REGISTRY)
+    for name in names:
+        try:
+            domain = get_domain(name)
+        except KeyError as exc:
+            print(f"\n  [FAIL] {exc}")
+            sys.exit(1)
+
+        summary = domain.summary()
+        print()
+        print(f"  {summary['name']} -- {summary['title']}")
+        print(f"    {summary['description']}")
+        print(f"    Tools    : {', '.join(summary['tools'])}")
+        print(f"    Policies : {', '.join(summary['policies'])}")
+        if summary["mutators"]:
+            print(f"    Mutators : {', '.join(summary['mutators'])}")
+
+    print()
+    print("  Run a domain with:  lifeforge eval --domain <name> --target agent.py:my_agent")
+
+
+def cmd_report(args: argparse.Namespace) -> None:
+    """Render a PDF audit report from a benchmark JSON report."""
+    from pathlib import Path
+
+    fmt = str(getattr(args, "format", "pdf")).lower()
+    if fmt != "pdf":
+        print(f"  [FAIL] Unsupported report format '{fmt}'. Supported formats: pdf")
+        sys.exit(1)
+
+    input_path = Path(args.input)
+    if not input_path.exists():
+        print(f"  [FAIL] Report file not found: {input_path}")
+        sys.exit(1)
+
+    with input_path.open("r", encoding="utf-8") as handle:
+        report = json.load(handle)
+
+    output_path = Path(args.output) if args.output else input_path.with_suffix(".pdf")
+
+    try:
+        from lifeforge.reporting.pdf import PdfExportUnavailable, render_from_report_dict
+    except ImportError as exc:
+        print(f"  [FAIL] PDF export module unavailable: {exc}")
+        sys.exit(1)
+
+    try:
+        written = render_from_report_dict(
+            report,
+            output_path,
+            customer=getattr(args, "customer", None),
+            model=getattr(args, "model", None) or report.get("agent_name"),
+            hardware=getattr(args, "hardware", None),
+            seed=getattr(args, "seed", 42),
+            generations=getattr(args, "generations", None),
+        )
+    except PdfExportUnavailable as exc:
+        print(f"  [FAIL] {exc}")
+        sys.exit(1)
+
+    print(f"  [OK] PDF report written: {written}")
+
+
+def cmd_harden(args: argparse.Namespace) -> None:
+    """Generate tool-boundary guards that remediate discovered violations."""
+    from lifeforge.hardening import (
+        VIOLATION_GUARDS,
+        violations_from_report,
+        write_hardening_module,
+    )
+
+    violations: list[str] = list(args.violation or [])
+    tool_name_map: dict[str, str] = {}
+
+    if args.input:
+        input_path = Path(args.input)
+        if not input_path.exists():
+            print(f"  [FAIL] Report file not found: {input_path}")
+            sys.exit(1)
+        with input_path.open("r", encoding="utf-8") as handle:
+            report = json.load(handle)
+        detected = violations_from_report(report)
+        if not detected:
+            print("  [NOTE] The report records no violations; nothing to harden.")
+        for violation in detected:
+            if violation not in violations:
+                violations.append(violation)
+        # Best-effort mapping from violation to the tool named in its findings.
+        for finding in report.get("findings", []) or []:
+            category = str(finding.get("category", ""))
+            step = finding.get("trace_snippet") or []
+            for event in step:
+                if isinstance(event, dict) and event.get("tool"):
+                    tool_name_map.setdefault(category, str(event["tool"]))
+
+    if not violations:
+        print("  [FAIL] No violations specified. Use --violation TYPE (repeatable) or --input report.json.")
+        print(f"         Known violations: {', '.join(sorted(VIOLATION_GUARDS))}")
+        sys.exit(1)
+
+    if getattr(args, "tool", None):
+        for violation in violations:
+            tool_name_map.setdefault(violation, args.tool)
+
+    out_path = Path(args.out)
+    written = write_hardening_module(
+        violations,
+        out_path,
+        tool_name_map=tool_name_map or None,
+    )
+
+    known = [v for v in violations if v in VIOLATION_GUARDS]
+    unknown = [v for v in violations if v not in VIOLATION_GUARDS]
+
+    print(f"  [OK] Hardening module written: {written}")
+    print(f"       Guards generated: {len(known)}")
+    for violation in known:
+        policy = VIOLATION_GUARDS[violation]["policy"]
+        tool = tool_name_map.get(violation, "<tool_function_name>")
+        print(f"         - {violation} -> {policy} on {tool}")
+    if unknown:
+        print(f"       [NOTE] No template for: {', '.join(unknown)} (manual review markers emitted)")
+
+
+def cmd_audit(args: argparse.Namespace) -> None:
+    """Produce the customer-deliverable audit bundle."""
+    from lifeforge.reporting.audit import build_audit_bundle
+
+    print("=" * 68)
+    print("  LIFE FORGE -- Audit Deliverable Package")
+    print("=" * 68)
+
+    if getattr(args, "input", None):
+        input_path = Path(args.input)
+        if not input_path.exists():
+            print(f"  [FAIL] Report file not found: {input_path}")
+            sys.exit(1)
+        with input_path.open("r", encoding="utf-8") as handle:
+            report = json.load(handle)
+        print(f"  Source report: {input_path}")
+    else:
+        # Run a fresh audit against the requested target.
+        from lifeforge.evolution.engine import EvolutionEngine
+        from lifeforge.reporting.analyzer import CausalAnalyzer
+        from lifeforge.sandbox.http_agent import HTTPAgentAdapter
+        from lifeforge.sandbox.loader import load_agent_from_spec
+        from lifeforge.sandbox.world_state import WorldState
+
+        if getattr(args, "target", None):
+            agent = load_agent_from_spec(args.target)
+        elif getattr(args, "endpoint", None):
+            agent = HTTPAgentAdapter(endpoint=args.endpoint, name="RemoteHTTPAgent")
+        else:
+            print("  [FAIL] Provide either --input report.json or --target agent.py:my_agent")
+            sys.exit(1)
+
+        domain = _resolve_domain(getattr(args, "domain", None))
+        seed_state = domain.build_world() if domain else WorldState.default_purchasing_world()
+        runner = domain.build_runner() if domain else None
+        if domain:
+            print(f"  Domain:        {domain.name} ({domain.title})")
+
+        print(f"  Target:        {agent.name}")
+        print(f"  Scenarios:     {args.scenarios}")
+        print(f"  Seed:          {args.seed}")
+        print("  Running evolutionary search...")
+
+        engine = EvolutionEngine(seed=args.seed, delay=args.delay, runner=runner, domain=None,
+                                 frontier_mutators=getattr(args, "frontier", False))
+        summary = engine.run(agent, seed_state, generations=args.scenarios)
+
+        analyzer = CausalAnalyzer(runner=runner) if runner else CausalAnalyzer()
+        diagnostics = analyzer.analyze(agent, summary, seed_state)
+        from dataclasses import asdict
+
+        report = asdict(diagnostics)
+        print(f"  Critical findings: {report.get('critical_failures', 0)}")
+
+    written = build_audit_bundle(
+        report,
+        Path(args.out),
+        customer=getattr(args, "customer", None),
+        model=getattr(args, "model", None),
+        target=getattr(args, "target", None),
+        domain=getattr(args, "domain", None),
+        hardware=getattr(args, "hardware", None),
+        scenarios=getattr(args, "scenarios", 30),
+        seed=getattr(args, "seed", 42),
+        include_pdf=not getattr(args, "no_pdf", False),
+    )
+
+    print()
+    print(f"  [OK] Audit bundle written to {Path(args.out).resolve()}")
+    for key, path in sorted(written.items()):
+        print(f"         {path.name:32} ({key})")
+    print()
+    print("  Deliverable complete. Review MANIFEST.md for the full contents.")
+
+
+def cmd_gateway(args: argparse.Namespace) -> None:
+    """Generate a runtime gateway policy config from a benchmark report."""
+    from lifeforge.gateway import GatewayRule, write_gateway_config, rules_from_report
+    from lifeforge.hardening import _VIOLATION_SEVERITY
+
+    if getattr(args, "list_rules", False):
+        print("  Supported runtime rule kinds: whitelist, amount, recipient, markers, rate, sequence")
+        print("  Supported gateway policies:")
+        from lifeforge.sandbox.policies import POLICY_REGISTRY
+
+        for name in sorted(POLICY_REGISTRY):
+            print(f"    - {name} ({POLICY_REGISTRY[name].violation_type})")
+        return
+
+    rules: list[GatewayRule] = []
+    if getattr(args, "input", None):
+        input_path = Path(args.input)
+        if not input_path.exists():
+            print(f"  [FAIL] Report file not found: {input_path}")
+            sys.exit(1)
+        with input_path.open("r", encoding="utf-8") as handle:
+            report = json.load(handle)
+        rules = rules_from_report(report)
+        print(f"  Discovered {len(rules)} rule(s) from {input_path.name}")
+
+    if getattr(args, "tool", None) and getattr(args, "violation", None):
+        severity = _VIOLATION_SEVERITY.get(args.violation.upper(), "HIGH")
+        rules.append(
+            GatewayRule(
+                name=f"manual_{args.violation.lower()}",
+                violation_type=args.violation.upper(),
+                action=args.action,
+                tools=(args.tool,),
+                kind=getattr(args, "kind", "whitelist"),
+                config={},
+                severity=severity,
+            )
+        )
+
+    if not rules:
+        print("  [FAIL] No rules produced. Use --input report.json or --tool X --violation TYPE.")
+        sys.exit(1)
+
+    out_path = write_gateway_config(rules, Path(args.out))
+    print(f"  [OK] Gateway config written: {out_path}")
+    for rule in rules:
+        print(f"       {rule.action.upper():6} {rule.kind:10} {rule.violation_type} ({rule.severity})")
+    print()
+    print("  Load it in production with:")
+    print(f"    gateway = PolicyGateway.from_config('{out_path.as_posix()}')")
+    print("    guarded = gateway.wrap_executor(original_executor)")
+
+
+def cmd_quickstart(args: argparse.Namespace) -> None:
+    """Auto-detect an agent framework in the current project and evaluate it."""
+    from lifeforge.cli.quickstart import run_quickstart
+
+    exit_code = run_quickstart(
+        Path(getattr(args, "path", ".") or "."),
+        dry_run=getattr(args, "dry_run", False),
+        force=getattr(args, "force", False),
+        scenarios=getattr(args, "scenarios", 30),
+        seed=getattr(args, "seed", 42),
+        out=getattr(args, "out", "results/eval_report.md"),
+    )
+    if exit_code != 0:
+        sys.exit(exit_code)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="LIFE FORGE: Evolutionary AI Agent Flight Simulator")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -426,6 +726,8 @@ def main() -> None:
     test_parser.add_argument("--out", type=str, default="results/agent_evolution_report.md", help="Output report path")
     test_parser.add_argument("--json", action="store_true", help="Also generate JSON report")
     test_parser.add_argument("--hardened", action="store_true", help="Test a hardened (non-vulnerable) agent")
+    test_parser.add_argument("--domain", type=str, default=None, help="Scenario domain (e.g. procurement, customer_support, devops, financial)")
+    test_parser.add_argument("--frontier", action="store_true", help="Include 2026 frontier attacks (prompt worms, memory poisoning, context flood, multilingual)")
 
     # Compare command -- head-to-head model comparison
     compare_parser = subparsers.add_parser("compare", help="Compare multiple agent evaluation reports")
@@ -462,6 +764,65 @@ def main() -> None:
     eval_parser.add_argument("--out", type=str, default="results/eval_report.md", help="Output markdown report path")
     eval_parser.add_argument("--json", action="store_true", help="Also generate structured JSON diagnostic report")
     eval_parser.add_argument("--fail-on-critical", action="store_true", help="Exit with code 1 if critical zero-day vulnerabilities are discovered")
+    eval_parser.add_argument("--domain", type=str, default=None, help="Scenario domain (procurement, customer_support, devops, financial)")
+    eval_parser.add_argument("--frontier", action="store_true", help="Include 2026 frontier attacks (prompt worms, memory poisoning, context flood, multilingual)")
+
+    # Report command -- PDF deliverable from a benchmark JSON report
+    report_parser = subparsers.add_parser("report", help="Render a CISO-ready PDF audit report from a benchmark JSON report")
+    report_parser.add_argument("--input", type=str, required=True, help="Path to a results/*_report.json file")
+    report_parser.add_argument("--format", type=str, default="pdf", choices=["pdf"], help="Output format (default: pdf)")
+    report_parser.add_argument("--output", type=str, default=None, help="Output PDF path (default: alongside the input)")
+    report_parser.add_argument("--customer", type=str, default=None, help="Customer name shown on the cover page")
+    report_parser.add_argument("--model", type=str, default=None, help="Model label override (default: the report's agent name)")
+    report_parser.add_argument("--hardware", type=str, default=None, help="Hardware description for the reproducibility appendix")
+    report_parser.add_argument("--seed", type=int, default=42, help="Seed to record in the reproducibility appendix")
+    report_parser.add_argument("--generations", type=int, default=None, help="Generation count to record")
+
+    # Harden command -- generate remediation guards
+    harden_parser = subparsers.add_parser("harden", help="Generate tool-boundary hardening guards for discovered violations")
+    harden_parser.add_argument("--input", type=str, default=None, help="Benchmark JSON report to read violations from")
+    harden_parser.add_argument("--violation", action="append", default=None, help="Violation type to guard (repeatable)")
+    harden_parser.add_argument("--tool", type=str, default=None, help="Tool function name to guard")
+    harden_parser.add_argument("--out", type=str, default="remediation_decorators.py", help="Output module path")
+
+    # Audit command -- customer-deliverable bundle
+    audit_parser = subparsers.add_parser("audit", help="Produce the full customer-deliverable audit bundle")
+    audit_parser.add_argument("--input", type=str, default=None, help="Existing benchmark JSON report (skips the live run)")
+    audit_parser.add_argument("--target", type=str, default=None, help="Agent spec to audit (e.g. agent.py:my_agent)")
+    audit_parser.add_argument("--endpoint", type=str, default=None, help="HTTP webhook agent to audit")
+    audit_parser.add_argument("--customer", type=str, default=None, help="Customer name for the deliverable")
+    audit_parser.add_argument("--model", type=str, default=None, help="Model label for the reproducibility appendix")
+    audit_parser.add_argument("--hardware", type=str, default=None, help="Hardware description for the appendix")
+    audit_parser.add_argument("--domain", type=str, default=None, help="Scenario domain to audit against")
+    audit_parser.add_argument("--scenarios", type=int, default=30, help="Number of evolutionary generations (default: 30)")
+    audit_parser.add_argument("--seed", type=int, default=42, help="Random seed (default: 42)")
+    audit_parser.add_argument("--delay", type=float, default=0.0, help="Delay between generations in seconds")
+    audit_parser.add_argument("--frontier", action="store_true", help="Include 2026 frontier attacks")
+    audit_parser.add_argument("--out", type=str, default="audit_report", help="Output directory (default: audit_report)")
+    audit_parser.add_argument("--no-pdf", action="store_true", help="Skip the PDF deliverables")
+
+    # Gateway command -- runtime enforcement config
+    gateway_parser = subparsers.add_parser("gateway", help="Generate a runtime PolicyGateway enforcement config")
+    gateway_parser.add_argument("--input", type=str, default=None, help="Benchmark JSON report to derive rules from")
+    gateway_parser.add_argument("--tool", type=str, default=None, help="Tool to guard for a manual rule")
+    gateway_parser.add_argument("--violation", type=str, default=None, help="Violation type for a manual rule")
+    gateway_parser.add_argument("--action", type=str, default="block", choices=["block", "warn", "allow"], help="Action for the manual rule")
+    gateway_parser.add_argument("--kind", type=str, default="whitelist", choices=["whitelist", "amount", "recipient", "markers", "rate", "sequence"], help="Rule kind for the manual rule")
+    gateway_parser.add_argument("--out", type=str, default="lifeforge_policy.yaml", help="Output config path")
+    gateway_parser.add_argument("--list-rules", action="store_true", help="List supported rule kinds and policies, then exit")
+
+    # Domains command -- list scenario domains
+    domains_parser = subparsers.add_parser("domains", help="List registered scenario domains and what each one tests")
+    domains_parser.add_argument("name", nargs="?", default=None, help="Show details for one domain")
+
+    # Quickstart command -- auto-detect framework and evaluate
+    quick_parser = subparsers.add_parser("quickstart", help="Auto-detect an agent framework in the current directory and evaluate the agent")
+    quick_parser.add_argument("--path", type=str, default=".", help="Directory to scan (default: current directory)")
+    quick_parser.add_argument("--dry-run", action="store_true", help="Detect and configure without running the evaluation")
+    quick_parser.add_argument("--force", action="store_true", help="Overwrite an existing generated harness file")
+    quick_parser.add_argument("--scenarios", type=int, default=30, help="Number of evolutionary generations (default: 30)")
+    quick_parser.add_argument("--seed", type=int, default=42, help="Random seed (default: 42)")
+    quick_parser.add_argument("--out", type=str, default="results/eval_report.md", help="Output report path")
 
     args = parser.parse_args()
     if args.command == "run":
@@ -480,6 +841,18 @@ def main() -> None:
         cmd_ui(args)
     elif args.command == "leaderboard":
         cmd_leaderboard(args)
+    elif args.command == "report":
+        cmd_report(args)
+    elif args.command == "harden":
+        cmd_harden(args)
+    elif args.command == "audit":
+        cmd_audit(args)
+    elif args.command == "gateway":
+        cmd_gateway(args)
+    elif args.command == "domains":
+        cmd_domains(args)
+    elif args.command == "quickstart":
+        cmd_quickstart(args)
 
 
 if __name__ == "__main__":

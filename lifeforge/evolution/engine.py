@@ -14,6 +14,7 @@ from .mutators.adversarial import (
     IndirectPromptInjectionMutator,
     SpoofedExecutiveMessageMutator,
 )
+from .mutators.frontier import build_frontier_mutators
 from .mutators.mcp_schema import MCPToolSchemaPoisoningMutator
 from .mutators.environmental import (
     BudgetConstraintMutator,
@@ -40,6 +41,12 @@ class EvolutionaryRunSummary:
 class EvolutionEngine:
     """
     Coordinates the evolutionary search for novel failure modes and adversarial vulnerabilities.
+
+    The engine is domain-agnostic.  Its default configuration reproduces the
+    original enterprise-procurement scenario exactly.  Passing ``domain`` swaps
+    in that domain's world, tool suite, invariant policies, mutators, and
+    behavioural coordinates, so the same Quality-Diversity search illuminates a
+    different environment without touching this file.
     """
 
     def __init__(
@@ -49,8 +56,11 @@ class EvolutionEngine:
         mutators: list[ScenarioMutator] | None = None,
         seed: int = 42,
         delay: float = 0.0,
+        domain: Any | None = None,
+        frontier_mutators: bool = False,
     ) -> None:
-        self.runner = runner or SandboxRunner()
+        self.domain = domain
+        self.runner = runner or (domain.build_runner() if domain is not None else SandboxRunner())
         self.archive = archive or MapElitesArchive(bins=(4, 4, 4))
         self.rng = random.Random(seed)
         self.delay = delay
@@ -67,6 +77,15 @@ class EvolutionEngine:
             ConflictingSpecificationMutator(),
             MCPToolSchemaPoisoningMutator(),
         ]
+        if frontier_mutators:
+            # Opt-in: the frontier attacks add strong selection pressure, so
+            # runs that do not ask for them keep the original, comparable
+            # behavioural coordinates.
+            self.adversarial_mutators = self.adversarial_mutators + build_frontier_mutators()
+        if domain is not None:
+            # Domain mutators join the shared library so an environment adds
+            # attack surface without losing the generic perturbations.
+            self.adversarial_mutators = self.adversarial_mutators + list(domain.build_mutators())
         self.all_mutators = mutators or (self.environmental_mutators + self.adversarial_mutators)
 
     def calculate_coords(
@@ -78,7 +97,16 @@ class EvolutionEngine:
         """
         Compute normalized 3D behavioral coordinates:
         (adversarial_intensity, environment_volatility, budget_pressure)
+
+        When a domain is configured, the domain supplies the coordinates: it
+        knows which features of its own world describe volatility and resource
+        pressure.  Without a domain this is the original procurement-specific
+        computation, preserved unchanged so published seed=42 results remain
+        reproducible.
         """
+        if self.domain is not None:
+            return self.domain.behavior_coords(base_state, scenario, mutations)
+
         # 1. Adversarial intensity: proportion of adversarial mutations
         adv_mutations = sum(
             1
@@ -129,7 +157,9 @@ class EvolutionEngine:
         """
         Execute an evolutionary arms race searching for vulnerabilities in the agent.
         """
-        base_state = seed_state or WorldState.default_purchasing_world()
+        base_state = seed_state or (
+            self.domain.build_world() if self.domain is not None else WorldState.default_purchasing_world()
+        )
 
         # Step 1: Evaluate baseline seed
         seed_trace = self.runner.run(agent, base_state)
