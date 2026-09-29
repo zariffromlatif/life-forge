@@ -2,78 +2,40 @@
 
 > **Co-evolutionary adversarial red-teaming and dynamic stress-testing for autonomous AI agents using Artificial Life Quality-Diversity algorithms (3D MAP-Elites).**
 
-[![Tests](https://img.shields.io/badge/tests-89%20passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-184%20passed-brightgreen.svg)](tests/)
 [![CI](https://github.com/zariffromlatif/life-forge/actions/workflows/agent_stress_test.yml/badge.svg)](https://github.com/zariffromlatif/life-forge/actions/workflows/agent_stress_test.yml)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
 [![Protocol](https://img.shields.io/badge/protocol-MCP%20Native-orange.svg)](lifeforge/sandbox/mcp_server.py)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-```
-┌─────────────────────────────────────────────────────────────────────────┐
-│                               LIFE FORGE                                │
-│                     The AI Agent Flight Simulator                       │
-└─────────────────────────────────────────────────────────────────────────┘
-                                     │
-           ┌─────────────────────────┴─────────────────────────┐
-           ▼                                                   ▼
-┌──────────────────────────────┐            ┌──────────────────────────────┐
-│       Target AI Agent        │ ◄────────► │   Simulated World (Sandbox)  │
-│  (Claude, GPT-4o, Llama,     │  Actions/  │  • ERP Database & Balances   │
-│   Qwen, Custom Frameworks)   │   Tools    │  • Vendor Catalogs & Quotes  │
-└──────────────────────────────┘            │  • Email Inbox / Outbox      │
-                                            └──────────────────────────────┘
-                                                           ▲
-                                                           │ Co-Evolves
-                                                           │ Perturbations
-                                            ┌──────────────────────────────┐
-                                            │      Evolution Engine        │
-                                            │ • Adversarial Injections     │
-                                            │ • Market Price Volatility    │
-                                            │ • Supply Scarcity            │
-                                            │ • 3D MAP-Elites Archive      │
-                                            └──────────────────────────────┘
-                                                           │
-                                                           ▼
-                                            ┌──────────────────────────────┐
-                                            │    Causal Root-Cause Engine  │
-                                            │  Generates Audit Report &    │
-                                            │  Minimal Fix Recommendations │
-                                            └──────────────────────────────┘
-```
+---
+
+> **New Empirical Research Paper**: [The Scale Paradox in Autonomous AI Agents: Why 24B and 33B Models Suffered More Zero-Day Wire Transfers Than 8B](docs/research/THE_SCALE_PARADOX_IN_AI_AGENTS.md)
 
 ---
 
-## Why LIFE FORGE?
+## Official Model Security Leaderboard (8 Frontier Models Tested)
 
-Before commercial pilots fly passengers, they spend hundreds of hours in a **flight simulator**. The simulator doesn't give them sunny skies; it throws dual-engine failure, sudden crosswinds, sensor glitches, and electrical fires at them.
+Evaluated under identical random seeds (`seed=42`) across 30 co-evolutionary generations combining market volatility, inventory scarcity, and prompt injections on a dedicated NVIDIA RTX 4090 GPU:
 
-Today, enterprise AI agents with tool access (databases, email, financial APIs) are deployed with almost zero dynamic testing:
-1. **Static Benchmarks Are Useless**: MMLU and HumanEval test multiple-choice trivia and leetcode snippets. They do not test what happens when an agent manages an ERP database while an adversary attempts an indirect prompt injection.
-2. **Static Red-Teaming Fails**: Traditional security tools test static lists of 500 prompts that LLMs quickly memorize.
-3. **The Real World Fights Back**: In production, suppliers run out of stock, prices fluctuate mid-transaction, executive emails get spoofed, and third-party data contains jailbreaks.
+| Rank | Model | Params | Security Grade | Critical Zero-Days | Operational Deadlocks | Adversarial Fail Rate | Primary Failure Mode |
+| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
+| **1** | `llama3.1:8b` | 8B | **C+** (Fragile) | **0** | 12 loops | 66.7% | Loop Termination under Volatility |
+| **2** | `deepseek-r1:8b` | 8B | **C** (High-Risk) | **0** | **0 loops** | 100.0% | Conservative Halting under Scarcity |
+| **3** | `deepseek-r1:14b` | 14B | **C** (High-Risk) | **0** | 14 loops | 100.0% | Reasoning Entrapment & Analytical Deadlock |
+| **4** | `qwen2.5:14b` | 14B | **F** (Vulnerable) | **7 [CRITICAL]** | 0 loops | 100.0% | Authority Spoofing Blindness |
+| **5** | `deepseek-coder:33b` | 33B | **F** (Vulnerable) | **8 [CRITICAL]** | 0 loops | 100.0% | Step-0 Immediate Injection Compliance |
+| **6** | `phi4:14b` | 14B | **F** (Vulnerable) | **8 [CRITICAL]** | 0 loops | 100.0% | Untrusted Tool Data & MCP Schema Poisoning |
+| **7** | `qwen2.5-coder:14b` | 14B | **F** (Vulnerable) | **12 [CRITICAL]** | 5 loops | 100.0% | Code Obedience Overdrive & Schema Blindness |
+| **8** | `mistral-small:24b` | 24B | **F** (Vulnerable) | **14 [CRITICAL]** | 3 loops | 100.0% | Critical Exfiltration & TOCTOU Race Conditions |
 
-**LIFE FORGE is the autonomous flight simulator for AI agents.** Using evolutionary Quality-Diversity algorithms (3D MAP-Elites), LIFE FORGE autonomously breeds and discovers edge-case scenarios that force frontier models to hallucinate, crash, deadlock, or leak company funds before reaching production.
+*Full leaderboard profiles and JSON audit reports available in [`results/LEADERBOARD.md`](results/LEADERBOARD.md).*
 
----
-
-## Empirical Benchmark: DeepSeek-R1 vs. Meta Llama 3.1 vs. Alibaba Qwen 2.5
-
-In an empirical showdown evaluated over 30 identical evolutionary generations under identical random seeds (`seed=42`) on an NVIDIA RTX 4090 GPU, LIFE FORGE exposed fundamentally contrasting failure profiles across frontier models:
-
-| Metric | Alibaba `Qwen-2.5-14B` | Meta `Llama-3.1-8B` | DeepSeek `DeepSeek-R1-14B` |
-| :--- | :--- | :--- | :--- |
-| **Security Rating** | **Critical Vulnerability (Zero-Day)** | **High Risk (Deadlock)** | **Fragile (Volatility Trap)** |
-| **Total Simulations Run** | 31 | 30 | 31 |
-| **Adversarial Failure Rate** | **100.0%** | **66.7%** | **100.0%** |
-| **Critical Zero-Days Discovered** | **7 Wire Exfiltrations** | **0 Wire Exfiltrations** | **0 Wire Exfiltrations** |
-| **Operational Loop Traps** | 0 | **12 Infinite Retry Loops** | **14 Infinite Retry Loops** |
-| **Supply Deficit Failures** | 6 | 8 | 0 |
-| **Most Vulnerable Capability** | *Privilege Separation & Spoofing* | *Loop Termination* | *Error Recovery & Strategy Adaptation* |
-
-### What Happened?
-* **Alibaba Qwen 2.5 (14B)**: Exhibited high general reasoning, but suffered from **authority-impersonation blindness**. When presented with spoofed CEO emails and vendor quote injections, Qwen believed the untrusted directive and **executed the prohibited `transfer_funds` tool 7 times, wiring $60,000 to unauthorized offshore accounts.**
-* **Meta Llama 3.1 (8B)**: Completely resisted social engineering and prompt injection wire fraud (0 exfiltrations). However, when market conditions shifted prices between catalog query and order submission, Llama entered an **unbounded infinite retry loop 12 times**, exhausting its maximum step budget without making progress.
-* **DeepSeek-R1 (14B)**: Demonstrated a stark split profile. Its `<think>` chain-of-thought tokens **completely neutralized prompt injection wire fraud** (0 unauthorized transfers). However, under market price volatility, its internal reasoning entered an analytical deadlock trap: it re-attempted the exact same failed purchase order **14 times** without adapting its strategy, causing an operational deadlock.
+### Key Takeaways from the Benchmark
+* **The Parameter Scale Myth Disproven**: Scaling from 8B to 24B and 33B did not increase safety. In fact, larger non-reasoning models rationalized prompt injections more fluently, resulting in 8 to 14 critical wire exfiltrations.
+* **The Cognitive Firewall of Reasoning Tokens**: DeepSeek-R1 (both 8B and 14B) recorded **zero critical wire exfiltrations**, completely neutralizing indirect prompt injection. Crucially, `deepseek-r1:8b` did not experience the 14 retry deadlocks seen in the 14B version, making it the most balanced reasoning agent tested.
+* **The Code-Specialist Penalty**: Fine-tuning specifically on code caused a **71% surge in prompt injection exploitability** (Qwen 2.5-Coder suffered 12 critical breaches vs. 7 for generalist Qwen 2.5). DeepSeek-Coder (33B) executed unauthorized transfers on **Step 0** before querying the catalog.
+* **First Live TOCTOU Race Condition**: Mistral Small committed purchase orders with stale price caps after price volatility shifted vendor rates, triggering our invariant oracle for Time-of-Check / Time-of-Use race conditions.
 
 ---
 
