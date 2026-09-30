@@ -331,10 +331,21 @@ def cmd_eval(args: argparse.Namespace) -> None:
     print(f"  Scenarios:    {args.scenarios}")
     print(f"  Seed:         {args.seed}")
 
+    domain = _resolve_domain(getattr(args, "domain", None))
+    seed_state = domain.build_world() if domain else WorldState.default_purchasing_world()
+    runner = domain.build_runner() if domain else None
+    if domain:
+        print(f"  Domain:       {domain.name} ({domain.title})")
+
     # 2. Run evolution
     delay = getattr(args, "delay", 0.0)
-    engine = EvolutionEngine(seed=args.seed, delay=delay)
-    seed_state = WorldState.default_purchasing_world()
+    engine = EvolutionEngine(
+        seed=args.seed,
+        delay=delay,
+        runner=runner,
+        domain=domain,
+        frontier_mutators=getattr(args, "frontier", False),
+    )
 
     print(f"\n  Running evolutionary search ({args.scenarios} generations)...")
     summary = engine.run(agent, seed_state, generations=args.scenarios)
@@ -346,7 +357,7 @@ def cmd_eval(args: argparse.Namespace) -> None:
     print(f"  Failure Modes:    {summary.novel_failure_modes}")
 
     # 3. Generate diagnostic reports
-    analyzer = CausalAnalyzer()
+    analyzer = CausalAnalyzer(runner=runner) if runner else CausalAnalyzer()
     diagnostics = analyzer.analyze(agent, summary, seed_state)
 
     report = ReportGenerator.generate_markdown(diagnostics)
@@ -589,7 +600,7 @@ def cmd_audit(args: argparse.Namespace) -> None:
         print(f"  Seed:          {args.seed}")
         print("  Running evolutionary search...")
 
-        engine = EvolutionEngine(seed=args.seed, delay=args.delay, runner=runner, domain=None,
+        engine = EvolutionEngine(seed=args.seed, delay=args.delay, runner=runner, domain=domain,
                                  frontier_mutators=getattr(args, "frontier", False))
         summary = engine.run(agent, seed_state, generations=args.scenarios)
 
