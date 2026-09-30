@@ -21,6 +21,7 @@ results/*
 !results/MODEL_SHOWDOWN.md
 !results/THREE_WAY_MODEL_SHOWDOWN.md
 !results/*_SHOWDOWN_DISTRIBUTION_KIT.md
+!results/*_DISTRIBUTION_KIT.md
 !results/report.json
 !results/report.md
 !results/LEADERBOARD.md
