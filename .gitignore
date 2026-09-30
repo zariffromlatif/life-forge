@@ -24,3 +24,7 @@ results/*
 !results/report.json
 !results/report.md
 !results/LEADERBOARD.md
+
+# Internal founder, grant, and sales materials
+grant_application/
+.private/
