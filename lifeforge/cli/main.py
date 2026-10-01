@@ -703,6 +703,90 @@ def cmd_quickstart(args: argparse.Namespace) -> None:
         sys.exit(exit_code)
 
 
+def cmd_mcp_scan(args: argparse.Namespace) -> None:
+    """Scan MCP tool definitions (manifest file or live server) for attack surface."""
+    from lifeforge.mcpsec import McpProbeError, RULESET_VERSION, scan_manifest, scan_server
+
+    if getattr(args, "list_rules", False):
+        print("  MCP security ruleset v" + RULESET_VERSION)
+        print()
+        print("  CRITICAL  MCP_SCHEMA_POISONING        Injection directives embedded in tool descriptions")
+        print("  HIGH      MCP_HIDDEN_CHARACTERS       Invisible / directional Unicode in definitions")
+        print("  HIGH      MCP_HOMOGLYPH_IDENTIFIER    Confusable non-ASCII characters in identifiers")
+        print("  HIGH      MCP_DESTRUCTIVE_UNCONSTRAINED  Destructive tool with no authorization surface")
+        print("  HIGH      MCP_TOOL_DRIFT              Tool definitions changed after baseline")
+        print("  MEDIUM    MCP_TOOL_SHADOWING          Same tool name published by multiple servers")
+        print("  MEDIUM    MCP_UNBOUNDED_PARAMETER     String/number parameters without bounds")
+        print("  MEDIUM    MCP_MUTATING_NO_REQUIRED    Mutating tool with no required arguments")
+        print("  MEDIUM    MCP_EXTERNAL_REFERENCE      External URLs inside descriptions")
+        return
+
+    sources = [
+        bool(getattr(args, "manifest", None)),
+        bool(getattr(args, "server", None)),
+        bool(getattr(args, "url", None)),
+    ]
+    if sum(sources) != 1:
+        print("  [FAIL] Provide exactly one of --manifest FILE, --server CMD, or --url URL.")
+        sys.exit(1)
+
+    out_path = Path(args.out) if getattr(args, "out", None) else None
+
+    try:
+        if getattr(args, "manifest", None):
+            print(f"  Scanning manifest: {args.manifest}")
+            report = scan_manifest(args.manifest, baseline_path=getattr(args, "baseline", None))
+        elif getattr(args, "server", None):
+            print(f"  Probing stdio server: {args.server}")
+            report = scan_server(
+                args.server,
+                kind="stdio",
+                baseline_path=getattr(args, "baseline", None),
+                timeout=args.timeout,
+                drift_delay_seconds=args.drift_delay,
+            )
+        else:
+            print(f"  Probing HTTP server: {args.url}")
+            report = scan_server(
+                args.url,
+                kind="http",
+                baseline_path=getattr(args, "baseline", None),
+                timeout=args.timeout,
+                drift_delay_seconds=args.drift_delay,
+            )
+    except McpProbeError as exc:
+        print(f"  [FAIL] Probe failed: {exc}")
+        sys.exit(2)
+
+    counts = report.counts_by_severity()
+    print()
+    print(f"  Target      : {report.target}")
+    print(f"  Tools       : {report.tool_count}")
+    print(f"  Risk score  : {report.score}/100 ({report.band})")
+    print(
+        f"  Findings    : {counts['CRITICAL']} critical, "
+        f"{counts['HIGH']} high, {counts['MEDIUM']} medium, {counts['LOW']} low"
+    )
+    for finding in report.findings[:10]:
+        print(f"    [{finding.severity:8}] {finding.rule_id:30} {finding.tool}")
+    if len(report.findings) > 10:
+        print(f"    ... and {len(report.findings) - 10} more")
+
+    if out_path is not None:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(report.to_markdown(), encoding="utf-8")
+        print(f"\n  [OK] Markdown report: {out_path}")
+        if getattr(args, "json", False):
+            json_path = out_path.with_suffix(".json")
+            json_path.write_text(report.to_json(), encoding="utf-8")
+            print(f"  [OK] JSON report:     {json_path}")
+
+    if getattr(args, "fail_on_critical", False) and report.has_critical():
+        print(f"\n  [FAIL] CI gate: {counts['CRITICAL']} critical finding(s).")
+        sys.exit(1)
+    print()
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="LIFE FORGE: Evolutionary AI Agent Flight Simulator")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -837,6 +921,19 @@ def main() -> None:
     quick_parser.add_argument("--seed", type=int, default=42, help="Random seed (default: 42)")
     quick_parser.add_argument("--out", type=str, default="results/eval_report.md", help="Output report path")
 
+    # MCP scan command -- MCP tool-definition security scanner
+    mcp_parser = subparsers.add_parser("mcp-scan", help="Scan MCP tool definitions (manifest or live server) for poisoning, drift, and over-broad capability")
+    mcp_parser.add_argument("--manifest", type=str, default=None, help="Path to a JSON manifest of MCP tool definitions")
+    mcp_parser.add_argument("--server", type=str, default=None, help="Command line launching an MCP server over stdio (e.g. \"python server.py\")")
+    mcp_parser.add_argument("--url", type=str, default=None, help="HTTP URL of an MCP Streamable-HTTP endpoint")
+    mcp_parser.add_argument("--baseline", type=str, default=None, help="Approved baseline manifest for rug-pull (drift) detection")
+    mcp_parser.add_argument("--timeout", type=float, default=15.0, help="Per-request timeout in seconds for live probes (default: 15)")
+    mcp_parser.add_argument("--drift-delay", type=float, default=0.0, help="Seconds between the two live tool-list fetches (drift window)")
+    mcp_parser.add_argument("--out", type=str, default=None, help="Output Markdown report path")
+    mcp_parser.add_argument("--json", action="store_true", help="Also write a JSON report alongside the Markdown")
+    mcp_parser.add_argument("--fail-on-critical", action="store_true", help="Exit with code 1 when critical findings are present (CI gate)")
+    mcp_parser.add_argument("--list-rules", action="store_true", help="List the detection rules, then exit")
+
     args = parser.parse_args()
     if args.command == "run":
         cmd_run(args)
@@ -866,6 +963,8 @@ def main() -> None:
         cmd_domains(args)
     elif args.command == "quickstart":
         cmd_quickstart(args)
+    elif args.command == "mcp-scan":
+        cmd_mcp_scan(args)
 
 
 if __name__ == "__main__":

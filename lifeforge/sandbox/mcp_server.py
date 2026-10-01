@@ -205,6 +205,9 @@ class LifeForgeMCPServer:
         try:
             if method == "initialize":
                 result = self.handle_initialize(params)
+            elif method == "ping":
+                # MCP spec: servers MUST respond to ping with an empty result.
+                result = {}
             elif method == "tools/list":
                 result = {"tools": self.handle_list_tools()}
             elif method == "tools/call":

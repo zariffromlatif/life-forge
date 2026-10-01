@@ -348,6 +348,29 @@ Critical findings become blocking rules; lower-severity ones start in monitor mo
 
 ---
 
+## MCP Security Scanner
+
+MCP adoption is outpacing its security: an industry scan found **33% of scanned MCP servers carried critical vulnerabilities**, and the NSA/CISA published MCP security guidance in June 2026. LIFE FORGE ships a deterministic scanner for MCP tool definitions - point it at a manifest or a live server:
+
+```bash
+# Static scan of a tool manifest
+lifeforge mcp-scan --manifest mcp_tools.json --out results/mcp_scan.md --json
+
+# Live probe: handshake + tools/list + rug-pull (drift) check across two fetches
+lifeforge mcp-scan --server "python my_mcp_server.py" --baseline approved.json --out results/mcp_scan.md
+
+# Streamable HTTP endpoint (CI gate on critical findings)
+lifeforge mcp-scan --url https://mcp.example.com/mcp --fail-on-critical
+
+lifeforge mcp-scan --list-rules     # the full ruleset
+```
+
+Detected classes: schema poisoning (injection directives in tool descriptions, decoded Base64 payloads), invisible/bidi Unicode, homoglyph tool-name spoofing, destructive tools with no authorization surface, unbounded parameters, cross-server tool shadowing, and description drift after approval (the rug pull). The scanner observes definitions only - it never executes tools on the target server.
+
+Example: `examples/mcp_manifest_example.json` ships with a poisoned tool and a homoglyph-shadowed tool - scan it to see the detector classes fire.
+
+---
+
 ## Continuous CI/CD Integration (GitHub Action Gatekeeper)
 
 Prevent vulnerable, exfiltrating, or deadlocking agents from ever reaching production. Add the turnkey **LIFE FORGE GitHub Action** (`action.yml`) to any repository in 4 lines of YAML:
@@ -414,26 +437,51 @@ lifeforge/
 │
 ├── sandbox/                    # Enterprise Agent Simulation Sandbox
 │   ├── world_state.py          # Deterministic digital twin state machine with deep rollback
-│   ├── mock_tools.py           # 5 enterprise tools (database, vendor API, PO, email, funds transfer)
+│   ├── mock_tools.py           # Enterprise tools (database, vendor API, PO, email, funds transfer)
 │   ├── agent.py                # AgentInterface, RuleBasedPurchasingAgent, CallableAgentAdapter
 │   ├── oracle.py               # Invariant policy enforcement & SandboxRunner orchestrator
+│   ├── policies.py             # Pluggable invariant policies (flood, cascade, scope, recon, worm, poison)
+│   ├── domains/                # Scenario domains: procurement, customer_support, devops, financial
 │   ├── llm_agent.py            # Unified LiteLLM adapter with 429/503 rate-limit backoff
 │   └── mcp_server.py           # Model Context Protocol (MCP) JSON-RPC stdio server
 │
 ├── evolution/                  # Co-Evolutionary Red-Teaming Engine
 │   ├── engine.py               # EvolutionEngine coordinating multi-generation search
-│   ├── map_elites.py           # 3D Quality-Diversity Archive (adversarial × volatility × budget)
+│   ├── map_elites.py           # 3D Quality-Diversity Archive (adversarial x volatility x budget)
 │   └── mutators/
 │       ├── environmental.py    # PriceVolatility, InventoryScarcity, BudgetConstraint, VendorDropout
 │       ├── adversarial.py      # IndirectPromptInjection, SpoofedExecutiveMessage, ConflictingSpec
+│       ├── frontier.py         # 2026 frontier attacks: worms, memory poisoning, context flood, multilingual
+│       ├── mcp_schema.py       # MCP tool schema poisoning (CVE-2025-53773 / CVE-2025-54135 class)
 │       └── semantic.py         # 10,000+ combinatorial template payloads & SLM generation
 │
 ├── reporting/                  # Causal Root-Cause Diagnostics
 │   ├── analyzer.py             # CausalAnalyzer extracting minimal failure triggers
-│   └── report.py               # Markdown and JSON executive audit generator
+│   ├── report.py               # Markdown and JSON executive audit generator
+│   ├── leaderboard.py          # Ranked model security leaderboard generator
+│   ├── audit.py                # Customer-deliverable audit bundle (PDF + evidence + remediation)
+│   └── pdf.py                  # CISO-ready PDF export (reportlab, vector charts)
+│
+├── adapters/                   # Framework adapters (lazy imports, zero lock-in)
+│   ├── langchain.py            # LangChain AgentExecutor adapter
+│   ├── langgraph.py            # LangGraph compiled StateGraph adapter
+│   ├── crewai.py               # CrewAI Crew adapter
+│   └── generic.py              # Callable adapter for any Python agent
+│
+├── mcpsec/                     # MCP security scanner (poisoning, drift, shadowing)
+│   ├── manifest.py             # Tool-definition model + manifest loaders
+│   ├── detectors.py            # Static ruleset over MCP tool definitions
+│   ├── probe.py                # Live stdio/HTTP protocol probe + drift check
+│   └── report.py               # Scan scoring and Markdown/JSON reports
+│
+├── hardening.py                # @tool_guard runtime + remediation code generator
+├── gateway.py                  # Runtime PolicyGateway with tamper-evident audit chain
 │
 └── cli/                        # Unified Command-Line Interface
-    └── main.py                 # Commands: run, survey, test, eval, compare, mcp-serve, ui
+    ├── main.py                 # Commands: run, survey, test, eval, compare, mcp-serve, ui,
+    │                          #   leaderboard, report, harden, audit, gateway, domains,
+    │                          #   quickstart, mcp-scan
+    └── quickstart.py           # Framework auto-detection + harness generation
 ```
 
 ---
@@ -444,7 +492,7 @@ LIFE FORGE maintains an extensive test suite verifying algorithm determinism, to
 
 ```bash
 pytest -q
-# 398 passed
+# 438 passed
 ```
 
 ---
