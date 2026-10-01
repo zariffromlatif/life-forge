@@ -120,7 +120,7 @@ def cmd_test(args: argparse.Namespace) -> None:
         print(f"  Seed:         {args.seed}")
 
     # Run evolution
-    domain = _resolve_domain(getattr(args, "domain", None))
+    domain = _resolve_domain_or_spec(args)
     if domain is not None:
         print(f"  Domain:       {domain.name} ({domain.title})")
     delay = getattr(args, "delay", 0.0)
@@ -329,7 +329,7 @@ def cmd_eval(args: argparse.Namespace) -> None:
     print(f"  Scenarios:    {args.scenarios}")
     print(f"  Seed:         {args.seed}")
 
-    domain = _resolve_domain(getattr(args, "domain", None))
+    domain = _resolve_domain_or_spec(args)
     seed_state = domain.build_world() if domain else WorldState.default_purchasing_world()
     runner = domain.build_runner() if domain else None
     if domain:
@@ -421,6 +421,69 @@ def _resolve_domain(name: str | None):
     from lifeforge.sandbox.domains import get_domain
 
     return get_domain(name)
+
+
+def _resolve_domain_or_spec(args: argparse.Namespace):
+    """Resolve a domain from --domain-spec (compiled) or --domain (registry)."""
+    spec_path = getattr(args, "domain_spec", None)
+    if spec_path:
+        from lifeforge.sandbox.domains.compiler import compile_domain_file
+
+        return compile_domain_file(spec_path)
+    return _resolve_domain(getattr(args, "domain", None))
+
+
+def cmd_compile_domain(args: argparse.Namespace) -> None:
+    """Validate a custom domain specification and print what it compiles to."""
+    from lifeforge.sandbox.domains.compiler import DomainSpecError, compile_domain_file
+
+    try:
+        domain = compile_domain_file(args.spec)
+    except (DomainSpecError, FileNotFoundError, OSError) as exc:
+        print(f"  [FAIL] Domain spec invalid: {exc}")
+        sys.exit(1)
+
+    summary = domain.summary()
+    print(f"  [OK] Domain spec compiles: {args.spec}")
+    print()
+    print(f"  {summary['name']} -- {summary['title']}")
+    print(f"    {summary['description']}")
+    print(f"    Tools    : {', '.join(summary['tools'])}")
+    print(f"    Policies : {', '.join(summary['policies'])}")
+    print(f"    Prohibited: {', '.join(summary['prohibited_tools']) or 'none'}")
+
+    if not getattr(args, "check", False):
+        # Full compile verification: run one scripted episode to prove the
+        # sandbox executes and the oracle produces verdicts.
+        from lifeforge.sandbox.agent import AgentAction, CallableAgentAdapter
+
+        registry = domain.build_tool_registry()
+        first_tool = registry.list_tools()[0]
+        schema_args = {
+            name: (
+                spec.get("enum")[0]
+                if spec.get("enum")
+                else {"string": "probe", "number": 1, "integer": 1, "boolean": True}.get(str(spec.get("type", "string")), "probe")
+            )
+            for name, spec in first_tool.parameters_schema.get("properties", {}).items()
+        }
+        remaining = [(first_tool.name, schema_args)]
+
+        def probe(observation, history):
+            if not remaining:
+                return AgentAction(action_type="finish", message="compile probe complete")
+            tool_name, call_args = remaining.pop(0)
+            return AgentAction(action_type="tool_call", tool_name=tool_name, arguments=call_args)
+
+        trace = domain.build_runner().run(
+            CallableAgentAdapter(probe, name="compile-probe"), domain.build_world()
+        )
+        print()
+        print(
+            f"    Probe episode: {trace.total_steps} step(s), "
+            f"{len(trace.violations)} violation(s), success={trace.success}"
+        )
+    print()
 
 
 def cmd_domains(args: argparse.Namespace) -> None:
@@ -587,7 +650,7 @@ def cmd_audit(args: argparse.Namespace) -> None:
             print("  [FAIL] Provide either --input report.json or --target agent.py:my_agent")
             sys.exit(1)
 
-        domain = _resolve_domain(getattr(args, "domain", None))
+        domain = _resolve_domain_or_spec(args)
         seed_state = domain.build_world() if domain else WorldState.default_purchasing_world()
         if domain:
             print(f"  Domain:        {domain.name} ({domain.title})")
@@ -734,7 +797,7 @@ def cmd_surface(args: argparse.Namespace) -> None:
             vulnerable_to_injection=not getattr(args, "hardened", False),
         )
 
-    domain = _resolve_domain(getattr(args, "domain", None))
+    domain = _resolve_domain_or_spec(args)
     seed_state = domain.build_world() if domain else WorldState.default_purchasing_world()
     engine = EvolutionEngine(
         seed=args.seed,
@@ -966,6 +1029,7 @@ def main() -> None:
     test_parser.add_argument("--hardened", action="store_true", help="Test a hardened (non-vulnerable) agent")
     test_parser.add_argument("--domain", type=str, default=None, help="Scenario domain (e.g. procurement, customer_support, devops, financial)")
     test_parser.add_argument("--frontier", action="store_true", help="Include 2026 frontier attacks (prompt worms, memory poisoning, context flood, multilingual)")
+    test_parser.add_argument("--domain-spec", type=str, default=None, help="Path to a YAML/JSON custom domain specification (overrides --domain)")
 
     # Compare command -- head-to-head model comparison
     compare_parser = subparsers.add_parser("compare", help="Compare multiple agent evaluation reports")
@@ -1004,6 +1068,7 @@ def main() -> None:
     eval_parser.add_argument("--fail-on-critical", action="store_true", help="Exit with code 1 if critical zero-day vulnerabilities are discovered")
     eval_parser.add_argument("--domain", type=str, default=None, help="Scenario domain (procurement, customer_support, devops, financial)")
     eval_parser.add_argument("--frontier", action="store_true", help="Include 2026 frontier attacks (prompt worms, memory poisoning, context flood, multilingual)")
+    eval_parser.add_argument("--domain-spec", type=str, default=None, help="Path to a YAML/JSON custom domain specification (overrides --domain)")
 
     # Report command -- PDF deliverable from a benchmark JSON report
     report_parser = subparsers.add_parser("report", help="Render a CISO-ready PDF audit report from a benchmark JSON report")
@@ -1036,6 +1101,7 @@ def main() -> None:
     audit_parser.add_argument("--seed", type=int, default=42, help="Random seed (default: 42)")
     audit_parser.add_argument("--delay", type=float, default=0.0, help="Delay between generations in seconds")
     audit_parser.add_argument("--frontier", action="store_true", help="Include 2026 frontier attacks")
+    audit_parser.add_argument("--domain-spec", type=str, default=None, help="Path to a YAML/JSON custom domain specification (overrides --domain)")
     audit_parser.add_argument("--out", type=str, default="audit_report", help="Output directory (default: audit_report)")
     audit_parser.add_argument("--no-pdf", action="store_true", help="Skip the PDF deliverables")
 
@@ -1087,6 +1153,7 @@ def main() -> None:
     surface_parser.add_argument("--agent-name", type=str, default=None, help="Label for the built-in reference agent")
     surface_parser.add_argument("--hardened", action="store_true", help="Use the hardened (non-vulnerable) reference agent")
     surface_parser.add_argument("--domain", type=str, default=None, help="Scenario domain to campaign against")
+    surface_parser.add_argument("--domain-spec", type=str, default=None, help="Path to a YAML/JSON custom domain specification (overrides --domain)")
     surface_parser.add_argument("--frontier", action="store_true", help="Include 2026 frontier attacks")
     surface_parser.add_argument("--scenarios", type=int, default=30, help="Number of evolutionary generations (default: 30)")
     surface_parser.add_argument("--seed", type=int, default=42, help="Random seed (default: 42)")
@@ -1094,6 +1161,11 @@ def main() -> None:
     surface_parser.add_argument("--out", type=str, default=None, help="Output path: snapshot file with --record, diff Markdown otherwise")
     surface_parser.add_argument("--json", action="store_true", help="Also write the diff as JSON alongside the Markdown")
     surface_parser.add_argument("--fail-on-regression", action="store_true", help="Exit with code 1 when the surface regressed (CI gate)")
+
+    # Compile-domain command -- validate a custom domain specification
+    compile_parser = subparsers.add_parser("compile-domain", help="Validate and compile a custom YAML/JSON domain specification")
+    compile_parser.add_argument("--spec", type=str, required=True, help="Path to the domain specification file")
+    compile_parser.add_argument("--check", action="store_true", help="Validate only; skip the probe episode")
 
     args = parser.parse_args()
     if args.command == "run":
@@ -1128,6 +1200,8 @@ def main() -> None:
         cmd_mcp_scan(args)
     elif args.command == "surface":
         cmd_surface(args)
+    elif args.command == "compile-domain":
+        cmd_compile_domain(args)
 
 
 if __name__ == "__main__":

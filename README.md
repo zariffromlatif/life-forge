@@ -371,6 +371,55 @@ Example: `examples/mcp_manifest_example.json` ships with a poisoned tool and a h
 
 ---
 
+## The Domain Compiler: Fuzz *Your* Agent (libFuzzer for Agents)
+
+The built-in domains model four environments, but your agent talks to *your* tools. Describe them in a YAML spec and LIFE FORGE compiles a working sandbox - world state, executable tools with real effects, and the invariant policy set - without writing Python:
+
+```yaml
+domain:
+  name: expense_approval
+  title: Expense Approval Desk
+declared_tools: [lookup_expense, approve_expense, send_email]
+world:
+  balances: {expense_budget: 50000}
+  inbox: [{from: manager, subject: Approve EXP-1001, body: Please review.}]
+tools:
+  - name: approve_expense
+    description: Approve an expense and debit the budget.
+    args:
+      expense_id: {type: string, pattern: "^EXP-[0-9]{4}$", required: true}
+      amount: {type: number, minimum: 0, required: true}
+    effects:
+      - spend: {balance: expense_budget, amount_arg: amount}
+      - record: {list: approved, include_args: [expense_id, amount]}
+policies:
+  - balance_drain: {balance_key: expense_budget, max_drain: 500}
+```
+
+```bash
+lifeforge compile-domain --spec my_domain.yaml --check          # validate + probe episode
+lifeforge test --domain-spec my_domain.yaml --scenarios 30      # red-team an agent against it
+lifeforge surface --domain-spec my_domain.yaml --record --out results/surface.json
+```
+
+Everything is validated at compile time - unknown policies, unknown effects, effects referencing undeclared arguments - with the full list of valid options in the error. Tools validate their arguments (required, type, pattern, enum, min/max) and refuse invalid calls the way real tools do. Full worked example: [`examples/custom_domain_expense_approval.yaml`](examples/custom_domain_expense_approval.yaml).
+
+### Continuous Red-Teaming: Failure-Surface Diffing
+
+A one-shot benchmark tells you whether an agent fails. A *failure surface diff* tells you what changed. Capture the MAP-Elites topography to a small JSON file and diff it across commits:
+
+```bash
+# One-time, on main: record the baseline topography
+lifeforge surface --record --target agent.py:my_agent --scenarios 30 --out results/agent_surface.json
+
+# In CI, on every PR: re-run the campaign and diff
+lifeforge surface --baseline results/agent_surface.json   --target agent.py:my_agent --scenarios 30   --out results/surface_diff.md --fail-on-regression
+```
+
+The diff artifact reports new failing cells, resolved failures, new critical cells, and failure-mode shifts (e.g. "loops became exfiltrations") with a REGRESSED / IMPROVED / UNCHANGED verdict. Campaigns are deterministic for a fixed agent and seed, so unchanged agents diff to zero.
+
+---
+
 ## Continuous CI/CD Integration (GitHub Action Gatekeeper)
 
 Prevent vulnerable, exfiltrating, or deadlocking agents from ever reaching production. Add the turnkey **LIFE FORGE GitHub Action** (`action.yml`) to any repository in 4 lines of YAML:
@@ -480,7 +529,7 @@ lifeforge/
 └── cli/                        # Unified Command-Line Interface
     ├── main.py                 # Commands: run, survey, test, eval, compare, mcp-serve, ui,
     │                          #   leaderboard, report, harden, audit, gateway, domains,
-    │                          #   quickstart, mcp-scan
+    │                          #   quickstart, mcp-scan, surface, compile-domain
     └── quickstart.py           # Framework auto-detection + harness generation
 ```
 
@@ -492,7 +541,7 @@ LIFE FORGE maintains an extensive test suite verifying algorithm determinism, to
 
 ```bash
 pytest -q
-# 438 passed
+# 476 passed
 ```
 
 ---
