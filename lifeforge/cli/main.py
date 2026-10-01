@@ -127,12 +127,10 @@ def cmd_test(args: argparse.Namespace) -> None:
     engine = EvolutionEngine(
         seed=args.seed,
         delay=delay,
+        domain=domain,
         frontier_mutators=getattr(args, "frontier", False),
     )
     seed_state = domain.build_world() if domain is not None else WorldState.default_purchasing_world()
-    runner = domain.build_runner() if domain is not None else None
-    if runner is not None:
-        engine.runner = runner
 
     print(f"\n  Running evolutionary search ({args.scenarios} generations)...")
     summary = engine.run(agent, seed_state, generations=args.scenarios)
@@ -144,7 +142,7 @@ def cmd_test(args: argparse.Namespace) -> None:
     print(f"  Failure Modes:    {summary.novel_failure_modes}")
 
     # Generate report
-    analyzer = CausalAnalyzer(runner=runner) if runner is not None else CausalAnalyzer()
+    analyzer = CausalAnalyzer(runner=engine.runner)
     diagnostics = analyzer.analyze(agent, summary, seed_state)
 
     report = ReportGenerator.generate_markdown(diagnostics)
@@ -591,7 +589,6 @@ def cmd_audit(args: argparse.Namespace) -> None:
 
         domain = _resolve_domain(getattr(args, "domain", None))
         seed_state = domain.build_world() if domain else WorldState.default_purchasing_world()
-        runner = domain.build_runner() if domain else None
         if domain:
             print(f"  Domain:        {domain.name} ({domain.title})")
 
@@ -600,12 +597,17 @@ def cmd_audit(args: argparse.Namespace) -> None:
         print(f"  Seed:          {args.seed}")
         print("  Running evolutionary search...")
 
-        engine = EvolutionEngine(seed=args.seed, delay=args.delay, runner=runner, domain=domain,
-                                 frontier_mutators=getattr(args, "frontier", False))
+        engine = EvolutionEngine(
+            seed=args.seed,
+            delay=args.delay,
+            domain=domain,
+            frontier_mutators=getattr(args, "frontier", False),
+        )
         summary = engine.run(agent, seed_state, generations=args.scenarios)
 
-        analyzer = CausalAnalyzer(runner=runner) if runner else CausalAnalyzer()
+        analyzer = CausalAnalyzer(runner=engine.runner)
         diagnostics = analyzer.analyze(agent, summary, seed_state)
+
         from dataclasses import asdict
 
         report = asdict(diagnostics)
@@ -818,7 +820,7 @@ def main() -> None:
     gateway_parser.add_argument("--tool", type=str, default=None, help="Tool to guard for a manual rule")
     gateway_parser.add_argument("--violation", type=str, default=None, help="Violation type for a manual rule")
     gateway_parser.add_argument("--action", type=str, default="block", choices=["block", "warn", "allow"], help="Action for the manual rule")
-    gateway_parser.add_argument("--kind", type=str, default="whitelist", choices=["whitelist", "amount", "recipient", "markers", "rate", "sequence"], help="Rule kind for the manual rule")
+    gateway_parser.add_argument("--kind", type=str, default="whitelist", choices=["whitelist", "denylist", "amount", "recipient", "markers", "rate", "sequence"], help="Rule kind for the manual rule")
     gateway_parser.add_argument("--out", type=str, default="lifeforge_policy.yaml", help="Output config path")
     gateway_parser.add_argument("--list-rules", action="store_true", help="List supported rule kinds and policies, then exit")
 

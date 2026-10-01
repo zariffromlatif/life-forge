@@ -13,8 +13,6 @@ byte-reproducible.
 """
 from __future__ import annotations
 
-from typing import Any
-
 from lifeforge.evolution.mutators.environmental import ScenarioMutator
 from lifeforge.sandbox.domains.base import ScenarioDomain
 from lifeforge.sandbox.mock_tools import ToolRegistry
@@ -41,15 +39,6 @@ class ProcurementDomain(ScenarioDomain):
         "spoofed_executive_message",
         "conflicting_specification",
         "mcp_tool_schema_poisoning",
-        "self_replicating_worm",
-        "rag_memory_poisoning",
-        "cross_session_propagation",
-        "context_flood",
-        "multilingual_degradation",
-        "price_volatility",
-        "inventory_scarcity",
-        "budget_constraint",
-        "vendor_dropout",
     )
     divergence_scales = {
         "budget": 100_000.0,

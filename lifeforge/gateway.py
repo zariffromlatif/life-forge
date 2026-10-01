@@ -546,6 +546,55 @@ class PolicyGateway:
             )
         return executor(tool_name, dict(arguments))
 
+    def evaluate_history(self) -> list[Any]:
+        """Run the configured policy objects over the accumulated call history.
+
+        Single-call rules catch per-call violations; the episode-level policies
+        catch patterns that only exist across a sequence of calls (reconnaissance
+        sweeps, forbidden tool chains).  Returns the violations the policies
+        found, in policy order.  Callers decide what to do with a pattern
+        finding - typically raise an alert and tighten the per-call rules,
+        because the offending call has already been forwarded by the time a
+        pattern is visible.
+        """
+        if not self.policies or not self.call_history:
+            return []
+
+        from lifeforge.sandbox.oracle import PolicyContext
+        from lifeforge.sandbox.world_state import WorldState
+
+        # The gateway does not own a world; policies only read the trace.
+        empty_world = WorldState()
+        trace: list[dict[str, Any]] = []
+        for index, (tool_name, arguments) in enumerate(self.call_history):
+            trace.append(
+                {
+                    "step": index,
+                    "action": {
+                        "action_type": "tool_call",
+                        "tool_name": tool_name,
+                        "arguments": dict(arguments),
+                    },
+                }
+            )
+
+        context = PolicyContext(
+            initial_state=empty_world,
+            final_state=empty_world,
+            trace=trace,
+        )
+        violations: list[Any] = []
+        for policy in self.policies:
+            if getattr(policy, "is_inert", None) is not None and policy.is_inert():
+                continue
+            try:
+                found = policy.evaluate(context)
+            except Exception:  # pragma: no cover - defensive isolation
+                continue
+            if found:
+                violations.extend(found)
+        return violations
+
     def wrap_executor(
         self,
         executor: Callable[[str, dict[str, Any]], Any],
@@ -609,9 +658,21 @@ class PolicyGateway:
         if rule.kind == "whitelist":
             allowed = {str(item) for item in config.get("allowed_tools", []) or []}
             if not allowed:
-                return False, ""
+                # An empty allow-list would silently disable the rule. Treat it
+                # as a configuration error rather than a permissive default,
+                # because a rule that never fires is worse than no rule: it
+                # reads as protection in a review and provides none.
+                return True, (
+                    f"rule '{rule.name}' has an empty allowed_tools list and cannot be "
+                    "evaluated; populate it or remove the rule"
+                )
             if tool_name not in allowed:
                 return True, f"tool '{tool_name}' is not in the authorized allow-list"
+
+        elif rule.kind == "denylist":
+            denied = {str(item) for item in config.get("denied_tools", []) or []}
+            if tool_name in denied:
+                return True, f"tool '{tool_name}' is on the prohibited list"
 
         elif rule.kind == "amount":
             argument = str(config.get("argument", "amount"))
@@ -820,31 +881,82 @@ def rules_from_report(report: dict[str, Any]) -> list[GatewayRule]:
     become runtime rules.  Rules are generated in ``block`` mode for CRITICAL
     findings and ``warn`` for everything else, which suits a monitor-first
     rollout where the operator promotes rules to blocking after observing them.
+
+    Where the report's findings name the tools involved, those names are
+    extracted into the rule's configuration so the rule actually fires.  Rules
+    whose tool set cannot be derived are still emitted, with an explicit note in
+    the config, because the operator has to supply the allow-list for a
+    least-privilege rule regardless.
     """
     from lifeforge.hardening import _VIOLATION_SEVERITY
 
     breakdown = (report or {}).get("failure_mode_breakdown", {}) or {}
+    tools_by_category = _tools_by_category(report or {})
+
     rules: list[GatewayRule] = []
     for violation_type, count in breakdown.items():
-        severity = _VIOLATION_SEVERITY.get(str(violation_type).upper(), "MEDIUM")
+        category = str(violation_type).upper()
+        severity = _VIOLATION_SEVERITY.get(category, "MEDIUM")
         action = "block" if severity == "CRITICAL" else "warn"
+        kind = _default_rule_kind(category)
+        tools = tools_by_category.get(category, [])
+
+        config: dict[str, Any] = {}
+        if kind == "denylist" and tools:
+            config["denied_tools"] = sorted(tools)
+        elif kind == "amount":
+            config = {"argument": "amount", "max_amount": 0.0}
+        elif kind == "recipient":
+            config = {"argument": "recipient", "allowed_recipients": ["internal"]}
+        elif kind == "rate":
+            config = {"max_calls": 3, "window_seconds": 60.0}
+        elif kind == "sequence" and tools:
+            config = {"forbidden_sequence": sorted(tools)}
+        else:
+            # A least-privilege rule needs the operator's real allow-list.
+            config = {"allowed_tools": [], "note": "TODO: populate allowed_tools for this agent"}
+
         rules.append(
             GatewayRule(
-                name=f"discovered_{str(violation_type).lower()}",
-                violation_type=str(violation_type),
+                name=f"discovered_{category.lower()}",
+                violation_type=category,
                 action=action,
-                kind=_default_rule_kind(str(violation_type)),
-                config={},
+                tools=tuple(sorted(tools)),
+                kind=kind,
+                config=config,
                 severity=severity,
             )
         )
     return rules
 
 
+def _tools_by_category(report: dict[str, Any]) -> dict[str, set[str]]:
+    """Collect the tools named in a report's findings, grouped by category.
+
+    The analyzer records the offending tool inside each finding's
+    ``trace_snippet``.  Reading them back is what lets a generated rule name the
+    tool it must govern instead of shipping an inert placeholder.
+    """
+    collected: dict[str, set[str]] = {}
+    for finding in report.get("findings", []) or []:
+        if not isinstance(finding, dict):
+            continue
+        category = str(finding.get("category", "")).upper()
+        if not category:
+            continue
+        for event in finding.get("trace_snippet", []) or []:
+            if not isinstance(event, dict):
+                continue
+            tool = event.get("tool")
+            if isinstance(tool, str) and tool and tool != "None":
+                collected.setdefault(category, set()).add(tool)
+    return collected
+
+
 def _default_rule_kind(violation_type: str) -> str:
     """Map a violation to the rule kind that best expresses its enforcement."""
     mapping = {
-        "UNAUTHORIZED_TOOL_EXECUTION": "whitelist",
+        "UNAUTHORIZED_TOOL_EXECUTION": "denylist",
         "UNAUTHORIZED_SCOPE_EXPANSION": "whitelist",
         "UNAUTHORIZED_FINANCIAL_DRAIN": "amount",
         "BUDGET_EXCEEDED": "amount",
@@ -854,5 +966,6 @@ def _default_rule_kind(violation_type: str) -> str:
         "RECURSIVE_LOOP_TRAP": "rate",
         "EXCESSIVE_DATA_QUERYING": "rate",
         "PRIVILEGE_ESCALATION": "sequence",
+        "PARAMETER_BOUNDARY_VIOLATION": "markers",
     }
     return mapping.get(str(violation_type).upper(), "whitelist")

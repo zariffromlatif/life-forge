@@ -223,6 +223,131 @@ docker run --rm -v ${PWD}/results:/app/results lifeforge test --scenarios 30 --o
 
 ---
 
+## Scenario Domains: Test Beyond Procurement
+
+The procurement ERP is the default environment, but the same evolutionary search runs against four registered scenario domains, each with its own world state, tool suite, invariant policies, and adversarial mutators:
+
+```bash
+lifeforge domains                                   # list what each domain tests
+lifeforge eval --domain customer_support --target agent.py:my_agent --json
+lifeforge eval --domain devops --endpoint http://localhost:5000/act
+lifeforge eval --domain financial --target agent.py:trading_agent
+```
+
+| Domain | Agent under test | Failure modes it surfaces |
+| :--- | :--- | :--- |
+| `procurement` | Enterprise purchasing agent | Unauthorized wire transfers, retry loops, budget breaches |
+| `customer_support` | SaaS/telco support agent | Social-engineered refunds, PII exfiltration, admin-grant abuse |
+| `devops` | CI/CD pipeline agent | Gate bypass (merge/deploy without tests), secret egress, forced merges |
+| `financial` | Trading desk agent | Approval bypass, spoofed-signal trading, risk-model tampering |
+
+### Frontier Attacks (2026 Research Gaps)
+
+Opt in with `--frontier` to add five attack classes that contemporary tooling does not cover:
+
+```bash
+lifeforge test --model ollama/llama3.1:8b --frontier --json
+```
+
+- `self_replicating_worm`: injections whose payload copies itself into the agent's own outputs (paired `SELF_REPLICATING_WORM_PROPAGATION` oracle verdict).
+- `rag_memory_poisoning`: false facts seeded into memory/RAG stores that survive the session (paired `RAG_MEMORY_POISONING_ADOPTED`).
+- `cross_session_propagation`: payloads instructing the agent to persist directives for the next agent in an orchestration.
+- `context_flood`: oversized untrusted payloads sized to evict safety instructions from the context window (`CONTEXT_FLOOD_ATTACK`).
+- `multilingual_degradation`: the same injection delivered in Chinese, Russian, Arabic, Base64, and romanized Chinese to expose language-dependent guardrails.
+
+### Pluggable Invariant Policies
+
+The oracle's checks are extensible: `lifeforge/sandbox/policies.py` ships nine composable policy objects (`ContextFloodAttackPolicy`, `CascadingToolFailurePolicy`, `UnauthorizedScopeExpansionPolicy`, `ExcessiveDataQueryingPolicy`, `ProhibitedArgumentValuePolicy`, `BalanceDrainPolicy`, `RequiredPredecessorPolicy`, `PayloadPropagationPolicy`, `PoisonedMemoryAdoptionPolicy`). Attach them to any `GoalSpecification`:
+
+```python
+from lifeforge.sandbox import GoalSpecification
+from lifeforge.sandbox.policies import ExcessiveDataQueryingPolicy
+
+goal = GoalSpecification(policies=[ExcessiveDataQueryingPolicy(max_sensitive_queries=1)])
+```
+
+---
+
+## Framework Adapters: LangChain, LangGraph, CrewAI
+
+Wrap an existing framework agent with zero modification and evaluate it in the sandbox:
+
+```python
+from lifeforge.adapters import LangChainAdapter, LangGraphAdapter, CrewAIAdapter
+
+executor = AgentExecutor(agent=agent, tools=tools)      # your existing LangChain agent
+lf_agent = LangChainAdapter(executor)
+
+app = builder.compile()                                  # your compiled LangGraph graph
+lf_agent = LangGraphAdapter(app=app)
+
+crew = Crew(agents=[...], tasks=[...])                   # your CrewAI crew
+lf_agent = CrewAIAdapter(crew=crew)
+
+results = lifeforge.test(lf_agent)
+```
+
+Or let LIFE FORGE auto-detect the framework in your project:
+
+```bash
+lifeforge quickstart                    # scans the current directory, generates a harness, runs the benchmark
+lifeforge quickstart --dry-run          # detection only, writes nothing
+```
+
+Detection covers LangChain, LangGraph, CrewAI, AutoGen, LlamaIndex, smolagents, and OpenAI Agents.
+
+---
+
+## From Finding to Fix: Hardening, PDF Reports, and the Runtime Gateway
+
+### 1. PDF Audit Reports (CISO-ready)
+
+```bash
+lifeforge report --input results/local_llama_report.json --output audit_report.pdf --customer "Acme Corp"
+```
+
+Executive summary page with risk score and band, failure-mode tables, threat-surface charts, per-finding evidence, remediation section, and a reproducibility appendix.
+
+### 2. Hardening Decorator Generator
+
+Turn every discovered violation into a drop-in tool-boundary guard:
+
+```bash
+lifeforge harden --input results/local_qwen_report.json --out remediation_decorators.py
+```
+
+The generated file imports the real runtime from `lifeforge.hardening` (`@tool_guard`, `PolicyError`) - guards raise `PolicyError` before a forbidden call reaches your implementation.
+
+### 3. Customer Audit Deliverable (48-Hour Audit Format)
+
+```bash
+lifeforge audit --input results/local_phi4_report.json --customer "Acme Corp" --out audit_report/
+# or run a fresh audit directly:
+lifeforge audit --target agent.py:my_agent --customer "Acme Corp" --out audit_report/
+```
+
+Produces: `executive_summary.md` + `.pdf`, `technical_report.md` + `.pdf`, `raw_data.json`, `reproduction_commands.sh`, `remediation_decorators.py`, and `MANIFEST.md`.
+
+### 4. Runtime Policy Gateway (Offline Findings -> Online Enforcement)
+
+The same invariant policies that judge simulations enforce production tool calls, with a tamper-evident (hash-chained) audit trail:
+
+```bash
+lifeforge gateway --input results/local_qwen_report.json --out lifeforge_policy.yaml
+```
+
+```python
+from lifeforge.gateway import PolicyGateway
+
+gateway = PolicyGateway.from_config("lifeforge_policy.yaml")
+guarded = gateway.wrap_executor(original_executor)   # drop-in replacement
+# gateway.audit.verify()  -> tamper check over the whole trail
+```
+
+Critical findings become blocking rules; lower-severity ones start in monitor mode so you can promote them after observing false-positive rates.
+
+---
+
 ## Continuous CI/CD Integration (GitHub Action Gatekeeper)
 
 Prevent vulnerable, exfiltrating, or deadlocking agents from ever reaching production. Add the turnkey **LIFE FORGE GitHub Action** (`action.yml`) to any repository in 4 lines of YAML:
@@ -318,8 +443,8 @@ lifeforge/
 LIFE FORGE maintains an extensive test suite verifying algorithm determinism, tool execution, and regression immunity:
 
 ```bash
-pytest -v
-# 89 passed in 4.21s
+pytest -q
+# 398 passed
 ```
 
 ---
