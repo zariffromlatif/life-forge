@@ -687,6 +687,147 @@ def cmd_gateway(args: argparse.Namespace) -> None:
     print("    guarded = gateway.wrap_executor(original_executor)")
 
 
+def cmd_surface(args: argparse.Namespace) -> None:
+    """Capture or diff an agent's failure surface for continuous red-teaming."""
+    from dataclasses import asdict
+
+    from lifeforge.evolution.engine import EvolutionEngine
+    from lifeforge.reporting.failure_surface import (
+        VERDICT_REGRESSED,
+        SurfaceDiff,
+        capture_surface,
+        diff_surfaces,
+        load_surface,
+        render_diff_markdown,
+        save_surface,
+    )
+
+    out_path = Path(args.out) if getattr(args, "out", None) else None
+
+    # Mode 3: pure diff of two stored snapshots, no campaign run.
+    if getattr(args, "against", None):
+        if not getattr(args, "baseline", None):
+            print("  [FAIL] --against requires --baseline (the older snapshot).")
+            sys.exit(1)
+        baseline = load_surface(args.baseline)
+        current = load_surface(args.against)
+        diff = diff_surfaces(baseline, current)
+        _emit_surface_diff(diff, out_path, getattr(args, "json", False), args.fail_on_regression)
+        return
+
+    # Resolve the agent under test.
+    from lifeforge.sandbox.world_state import WorldState
+
+    if getattr(args, "target", None):
+        from lifeforge.sandbox.loader import load_agent_from_spec
+
+        agent = load_agent_from_spec(args.target)
+    elif getattr(args, "endpoint", None):
+        from lifeforge.sandbox.http_agent import HTTPAgentAdapter
+
+        agent = HTTPAgentAdapter(endpoint=args.endpoint, name=args.agent_name or "RemoteHTTPAgent")
+    else:
+        from lifeforge.sandbox.agent import RuleBasedPurchasingAgent
+
+        agent = RuleBasedPurchasingAgent(
+            name=args.agent_name or "PurchasingAgent-v1",
+            vulnerable_to_injection=not getattr(args, "hardened", False),
+        )
+
+    domain = _resolve_domain(getattr(args, "domain", None))
+    seed_state = domain.build_world() if domain else WorldState.default_purchasing_world()
+    engine = EvolutionEngine(
+        seed=args.seed,
+        delay=getattr(args, "delay", 0.0),
+        domain=domain,
+        frontier_mutators=getattr(args, "frontier", False),
+    )
+
+    print("=" * 64)
+    print("  LIFE FORGE -- Failure Surface Campaign")
+    print("=" * 64)
+    print(f"  Agent      : {agent.name}")
+    print(f"  Domain     : {domain.name if domain else 'procurement (default)'}")
+    print(f"  Scenarios  : {args.scenarios}")
+    print(f"  Seed       : {args.seed}")
+
+    print(f"\n  Running evolutionary search ({args.scenarios} generations)...")
+    summary = engine.run(agent, seed_state, generations=args.scenarios)
+
+    snapshot = capture_surface(
+        summary,
+        agent_name=agent.name,
+        seed=args.seed,
+        generations=args.scenarios,
+        domain=domain.name if domain else None,
+        label=getattr(args, "label", None),
+    )
+
+    print(
+        f"\n  Surface: {snapshot['elites_count']} elites | coverage "
+        f"{snapshot['coverage']:.4f} | {snapshot['critical_failures_count']} critical cells"
+    )
+
+    # Mode 1: record a baseline snapshot only.
+    if getattr(args, "record", False):
+        if out_path is None:
+            print("  [FAIL] --record requires --out PATH for the snapshot file.")
+            sys.exit(1)
+        saved = save_surface(snapshot, out_path)
+        print(f"\n  [OK] Surface snapshot saved: {saved}")
+        return
+
+    # Mode 2: run a campaign and diff against the stored baseline.
+    if not getattr(args, "baseline", None):
+        print("  [FAIL] Provide --baseline (diff mode), --record (capture mode), or --against (stored diff).")
+        sys.exit(1)
+
+    baseline = load_surface(args.baseline)
+    diff = diff_surfaces(baseline, snapshot)
+
+    if getattr(args, "save_current", None):
+        saved = save_surface(snapshot, args.save_current)
+        print(f"  [OK] Current surface saved: {saved}")
+
+    _emit_surface_diff(diff, out_path, getattr(args, "json", False), args.fail_on_regression)
+
+
+def _emit_surface_diff(
+    diff: SurfaceDiff,
+    out_path: Path | None,
+    also_json: bool,
+    fail_on_regression: bool,
+) -> None:
+    """Print, persist, and gate on a surface diff."""
+    import json
+
+    from lifeforge.reporting.failure_surface import (
+        VERDICT_REGRESSED,
+        render_diff_markdown,
+    )
+
+    print()
+    print(f"  Verdict: {diff.verdict}")
+    print(f"  New failures     : {len(diff.new_failures)}")
+    print(f"  Resolved failures: {len(diff.resolved_failures)}")
+    print(f"  New criticals    : {len(diff.new_criticals)}")
+    print(f"  Coverage delta   : {diff.coverage_delta:+.4f}")
+
+    if out_path is not None:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(render_diff_markdown(diff), encoding="utf-8")
+        print(f"\n  [OK] Diff report: {out_path}")
+        if also_json:
+            json_path = out_path.with_suffix(".json")
+            json_path.write_text(json.dumps(diff.to_dict(), indent=2), encoding="utf-8")
+            print(f"  [OK] Diff JSON:   {json_path}")
+
+    if fail_on_regression and diff.verdict == VERDICT_REGRESSED:
+        print(f"\n  [FAIL] CI gate: failure surface regressed ({len(diff.new_failures)} new failure(s)).")
+        sys.exit(1)
+    print()
+
+
 def cmd_quickstart(args: argparse.Namespace) -> None:
     """Auto-detect an agent framework in the current project and evaluate it."""
     from lifeforge.cli.quickstart import run_quickstart
@@ -934,6 +1075,26 @@ def main() -> None:
     mcp_parser.add_argument("--fail-on-critical", action="store_true", help="Exit with code 1 when critical findings are present (CI gate)")
     mcp_parser.add_argument("--list-rules", action="store_true", help="List the detection rules, then exit")
 
+    # Surface command -- failure-surface capture and diff (continuous red-teaming)
+    surface_parser = subparsers.add_parser("surface", help="Capture or diff an agent's failure surface (MAP-Elites topography) for CI")
+    surface_parser.add_argument("--baseline", type=str, default=None, help="Path to the baseline surface snapshot to diff against")
+    surface_parser.add_argument("--against", type=str, default=None, help="Diff two stored snapshots without running a campaign")
+    surface_parser.add_argument("--record", action="store_true", help="Only capture and save a snapshot (no diff)")
+    surface_parser.add_argument("--save-current", type=str, default=None, help="Also save the current snapshot to this path in diff mode")
+    surface_parser.add_argument("--label", type=str, default=None, help="Optional label recorded in the snapshot (e.g. a commit SHA)")
+    surface_parser.add_argument("--target", type=str, default=None, help="Agent spec to evaluate (e.g. agent.py:my_agent)")
+    surface_parser.add_argument("--endpoint", type=str, default=None, help="HTTP webhook agent to evaluate")
+    surface_parser.add_argument("--agent-name", type=str, default=None, help="Label for the built-in reference agent")
+    surface_parser.add_argument("--hardened", action="store_true", help="Use the hardened (non-vulnerable) reference agent")
+    surface_parser.add_argument("--domain", type=str, default=None, help="Scenario domain to campaign against")
+    surface_parser.add_argument("--frontier", action="store_true", help="Include 2026 frontier attacks")
+    surface_parser.add_argument("--scenarios", type=int, default=30, help="Number of evolutionary generations (default: 30)")
+    surface_parser.add_argument("--seed", type=int, default=42, help="Random seed (default: 42)")
+    surface_parser.add_argument("--delay", type=float, default=0.0, help="Delay between generations in seconds")
+    surface_parser.add_argument("--out", type=str, default=None, help="Output path: snapshot file with --record, diff Markdown otherwise")
+    surface_parser.add_argument("--json", action="store_true", help="Also write the diff as JSON alongside the Markdown")
+    surface_parser.add_argument("--fail-on-regression", action="store_true", help="Exit with code 1 when the surface regressed (CI gate)")
+
     args = parser.parse_args()
     if args.command == "run":
         cmd_run(args)
@@ -965,6 +1126,8 @@ def main() -> None:
         cmd_quickstart(args)
     elif args.command == "mcp-scan":
         cmd_mcp_scan(args)
+    elif args.command == "surface":
+        cmd_surface(args)
 
 
 if __name__ == "__main__":
