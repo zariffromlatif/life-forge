@@ -86,8 +86,16 @@ Context: an industry scan reported 33% of MCP servers with critical vulnerabilit
 1. Live probes launch each published package exactly as a client would (`npx -y <package>` / `uvx <package>`) and read `tools/list` off the wire after a full MCP handshake. Nothing is executed on the target beyond protocol-level requests.
 2. Static extraction recovers definitions from source with known registration patterns (`server.tool`, `registerTool`, FastMCP `@mcp.tool`); extraction counters are recorded per server, and servers where no pattern matched are reported as such rather than silently dropped.
 3. Findings are deterministic: re-running the scan against the same server versions reproduces every result. Per-server raw reports ship alongside this document in `results/mcp_ecosystem_scan/reports/`.
-4. Severity reflects *attack surface present in tool definitions*, not a proven exploit chain: a CRITICAL here means an attacker-controlled channel or an unconstrained destructive capability exists in the definition itself.
-5. This scan covers a curated set of high-adoption servers, not the full ecosystem registry; percentages are for this cohort.
+4. **Live probing executes the server's startup code.** The scanner never
+   calls tools on a target, but launching a published package runs whatever
+   its startup performs - and we observed this directly: Desktop Commander's
+   first-run flow opened its onboarding page in the analyst's browser,
+   attributing the visit to our client name via `utm_source=lifeforge-mcpsec`
+   (it reads the MCP `initialize` handshake). Analysts treating targets as
+   untrusted should probe inside a sandbox or VM. A server that acts on mere
+   launch - before any tool call - is itself a signal worth weighing.
+5. Severity reflects *attack surface present in tool definitions*, not a proven exploit chain: a CRITICAL here means an attacker-controlled channel or an unconstrained destructive capability exists in the definition itself.
+6. This scan covers a curated set of high-adoption servers, not the full ecosystem registry; percentages are for this cohort.
 
 ---
 
