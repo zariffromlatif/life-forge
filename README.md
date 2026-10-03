@@ -420,6 +420,32 @@ The diff artifact reports new failing cells, resolved failures, new critical cel
 
 ---
 
+### Multi-Agent Swarm Simulation
+
+Cross-session propagation attacks only become observable when a *second* agent runs on the state the first one left behind. The swarm runner chains agents sequentially over one evolving world - each hop inherits the previous agent's memory, outbox, and flags, plus a neutral orchestrator handoff message - and judges every hop with the same invariant oracle:
+
+```python
+from lifeforge.sandbox.swarm import run_swarm, cross_agent_propagations
+
+result = run_swarm([agent_a, agent_b], world, between_hops=attack_mutator)
+result.critical_hops                     # which hops went critical
+cross_agent_propagations(result, marker) # payload moved hop 0 -> hop 1
+```
+
+Attacks inject at the handoff boundary (`between_hops`), which is where multi-agent coordination attacks actually live.
+
+### Compliance Evidence Packs
+
+Map the deterministic violation register onto regulatory controls (EU AI Act: risk management Art. 9, data governance Art. 10, record-keeping Art. 12, transparency Art. 13, human oversight Art. 14, robustness Art. 15):
+
+```bash
+lifeforge compliance --input results/local_qwen_report.json   --gateway-trail audit_trail.jsonl --customer "Acme Corp" --out results/compliance_pack.md
+```
+
+Per-control verdicts: GAP (violations mapped to the control), PASS, or UNVERIFIED. When a gateway audit trail is supplied, its hash chain is verified as part of the record-keeping control. The document is deterministic evidence, not a legal opinion - and says so on its face.
+
+---
+
 ## Continuous CI/CD Integration (GitHub Action Gatekeeper)
 
 Prevent vulnerable, exfiltrating, or deadlocking agents from ever reaching production. Add the turnkey **LIFE FORGE GitHub Action** (`action.yml`) to any repository in 4 lines of YAML:
@@ -541,7 +567,7 @@ LIFE FORGE maintains an extensive test suite verifying algorithm determinism, to
 
 ```bash
 pytest -q
-# 476 passed
+# 543 passed
 ```
 
 ---
