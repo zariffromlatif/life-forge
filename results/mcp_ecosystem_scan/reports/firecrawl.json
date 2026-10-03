@@ -13,7 +13,7 @@
   "report": {
     "target": "https://github.com/firecrawl/firecrawl-mcp-server.git#src",
     "target_kind": "manifest",
-    "generated_utc": "2026-10-03 09:01:54 UTC",
+    "generated_utc": "2026-10-03 12:50:45 UTC",
     "ruleset_version": "1.0.0",
     "tool_count": 19,
     "servers": [
@@ -26,7 +26,7 @@
     "risk_band": "CRITICAL",
     "counts_by_severity": {
       "CRITICAL": 0,
-      "HIGH": 8,
+      "HIGH": 7,
       "MEDIUM": 58,
       "LOW": 0
     },
@@ -157,24 +157,6 @@
           ],
           "required": [
             "id"
-          ]
-        },
-        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
-      },
-      {
-        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
-        "severity": "HIGH",
-        "title": "Destructive tool exposes no authorization surface",
-        "tool": "firecrawl_research_search_github",
-        "server": "src",
-        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
-        "evidence": {
-          "arguments": [
-            "k",
-            "query"
-          ],
-          "required": [
-            "query"
           ]
         },
         "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."

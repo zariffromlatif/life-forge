@@ -94,9 +94,11 @@ _INVISIBLE_RANGES: tuple[tuple[int, int, str], ...] = (
 
 #: Destructive-capability verbs. A tool matching these without an authorization
 #: surface is one injected instruction away from an unauthorized action.
+#: "issue" is deliberately absent: as a noun it names GitHub/Jira artifacts and
+#: flagging read tools like get_issue would be a false positive.
 _DESTRUCTIVE_VERBS = (
     "delete", "drop", "destroy", "remove", "execute", "run", "deploy",
-    "transfer", "send", "pay", "refund", "purchase", "issue", "grant",
+    "transfer", "send", "pay", "refund", "purchase", "grant",
     "revoke", "merge", "cancel", "purge", "overwrite", "write",
 )
 

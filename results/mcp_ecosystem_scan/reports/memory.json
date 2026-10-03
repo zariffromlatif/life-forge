@@ -13,7 +13,7 @@
   "report": {
     "target": "npx.cmd -y @modelcontextprotocol/server-memory",
     "target_kind": "server",
-    "generated_utc": "2026-10-03 09:00:30 UTC",
+    "generated_utc": "2026-10-03 12:49:22 UTC",
     "ruleset_version": "1.0.0",
     "tool_count": 9,
     "servers": [

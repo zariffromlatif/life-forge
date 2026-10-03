@@ -1,7 +1,7 @@
 cff-version: 1.2.0
 message: "If you use LIFE FORGE in your research or evaluations, please cite it as below."
 title: "LIFE FORGE: The Autonomous Flight Simulator for AI Agents"
-version: 0.2.0
+version: 0.3.0
 date-released: 2026-03-23
 authors:
   - family-names: "Latif"

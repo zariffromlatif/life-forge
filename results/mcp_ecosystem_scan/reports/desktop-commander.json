@@ -13,7 +13,7 @@
   "report": {
     "target": "npx.cmd -y @wonderwhy-er/desktop-commander",
     "target_kind": "server",
-    "generated_utc": "2026-10-03 09:01:42 UTC",
+    "generated_utc": "2026-10-03 12:50:41 UTC",
     "ruleset_version": "1.0.0",
     "tool_count": 26,
     "servers": [
@@ -29,7 +29,7 @@
     "risk_band": "CRITICAL",
     "counts_by_severity": {
       "CRITICAL": 0,
-      "HIGH": 9,
+      "HIGH": 8,
       "MEDIUM": 27,
       "LOW": 0
     },
@@ -109,26 +109,6 @@
         "evidence": {
           "arguments": [],
           "required": []
-        },
-        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
-      },
-      {
-        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
-        "severity": "HIGH",
-        "title": "Destructive tool exposes no authorization surface",
-        "tool": "set_config_value",
-        "server": "desktop-commander",
-        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
-        "evidence": {
-          "arguments": [
-            "key",
-            "origin",
-            "value"
-          ],
-          "required": [
-            "key",
-            "value"
-          ]
         },
         "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
       },

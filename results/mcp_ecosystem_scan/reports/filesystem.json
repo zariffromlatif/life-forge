@@ -13,7 +13,7 @@
   "report": {
     "target": "npx.cmd -y @modelcontextprotocol/server-filesystem C:/Users/USER/AppData/Local/Temp/lf_mcp_ecosystem",
     "target_kind": "server",
-    "generated_utc": "2026-10-03 09:00:18 UTC",
+    "generated_utc": "2026-10-03 12:52:41 UTC",
     "ruleset_version": "1.0.0",
     "tool_count": 14,
     "servers": [

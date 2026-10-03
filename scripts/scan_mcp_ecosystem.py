@@ -346,9 +346,19 @@ def render_markdown(summary: dict, records: list[dict], generated_utc: str) -> s
             "4. Severity reflects *attack surface present in tool definitions*, not a proven "
             "exploit chain: a CRITICAL here means an attacker-controlled channel or an "
             "unconstrained destructive capability exists in the definition itself.",
-            "5. This scan covers a curated set of high-adoption servers, not the full "
+            "5. The destructive-tool heuristic matches verbs in tool names and descriptions. "
+            "It deliberately over-approximates: a read tool whose description mentions "
+            "execution can be flagged HIGH. Every finding lists its evidence; maintainers "
+            "reviewing their own tools should read the rule as 'this capability exists "
+            "without an authorization surface', and open an issue if a flag is wrong.",
+            "6. **Live probing executes the server's startup code.** The scanner never calls "
+            "tools on a target, but launching a published package runs whatever its startup "
+            "performs - observed directly during this scan, when Desktop Commander's "
+            "first-run flow opened its onboarding page in the analyst's browser, attributing "
+            "the visit via utm_source=lifeforge-mcpsec read from the MCP initialize "
+            "handshake. Treat probe targets as untrusted and run them sandboxed.",
+            "7. This scan covers a curated set of high-adoption servers, not the full "
             "ecosystem registry; percentages are for this cohort.",
-            "",
             "---",
             "",
             "*Scan performed with [LIFE FORGE](https://github.com/zariffromlatif/life-forge) "

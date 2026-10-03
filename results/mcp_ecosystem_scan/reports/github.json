@@ -13,7 +13,7 @@
   "report": {
     "target": "https://github.com/modelcontextprotocol/servers-archived.git#src/github",
     "target_kind": "manifest",
-    "generated_utc": "2026-10-03 09:01:54 UTC",
+    "generated_utc": "2026-10-03 12:50:44 UTC",
     "ruleset_version": "1.0.0",
     "tool_count": 26,
     "servers": [
@@ -26,100 +26,11 @@
     "risk_band": "CRITICAL",
     "counts_by_severity": {
       "CRITICAL": 0,
-      "HIGH": 7,
-      "MEDIUM": 94,
+      "HIGH": 1,
+      "MEDIUM": 93,
       "LOW": 0
     },
     "findings": [
-      {
-        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
-        "severity": "HIGH",
-        "title": "Destructive tool exposes no authorization surface",
-        "tool": "add_issue_comment",
-        "server": "github",
-        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
-        "evidence": {
-          "arguments": [
-            "body",
-            "issue_number",
-            "owner",
-            "repo"
-          ],
-          "required": [
-            "body",
-            "issue_number",
-            "owner",
-            "repo"
-          ]
-        },
-        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
-      },
-      {
-        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
-        "severity": "HIGH",
-        "title": "Destructive tool exposes no authorization surface",
-        "tool": "create_issue",
-        "server": "github",
-        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
-        "evidence": {
-          "arguments": [
-            "owner",
-            "repo"
-          ],
-          "required": [
-            "owner",
-            "repo"
-          ]
-        },
-        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
-      },
-      {
-        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
-        "severity": "HIGH",
-        "title": "Destructive tool exposes no authorization surface",
-        "tool": "get_issue",
-        "server": "github",
-        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
-        "evidence": {
-          "arguments": [
-            "issue_number",
-            "owner",
-            "repo"
-          ],
-          "required": [
-            "issue_number",
-            "owner",
-            "repo"
-          ]
-        },
-        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
-      },
-      {
-        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
-        "severity": "HIGH",
-        "title": "Destructive tool exposes no authorization surface",
-        "tool": "list_issues",
-        "server": "github",
-        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
-        "evidence": {
-          "arguments": [
-            "direction",
-            "labels",
-            "owner",
-            "page",
-            "per_page",
-            "repo",
-            "since",
-            "sort",
-            "state"
-          ],
-          "required": [
-            "owner",
-            "repo"
-          ]
-        },
-        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
-      },
       {
         "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
         "severity": "HIGH",
@@ -139,46 +50,6 @@
           "required": [
             "owner",
             "pull_number",
-            "repo"
-          ]
-        },
-        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
-      },
-      {
-        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
-        "severity": "HIGH",
-        "title": "Destructive tool exposes no authorization surface",
-        "tool": "search_issues",
-        "server": "github",
-        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
-        "evidence": {
-          "arguments": [],
-          "required": []
-        },
-        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
-      },
-      {
-        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
-        "severity": "HIGH",
-        "title": "Destructive tool exposes no authorization surface",
-        "tool": "update_issue",
-        "server": "github",
-        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
-        "evidence": {
-          "arguments": [
-            "assignees",
-            "body",
-            "issue_number",
-            "labels",
-            "milestone",
-            "owner",
-            "repo",
-            "state",
-            "title"
-          ],
-          "required": [
-            "issue_number",
-            "owner",
             "repo"
           ]
         },
@@ -1143,18 +1014,6 @@
           "parameter": "repo"
         },
         "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
-      },
-      {
-        "rule_id": "MCP_MUTATING_NO_REQUIRED",
-        "severity": "MEDIUM",
-        "title": "State-mutating tool declares no required arguments",
-        "tool": "search_issues",
-        "server": "github",
-        "description": "The tool can mutate state while every argument is optional. The agent can invoke it with an empty or degenerate call, and the schema communicates no intended shape.",
-        "evidence": {
-          "arguments": []
-        },
-        "remediation": "Mark the arguments the tool genuinely needs as required."
       },
       {
         "rule_id": "MCP_UNBOUNDED_PARAMETER",

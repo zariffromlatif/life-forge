@@ -13,7 +13,7 @@
   "report": {
     "target": "uvx mcp-server-fetch",
     "target_kind": "server",
-    "generated_utc": "2026-10-03 09:00:52 UTC",
+    "generated_utc": "2026-10-03 12:49:41 UTC",
     "ruleset_version": "1.0.0",
     "tool_count": 1,
     "servers": [

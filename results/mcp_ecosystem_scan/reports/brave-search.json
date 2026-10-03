@@ -13,7 +13,7 @@
   "report": {
     "target": "https://github.com/modelcontextprotocol/servers-archived.git#src/brave-search",
     "target_kind": "manifest",
-    "generated_utc": "2026-10-03 09:01:54 UTC",
+    "generated_utc": "2026-10-03 12:50:45 UTC",
     "ruleset_version": "1.0.0",
     "tool_count": 2,
     "servers": [

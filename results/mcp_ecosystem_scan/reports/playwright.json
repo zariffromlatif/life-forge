@@ -13,7 +13,7 @@
   "report": {
     "target": "npx.cmd -y @playwright/mcp@latest",
     "target_kind": "server",
-    "generated_utc": "2026-10-03 09:01:54 UTC",
+    "generated_utc": "2026-10-03 12:50:44 UTC",
     "ruleset_version": "1.0.0",
     "tool_count": 25,
     "servers": [
