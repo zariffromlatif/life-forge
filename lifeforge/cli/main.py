@@ -891,6 +891,40 @@ def _emit_surface_diff(
     print()
 
 
+def cmd_compliance(args: argparse.Namespace) -> None:
+    """Generate a regulatory compliance evidence pack from a benchmark report."""
+    from lifeforge.reporting.compliance import write_compliance_pack
+
+    input_path = Path(args.input)
+    if not input_path.exists():
+        print(f"  [FAIL] Report file not found: {input_path}")
+        sys.exit(1)
+
+    with input_path.open("r", encoding="utf-8") as handle:
+        report = json.load(handle)
+
+    out_path = Path(args.out)
+    try:
+        md_path, json_path = write_compliance_pack(
+            report,
+            out_path,
+            framework=args.framework,
+            customer=getattr(args, "customer", None),
+            trail_path=getattr(args, "gateway_trail", None) or None,
+            environment={
+                "scenarios": getattr(args, "scenarios", 30),
+                "seed": getattr(args, "seed", 42),
+            },
+        )
+    except ValueError as exc:
+        print(f"  [FAIL] {exc}")
+        sys.exit(1)
+
+    print("  [OK] Compliance evidence pack written:")
+    print(f"       Markdown: {md_path}")
+    print(f"       JSON:     {json_path}")
+
+
 def cmd_quickstart(args: argparse.Namespace) -> None:
     """Auto-detect an agent framework in the current project and evaluate it."""
     from lifeforge.cli.quickstart import run_quickstart
@@ -1119,6 +1153,16 @@ def main() -> None:
     domains_parser = subparsers.add_parser("domains", help="List registered scenario domains and what each one tests")
     domains_parser.add_argument("name", nargs="?", default=None, help="Show details for one domain")
 
+    # Compliance command -- regulatory evidence pack
+    compliance_parser = subparsers.add_parser("compliance", help="Generate a regulatory compliance evidence pack from a benchmark report")
+    compliance_parser.add_argument("--input", type=str, required=True, help="Benchmark JSON report (results/*_report.json)")
+    compliance_parser.add_argument("--framework", type=str, default="eu-ai-act", choices=["eu-ai-act"], help="Regulatory framework to assess against")
+    compliance_parser.add_argument("--gateway-trail", type=str, default=None, help="Path to a persisted gateway audit trail (JSON lines) to verify")
+    compliance_parser.add_argument("--customer", type=str, default=None, help="Customer name for the document header")
+    compliance_parser.add_argument("--scenarios", type=int, default=30, help="Scenario count to record in the provenance table")
+    compliance_parser.add_argument("--seed", type=int, default=42, help="Seed to record in the provenance table")
+    compliance_parser.add_argument("--out", type=str, default="results/compliance_pack.md", help="Output Markdown path (JSON written alongside)")
+
     # Quickstart command -- auto-detect framework and evaluate
     quick_parser = subparsers.add_parser("quickstart", help="Auto-detect an agent framework in the current directory and evaluate the agent")
     quick_parser.add_argument("--path", type=str, default=".", help="Directory to scan (default: current directory)")
@@ -1202,6 +1246,8 @@ def main() -> None:
         cmd_surface(args)
     elif args.command == "compile-domain":
         cmd_compile_domain(args)
+    elif args.command == "compliance":
+        cmd_compliance(args)
 
 
 if __name__ == "__main__":
