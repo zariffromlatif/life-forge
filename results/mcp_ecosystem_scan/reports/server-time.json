@@ -1,0 +1,64 @@
+{
+  "target": {
+    "name": "server-time",
+    "method": "live-stdio",
+    "source": "mcp-server-time (PyPI)",
+    "note": "Official Python time/timezone server.",
+    "command": "uvx mcp-server-time",
+    "repo": "",
+    "subdir": "",
+    "language": null
+  },
+  "status": "scanned",
+  "report": {
+    "target": "uvx mcp-server-time",
+    "target_kind": "server",
+    "generated_utc": "2026-10-03 09:00:47 UTC",
+    "ruleset_version": "1.0.0",
+    "tool_count": 2,
+    "servers": [
+      "mcp-time"
+    ],
+    "server_info": {
+      "name": "mcp-time",
+      "version": "1.30.0"
+    },
+    "protocol_version": "2024-11-05",
+    "drift_observations": 2,
+    "risk_score": 10,
+    "risk_band": "LOW",
+    "counts_by_severity": {
+      "CRITICAL": 0,
+      "HIGH": 0,
+      "MEDIUM": 2,
+      "LOW": 0
+    },
+    "findings": [
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "convert_time",
+        "server": "mcp-time",
+        "description": "Parameter 'source_timezone' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "source_timezone"
+        },
+        "remediation": "Constrain 'source_timezone' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_current_time",
+        "server": "mcp-time",
+        "description": "Parameter 'timezone' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "timezone"
+        },
+        "remediation": "Constrain 'timezone' with maxLength and/or a pattern or enum."
+      }
+    ],
+    "probe_result": null
+  }
+}

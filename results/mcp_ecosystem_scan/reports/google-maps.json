@@ -1,0 +1,43 @@
+{
+  "target": {
+    "name": "google-maps",
+    "method": "static-source",
+    "source": "modelcontextprotocol/servers-archived",
+    "note": "Official maps server; requires an API key.",
+    "command": "",
+    "repo": "https://github.com/modelcontextprotocol/servers-archived.git",
+    "subdir": "src/google-maps",
+    "language": "typescript"
+  },
+  "status": "scanned",
+  "report": {
+    "target": "https://github.com/modelcontextprotocol/servers-archived.git#src/google-maps",
+    "target_kind": "manifest",
+    "generated_utc": "2026-10-03 09:01:54 UTC",
+    "ruleset_version": "1.0.0",
+    "tool_count": 7,
+    "servers": [
+      "google-maps"
+    ],
+    "server_info": {},
+    "protocol_version": "",
+    "drift_observations": 0,
+    "risk_score": 0,
+    "risk_band": "LOW",
+    "counts_by_severity": {
+      "CRITICAL": 0,
+      "HIGH": 0,
+      "MEDIUM": 0,
+      "LOW": 0
+    },
+    "findings": [],
+    "probe_result": null,
+    "extraction": {
+      "files_scanned": 1,
+      "pattern_hits": 7,
+      "pattern_misses": 14,
+      "tools_extracted": 7,
+      "language": "typescript"
+    }
+  }
+}

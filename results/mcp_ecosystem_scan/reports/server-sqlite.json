@@ -1,0 +1,14 @@
+{
+  "target": {
+    "name": "server-sqlite",
+    "method": "live-stdio",
+    "source": "mcp-server-sqlite (PyPI)",
+    "note": "Official Python SQLite server (archived reference).",
+    "command": "uvx mcp-server-sqlite --db-path C:/Users/USER/AppData/Local/Temp/lf_mcp_ecosystem/scan.db",
+    "repo": "",
+    "subdir": "",
+    "language": null
+  },
+  "status": "launch_failed",
+  "error": "MCP server exited before the scan completed"
+}

@@ -404,6 +404,10 @@ lifeforge surface --domain-spec my_domain.yaml --record --out results/surface.js
 
 Everything is validated at compile time - unknown policies, unknown effects, effects referencing undeclared arguments - with the full list of valid options in the error. Tools validate their arguments (required, type, pattern, enum, min/max) and refuse invalid calls the way real tools do. Full worked example: [`examples/custom_domain_expense_approval.yaml`](examples/custom_domain_expense_approval.yaml).
 
+### MCP Ecosystem Scan Results
+
+We ran the scanner against 15 of the most-installed public MCP servers (9 live protocol probes, 6 static source extractions; 167 tool definitions). **40% score in the CRITICAL band**, including the official `filesystem` and `git` reference servers, Microsoft's `playwright` MCP, `desktop-commander`, `context7`, and `firecrawl` - mostly destructive tools with no authorization surface and unbounded parameters. Full methodology, per-server reports, and limitations: [`results/MCP_ECOSYSTEM_SCAN.md`](results/MCP_ECOSYSTEM_SCAN.md). Reproduce with `python scripts/scan_mcp_ecosystem.py`.
+
 ### Continuous Red-Teaming: Failure-Surface Diffing
 
 A one-shot benchmark tells you whether an agent fails. A *failure surface diff* tells you what changed. Capture the MAP-Elites topography to a small JSON file and diff it across commits:
@@ -567,7 +571,7 @@ LIFE FORGE maintains an extensive test suite verifying algorithm determinism, to
 
 ```bash
 pytest -q
-# 543 passed
+# 559 passed
 ```
 
 ---

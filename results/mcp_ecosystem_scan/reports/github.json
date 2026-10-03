@@ -1,0 +1,1325 @@
+{
+  "target": {
+    "name": "github",
+    "method": "static-source",
+    "source": "modelcontextprotocol/servers-archived",
+    "note": "Official GitHub server; requires a token to launch.",
+    "command": "",
+    "repo": "https://github.com/modelcontextprotocol/servers-archived.git",
+    "subdir": "src/github",
+    "language": "typescript"
+  },
+  "status": "scanned",
+  "report": {
+    "target": "https://github.com/modelcontextprotocol/servers-archived.git#src/github",
+    "target_kind": "manifest",
+    "generated_utc": "2026-10-03 09:01:54 UTC",
+    "ruleset_version": "1.0.0",
+    "tool_count": 26,
+    "servers": [
+      "github"
+    ],
+    "server_info": {},
+    "protocol_version": "",
+    "drift_observations": 0,
+    "risk_score": 100,
+    "risk_band": "CRITICAL",
+    "counts_by_severity": {
+      "CRITICAL": 0,
+      "HIGH": 7,
+      "MEDIUM": 94,
+      "LOW": 0
+    },
+    "findings": [
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "add_issue_comment",
+        "server": "github",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "body",
+            "issue_number",
+            "owner",
+            "repo"
+          ],
+          "required": [
+            "body",
+            "issue_number",
+            "owner",
+            "repo"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "create_issue",
+        "server": "github",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "owner",
+            "repo"
+          ],
+          "required": [
+            "owner",
+            "repo"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "get_issue",
+        "server": "github",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "issue_number",
+            "owner",
+            "repo"
+          ],
+          "required": [
+            "issue_number",
+            "owner",
+            "repo"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "list_issues",
+        "server": "github",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "direction",
+            "labels",
+            "owner",
+            "page",
+            "per_page",
+            "repo",
+            "since",
+            "sort",
+            "state"
+          ],
+          "required": [
+            "owner",
+            "repo"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "merge_pull_request",
+        "server": "github",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "commit_message",
+            "commit_title",
+            "merge_method",
+            "owner",
+            "pull_number",
+            "repo"
+          ],
+          "required": [
+            "owner",
+            "pull_number",
+            "repo"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "search_issues",
+        "server": "github",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [],
+          "required": []
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "update_issue",
+        "server": "github",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "assignees",
+            "body",
+            "issue_number",
+            "labels",
+            "milestone",
+            "owner",
+            "repo",
+            "state",
+            "title"
+          ],
+          "required": [
+            "issue_number",
+            "owner",
+            "repo"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "add_issue_comment",
+        "server": "github",
+        "description": "Parameter 'body' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "body"
+        },
+        "remediation": "Constrain 'body' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "add_issue_comment",
+        "server": "github",
+        "description": "Parameter 'issue_number' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "issue_number"
+        },
+        "remediation": "Declare minimum/maximum for 'issue_number'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "add_issue_comment",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "add_issue_comment",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_branch",
+        "server": "github",
+        "description": "Parameter 'branch' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "branch"
+        },
+        "remediation": "Constrain 'branch' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_branch",
+        "server": "github",
+        "description": "Parameter 'from_branch' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "from_branch"
+        },
+        "remediation": "Constrain 'from_branch' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_branch",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_branch",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_issue",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_issue",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_or_update_file",
+        "server": "github",
+        "description": "Parameter 'branch' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "branch"
+        },
+        "remediation": "Constrain 'branch' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_or_update_file",
+        "server": "github",
+        "description": "Parameter 'content' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "content"
+        },
+        "remediation": "Constrain 'content' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_or_update_file",
+        "server": "github",
+        "description": "Parameter 'message' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "message"
+        },
+        "remediation": "Constrain 'message' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_or_update_file",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_or_update_file",
+        "server": "github",
+        "description": "Parameter 'path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "path"
+        },
+        "remediation": "Constrain 'path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_or_update_file",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_or_update_file",
+        "server": "github",
+        "description": "Parameter 'sha' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "sha"
+        },
+        "remediation": "Constrain 'sha' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_pull_request",
+        "server": "github",
+        "description": "Parameter 'base' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "base"
+        },
+        "remediation": "Constrain 'base' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_pull_request",
+        "server": "github",
+        "description": "Parameter 'body' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "body"
+        },
+        "remediation": "Constrain 'body' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_pull_request",
+        "server": "github",
+        "description": "Parameter 'head' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "head"
+        },
+        "remediation": "Constrain 'head' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_pull_request",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_pull_request",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_pull_request",
+        "server": "github",
+        "description": "Parameter 'title' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "title"
+        },
+        "remediation": "Constrain 'title' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_pull_request_review",
+        "server": "github",
+        "description": "Parameter 'body' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "body"
+        },
+        "remediation": "Constrain 'body' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_pull_request_review",
+        "server": "github",
+        "description": "Parameter 'commit_id' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "commit_id"
+        },
+        "remediation": "Constrain 'commit_id' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_pull_request_review",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "create_pull_request_review",
+        "server": "github",
+        "description": "Parameter 'pull_number' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "pull_number"
+        },
+        "remediation": "Declare minimum/maximum for 'pull_number'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_pull_request_review",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_repository",
+        "server": "github",
+        "description": "Parameter 'description' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "description"
+        },
+        "remediation": "Constrain 'description' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_repository",
+        "server": "github",
+        "description": "Parameter 'name' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "name"
+        },
+        "remediation": "Constrain 'name' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "fork_repository",
+        "server": "github",
+        "description": "Parameter 'organization' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "organization"
+        },
+        "remediation": "Constrain 'organization' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "fork_repository",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "fork_repository",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_file_contents",
+        "server": "github",
+        "description": "Parameter 'branch' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "branch"
+        },
+        "remediation": "Constrain 'branch' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_file_contents",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_file_contents",
+        "server": "github",
+        "description": "Parameter 'path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "path"
+        },
+        "remediation": "Constrain 'path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_file_contents",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "get_issue",
+        "server": "github",
+        "description": "Parameter 'issue_number' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "issue_number"
+        },
+        "remediation": "Declare minimum/maximum for 'issue_number'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_issue",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_issue",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_pull_request",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "get_pull_request",
+        "server": "github",
+        "description": "Parameter 'pull_number' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "pull_number"
+        },
+        "remediation": "Declare minimum/maximum for 'pull_number'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_pull_request",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_pull_request_comments",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "get_pull_request_comments",
+        "server": "github",
+        "description": "Parameter 'pull_number' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "pull_number"
+        },
+        "remediation": "Declare minimum/maximum for 'pull_number'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_pull_request_comments",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_pull_request_files",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "get_pull_request_files",
+        "server": "github",
+        "description": "Parameter 'pull_number' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "pull_number"
+        },
+        "remediation": "Declare minimum/maximum for 'pull_number'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_pull_request_files",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_pull_request_reviews",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "get_pull_request_reviews",
+        "server": "github",
+        "description": "Parameter 'pull_number' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "pull_number"
+        },
+        "remediation": "Declare minimum/maximum for 'pull_number'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_pull_request_reviews",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_pull_request_status",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "get_pull_request_status",
+        "server": "github",
+        "description": "Parameter 'pull_number' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "pull_number"
+        },
+        "remediation": "Declare minimum/maximum for 'pull_number'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_pull_request_status",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "list_commits",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "list_commits",
+        "server": "github",
+        "description": "Parameter 'page' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "page"
+        },
+        "remediation": "Declare minimum/maximum for 'page'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "list_commits",
+        "server": "github",
+        "description": "Parameter 'perPage' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "perPage"
+        },
+        "remediation": "Declare minimum/maximum for 'perPage'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "list_commits",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "list_commits",
+        "server": "github",
+        "description": "Parameter 'sha' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "sha"
+        },
+        "remediation": "Constrain 'sha' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "list_issues",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "list_issues",
+        "server": "github",
+        "description": "Parameter 'page' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "page"
+        },
+        "remediation": "Declare minimum/maximum for 'page'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "list_issues",
+        "server": "github",
+        "description": "Parameter 'per_page' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "per_page"
+        },
+        "remediation": "Declare minimum/maximum for 'per_page'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "list_issues",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "list_issues",
+        "server": "github",
+        "description": "Parameter 'since' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "since"
+        },
+        "remediation": "Constrain 'since' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "list_pull_requests",
+        "server": "github",
+        "description": "Parameter 'base' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "base"
+        },
+        "remediation": "Constrain 'base' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "list_pull_requests",
+        "server": "github",
+        "description": "Parameter 'head' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "head"
+        },
+        "remediation": "Constrain 'head' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "list_pull_requests",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "list_pull_requests",
+        "server": "github",
+        "description": "Parameter 'page' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "page"
+        },
+        "remediation": "Declare minimum/maximum for 'page'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "list_pull_requests",
+        "server": "github",
+        "description": "Parameter 'per_page' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "per_page"
+        },
+        "remediation": "Declare minimum/maximum for 'per_page'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "list_pull_requests",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "merge_pull_request",
+        "server": "github",
+        "description": "Parameter 'commit_message' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "commit_message"
+        },
+        "remediation": "Constrain 'commit_message' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "merge_pull_request",
+        "server": "github",
+        "description": "Parameter 'commit_title' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "commit_title"
+        },
+        "remediation": "Constrain 'commit_title' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "merge_pull_request",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "merge_pull_request",
+        "server": "github",
+        "description": "Parameter 'pull_number' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "pull_number"
+        },
+        "remediation": "Declare minimum/maximum for 'pull_number'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "merge_pull_request",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "push_files",
+        "server": "github",
+        "description": "Parameter 'branch' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "branch"
+        },
+        "remediation": "Constrain 'branch' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "push_files",
+        "server": "github",
+        "description": "Parameter 'message' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "message"
+        },
+        "remediation": "Constrain 'message' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "push_files",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "push_files",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_MUTATING_NO_REQUIRED",
+        "severity": "MEDIUM",
+        "title": "State-mutating tool declares no required arguments",
+        "tool": "search_issues",
+        "server": "github",
+        "description": "The tool can mutate state while every argument is optional. The agent can invoke it with an empty or degenerate call, and the schema communicates no intended shape.",
+        "evidence": {
+          "arguments": []
+        },
+        "remediation": "Mark the arguments the tool genuinely needs as required."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "search_repositories",
+        "server": "github",
+        "description": "Parameter 'page' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "page"
+        },
+        "remediation": "Declare minimum/maximum for 'page'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "search_repositories",
+        "server": "github",
+        "description": "Parameter 'perPage' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "perPage"
+        },
+        "remediation": "Declare minimum/maximum for 'perPage'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "search_repositories",
+        "server": "github",
+        "description": "Parameter 'query' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "query"
+        },
+        "remediation": "Constrain 'query' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "update_issue",
+        "server": "github",
+        "description": "Parameter 'body' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "body"
+        },
+        "remediation": "Constrain 'body' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "update_issue",
+        "server": "github",
+        "description": "Parameter 'issue_number' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "issue_number"
+        },
+        "remediation": "Declare minimum/maximum for 'issue_number'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "update_issue",
+        "server": "github",
+        "description": "Parameter 'milestone' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "milestone"
+        },
+        "remediation": "Declare minimum/maximum for 'milestone'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "update_issue",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "update_issue",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "update_issue",
+        "server": "github",
+        "description": "Parameter 'title' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "title"
+        },
+        "remediation": "Constrain 'title' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "update_pull_request_branch",
+        "server": "github",
+        "description": "Parameter 'expected_head_sha' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "expected_head_sha"
+        },
+        "remediation": "Constrain 'expected_head_sha' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "update_pull_request_branch",
+        "server": "github",
+        "description": "Parameter 'owner' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "owner"
+        },
+        "remediation": "Constrain 'owner' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "update_pull_request_branch",
+        "server": "github",
+        "description": "Parameter 'pull_number' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "pull_number"
+        },
+        "remediation": "Declare minimum/maximum for 'pull_number'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "update_pull_request_branch",
+        "server": "github",
+        "description": "Parameter 'repo' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo"
+        },
+        "remediation": "Constrain 'repo' with maxLength and/or a pattern or enum."
+      }
+    ],
+    "probe_result": null,
+    "extraction": {
+      "files_scanned": 12,
+      "pattern_hits": 26,
+      "pattern_misses": 0,
+      "tools_extracted": 26,
+      "language": "typescript"
+    }
+  }
+}

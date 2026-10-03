@@ -1,0 +1,555 @@
+{
+  "target": {
+    "name": "desktop-commander",
+    "method": "live-stdio",
+    "source": "@wonderwhy-er/desktop-commander",
+    "note": "File/terminal control server; top-directory fixture.",
+    "command": "npx.cmd -y @wonderwhy-er/desktop-commander",
+    "repo": "",
+    "subdir": "",
+    "language": null
+  },
+  "status": "scanned",
+  "report": {
+    "target": "npx.cmd -y @wonderwhy-er/desktop-commander",
+    "target_kind": "server",
+    "generated_utc": "2026-10-03 09:01:42 UTC",
+    "ruleset_version": "1.0.0",
+    "tool_count": 26,
+    "servers": [
+      "desktop-commander"
+    ],
+    "server_info": {
+      "name": "desktop-commander",
+      "version": "0.2.52"
+    },
+    "protocol_version": "2024-11-05",
+    "drift_observations": 2,
+    "risk_score": 100,
+    "risk_band": "CRITICAL",
+    "counts_by_severity": {
+      "CRITICAL": 0,
+      "HIGH": 9,
+      "MEDIUM": 27,
+      "LOW": 0
+    },
+    "findings": [
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "edit_block",
+        "server": "desktop-commander",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "content",
+            "expected_replacements",
+            "file_path",
+            "new_string",
+            "old_string",
+            "options",
+            "origin",
+            "range"
+          ],
+          "required": [
+            "file_path"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "get_prompts",
+        "server": "desktop-commander",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "action",
+            "promptid"
+          ],
+          "required": [
+            "action",
+            "promptId"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "interact_with_process",
+        "server": "desktop-commander",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "input",
+            "pid",
+            "timeout_ms",
+            "verbose_timing",
+            "wait_for_prompt"
+          ],
+          "required": [
+            "pid",
+            "input"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "list_sessions",
+        "server": "desktop-commander",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [],
+          "required": []
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "set_config_value",
+        "server": "desktop-commander",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "key",
+            "origin",
+            "value"
+          ],
+          "required": [
+            "key",
+            "value"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "start_process",
+        "server": "desktop-commander",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "command",
+            "origin",
+            "shell",
+            "timeout_ms",
+            "verbose_timing"
+          ],
+          "required": [
+            "command",
+            "timeout_ms"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "start_search",
+        "server": "desktop-commander",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "contextlines",
+            "earlytermination",
+            "filepattern",
+            "ignorecase",
+            "includehidden",
+            "literalsearch",
+            "maxresults",
+            "origin",
+            "path",
+            "pattern",
+            "searchtype",
+            "timeout_ms"
+          ],
+          "required": [
+            "path",
+            "pattern"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "write_file",
+        "server": "desktop-commander",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "content",
+            "mode",
+            "origin",
+            "path"
+          ],
+          "required": [
+            "path",
+            "content"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "write_pdf",
+        "server": "desktop-commander",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "content",
+            "options",
+            "outputpath",
+            "path"
+          ],
+          "required": [
+            "path",
+            "content"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_directory",
+        "server": "desktop-commander",
+        "description": "Parameter 'path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "path"
+        },
+        "remediation": "Constrain 'path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "edit_block",
+        "server": "desktop-commander",
+        "description": "Parameter 'expected_replacements' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "expected_replacements"
+        },
+        "remediation": "Declare minimum/maximum for 'expected_replacements'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "edit_block",
+        "server": "desktop-commander",
+        "description": "Parameter 'file_path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "file_path"
+        },
+        "remediation": "Constrain 'file_path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "force_terminate",
+        "server": "desktop-commander",
+        "description": "Parameter 'pid' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "pid"
+        },
+        "remediation": "Declare minimum/maximum for 'pid'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_file_info",
+        "server": "desktop-commander",
+        "description": "Parameter 'path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "path"
+        },
+        "remediation": "Constrain 'path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "get_more_search_results",
+        "server": "desktop-commander",
+        "description": "Parameter 'length' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "length"
+        },
+        "remediation": "Declare minimum/maximum for 'length'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_more_search_results",
+        "server": "desktop-commander",
+        "description": "Parameter 'sessionId' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "sessionId"
+        },
+        "remediation": "Constrain 'sessionId' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_prompts",
+        "server": "desktop-commander",
+        "description": "Parameter 'promptId' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "promptId"
+        },
+        "remediation": "Constrain 'promptId' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_recent_tool_calls",
+        "server": "desktop-commander",
+        "description": "Parameter 'toolName' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "toolName"
+        },
+        "remediation": "Constrain 'toolName' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "interact_with_process",
+        "server": "desktop-commander",
+        "description": "Parameter 'input' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "input"
+        },
+        "remediation": "Constrain 'input' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "interact_with_process",
+        "server": "desktop-commander",
+        "description": "Parameter 'pid' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "pid"
+        },
+        "remediation": "Declare minimum/maximum for 'pid'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "kill_process",
+        "server": "desktop-commander",
+        "description": "Parameter 'pid' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "pid"
+        },
+        "remediation": "Declare minimum/maximum for 'pid'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "list_directory",
+        "server": "desktop-commander",
+        "description": "Parameter 'depth' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "depth"
+        },
+        "remediation": "Declare minimum/maximum for 'depth'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "list_directory",
+        "server": "desktop-commander",
+        "description": "Parameter 'path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "path"
+        },
+        "remediation": "Constrain 'path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_MUTATING_NO_REQUIRED",
+        "severity": "MEDIUM",
+        "title": "State-mutating tool declares no required arguments",
+        "tool": "list_sessions",
+        "server": "desktop-commander",
+        "description": "The tool can mutate state while every argument is optional. The agent can invoke it with an empty or degenerate call, and the schema communicates no intended shape.",
+        "evidence": {
+          "arguments": []
+        },
+        "remediation": "Mark the arguments the tool genuinely needs as required."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "move_file",
+        "server": "desktop-commander",
+        "description": "Parameter 'destination' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "destination"
+        },
+        "remediation": "Constrain 'destination' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "read_file",
+        "server": "desktop-commander",
+        "description": "Parameter 'length' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "length"
+        },
+        "remediation": "Declare minimum/maximum for 'length'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "read_file",
+        "server": "desktop-commander",
+        "description": "Parameter 'path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "path"
+        },
+        "remediation": "Constrain 'path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "read_process_output",
+        "server": "desktop-commander",
+        "description": "Parameter 'length' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "length"
+        },
+        "remediation": "Declare minimum/maximum for 'length'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "set_config_value",
+        "server": "desktop-commander",
+        "description": "Parameter 'key' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "key"
+        },
+        "remediation": "Constrain 'key' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "start_process",
+        "server": "desktop-commander",
+        "description": "Parameter 'command' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "command"
+        },
+        "remediation": "Constrain 'command' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "start_process",
+        "server": "desktop-commander",
+        "description": "Parameter 'timeout_ms' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "timeout_ms"
+        },
+        "remediation": "Declare minimum/maximum for 'timeout_ms'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "start_search",
+        "server": "desktop-commander",
+        "description": "Parameter 'contextLines' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "contextLines"
+        },
+        "remediation": "Declare minimum/maximum for 'contextLines'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "start_search",
+        "server": "desktop-commander",
+        "description": "Parameter 'filePattern' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "filePattern"
+        },
+        "remediation": "Constrain 'filePattern' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "stop_search",
+        "server": "desktop-commander",
+        "description": "Parameter 'sessionId' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "sessionId"
+        },
+        "remediation": "Constrain 'sessionId' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "write_file",
+        "server": "desktop-commander",
+        "description": "Parameter 'content' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "content"
+        },
+        "remediation": "Constrain 'content' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "write_pdf",
+        "server": "desktop-commander",
+        "description": "Parameter 'outputPath' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "outputPath"
+        },
+        "remediation": "Constrain 'outputPath' with maxLength and/or a pattern or enum."
+      }
+    ],
+    "probe_result": null
+  }
+}

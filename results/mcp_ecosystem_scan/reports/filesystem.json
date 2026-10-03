@@ -1,0 +1,227 @@
+{
+  "target": {
+    "name": "filesystem",
+    "method": "live-stdio",
+    "source": "@modelcontextprotocol/server-filesystem",
+    "note": "Official; among the most-installed MCP servers.",
+    "command": "npx.cmd -y @modelcontextprotocol/server-filesystem C:/Users/USER/AppData/Local/Temp/lf_mcp_ecosystem",
+    "repo": "",
+    "subdir": "",
+    "language": null
+  },
+  "status": "scanned",
+  "report": {
+    "target": "npx.cmd -y @modelcontextprotocol/server-filesystem C:/Users/USER/AppData/Local/Temp/lf_mcp_ecosystem",
+    "target_kind": "server",
+    "generated_utc": "2026-10-03 09:00:18 UTC",
+    "ruleset_version": "1.0.0",
+    "tool_count": 14,
+    "servers": [
+      "secure-filesystem-server"
+    ],
+    "server_info": {
+      "name": "secure-filesystem-server",
+      "version": "0.2.0"
+    },
+    "protocol_version": "2024-11-05",
+    "drift_observations": 2,
+    "risk_score": 82,
+    "risk_band": "CRITICAL",
+    "counts_by_severity": {
+      "CRITICAL": 0,
+      "HIGH": 1,
+      "MEDIUM": 14,
+      "LOW": 0
+    },
+    "findings": [
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "write_file",
+        "server": "secure-filesystem-server",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "content",
+            "path"
+          ],
+          "required": [
+            "path",
+            "content"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "create_directory",
+        "server": "secure-filesystem-server",
+        "description": "Parameter 'path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "path"
+        },
+        "remediation": "Constrain 'path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "directory_tree",
+        "server": "secure-filesystem-server",
+        "description": "Parameter 'path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "path"
+        },
+        "remediation": "Constrain 'path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "edit_file",
+        "server": "secure-filesystem-server",
+        "description": "Parameter 'path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "path"
+        },
+        "remediation": "Constrain 'path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "get_file_info",
+        "server": "secure-filesystem-server",
+        "description": "Parameter 'path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "path"
+        },
+        "remediation": "Constrain 'path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "list_directory",
+        "server": "secure-filesystem-server",
+        "description": "Parameter 'path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "path"
+        },
+        "remediation": "Constrain 'path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "list_directory_with_sizes",
+        "server": "secure-filesystem-server",
+        "description": "Parameter 'path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "path"
+        },
+        "remediation": "Constrain 'path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "move_file",
+        "server": "secure-filesystem-server",
+        "description": "Parameter 'destination' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "destination"
+        },
+        "remediation": "Constrain 'destination' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "read_file",
+        "server": "secure-filesystem-server",
+        "description": "Parameter 'head' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "head"
+        },
+        "remediation": "Declare minimum/maximum for 'head'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "read_file",
+        "server": "secure-filesystem-server",
+        "description": "Parameter 'path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "path"
+        },
+        "remediation": "Constrain 'path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "read_media_file",
+        "server": "secure-filesystem-server",
+        "description": "Parameter 'path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "path"
+        },
+        "remediation": "Constrain 'path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "read_text_file",
+        "server": "secure-filesystem-server",
+        "description": "Parameter 'head' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "head"
+        },
+        "remediation": "Declare minimum/maximum for 'head'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "read_text_file",
+        "server": "secure-filesystem-server",
+        "description": "Parameter 'path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "path"
+        },
+        "remediation": "Constrain 'path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "search_files",
+        "server": "secure-filesystem-server",
+        "description": "Parameter 'path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "path"
+        },
+        "remediation": "Constrain 'path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "write_file",
+        "server": "secure-filesystem-server",
+        "description": "Parameter 'content' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "content"
+        },
+        "remediation": "Constrain 'content' with maxLength and/or a pattern or enum."
+      }
+    ],
+    "probe_result": null
+  }
+}

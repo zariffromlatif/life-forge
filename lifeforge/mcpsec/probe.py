@@ -12,6 +12,7 @@ without spawning subprocesses.
 from __future__ import annotations
 
 import json
+import logging
 import queue
 import shlex
 import subprocess
@@ -23,6 +24,8 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from .manifest import McpServerManifest, McpToolDefinition, tools_from_wire
+
+logger = logging.getLogger(__name__)
 
 #: Default timeout for one protocol round-trip, in seconds.
 DEFAULT_TIMEOUT = 15.0
@@ -236,9 +239,10 @@ class McpClient:
         return self._next_id
 
     def _send_request(self, method: str, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        request_id = self._next_request_id()
         request = {
             "jsonrpc": "2.0",
-            "id": self._next_request_id(),
+            "id": request_id,
             "method": method,
             "params": params or {},
         }
@@ -246,7 +250,21 @@ class McpClient:
             response = self.transport.request(request, timeout=self.timeout)
         else:
             self.transport.send(request)
-            response = self.transport.receive(self.timeout)
+            # Some servers emit a reply to the notifications/initialized
+            # notification, or stale messages land in the queue; only a
+            # response carrying THIS request's id is acceptable. Anything else
+            # is discarded and the read continues.
+            response = None
+            deadline = time.monotonic() + self.timeout
+            while True:
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise McpProbeError(f"MCP server did not respond to '{method}' within {self.timeout:.0f}s")
+                candidate = self.transport.receive(remaining)
+                if candidate.get("id") == request_id:
+                    response = candidate
+                    break
+                logger.debug("Discarding non-matching message while awaiting '%s': %s", method, str(candidate)[:120])
 
         if response is None:
             raise McpProbeError(f"MCP server returned no response to '{method}'")

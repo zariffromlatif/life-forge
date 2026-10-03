@@ -1,0 +1,72 @@
+{
+  "target": {
+    "name": "context7",
+    "method": "live-stdio",
+    "source": "@upstash/context7-mcp",
+    "note": "Upstash docs-retrieval server; a top-directory fixture.",
+    "command": "npx.cmd -y @upstash/context7-mcp",
+    "repo": "",
+    "subdir": "",
+    "language": null
+  },
+  "status": "scanned",
+  "report": {
+    "target": "npx.cmd -y @upstash/context7-mcp",
+    "target_kind": "server",
+    "generated_utc": "2026-10-03 09:01:18 UTC",
+    "ruleset_version": "1.0.0",
+    "tool_count": 2,
+    "servers": [
+      "Context7"
+    ],
+    "server_info": {
+      "name": "Context7",
+      "version": "4.1.1",
+      "websiteUrl": "https://context7.com",
+      "description": "Context7 provides up-to-date documentation and code examples for libraries and frameworks.",
+      "icons": [
+        {
+          "src": "https://context7.com/context7-icon-green.png",
+          "mimeType": "image/png"
+        }
+      ]
+    },
+    "protocol_version": "2024-11-05",
+    "drift_observations": 2,
+    "risk_score": 10,
+    "risk_band": "LOW",
+    "counts_by_severity": {
+      "CRITICAL": 0,
+      "HIGH": 0,
+      "MEDIUM": 2,
+      "LOW": 0
+    },
+    "findings": [
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "query-docs",
+        "server": "Context7",
+        "description": "Parameter 'libraryId' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "libraryId"
+        },
+        "remediation": "Constrain 'libraryId' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "resolve-library-id",
+        "server": "Context7",
+        "description": "Parameter 'libraryName' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "libraryName"
+        },
+        "remediation": "Constrain 'libraryName' with maxLength and/or a pattern or enum."
+      }
+    ],
+    "probe_result": null
+  }
+}

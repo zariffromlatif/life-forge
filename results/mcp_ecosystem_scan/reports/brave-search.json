@@ -1,0 +1,43 @@
+{
+  "target": {
+    "name": "brave-search",
+    "method": "static-source",
+    "source": "modelcontextprotocol/servers-archived",
+    "note": "Official web-search server; requires an API key.",
+    "command": "",
+    "repo": "https://github.com/modelcontextprotocol/servers-archived.git",
+    "subdir": "src/brave-search",
+    "language": "typescript"
+  },
+  "status": "scanned",
+  "report": {
+    "target": "https://github.com/modelcontextprotocol/servers-archived.git#src/brave-search",
+    "target_kind": "manifest",
+    "generated_utc": "2026-10-03 09:01:54 UTC",
+    "ruleset_version": "1.0.0",
+    "tool_count": 2,
+    "servers": [
+      "brave-search"
+    ],
+    "server_info": {},
+    "protocol_version": "",
+    "drift_observations": 0,
+    "risk_score": 0,
+    "risk_band": "LOW",
+    "counts_by_severity": {
+      "CRITICAL": 0,
+      "HIGH": 0,
+      "MEDIUM": 0,
+      "LOW": 0
+    },
+    "findings": [],
+    "probe_result": null,
+    "extraction": {
+      "files_scanned": 1,
+      "pattern_hits": 2,
+      "pattern_misses": 4,
+      "tools_extracted": 2,
+      "language": "typescript"
+    }
+  }
+}

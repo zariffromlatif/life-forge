@@ -1,0 +1,72 @@
+{
+  "target": {
+    "name": "server-fetch",
+    "method": "live-stdio",
+    "source": "mcp-server-fetch (PyPI)",
+    "note": "Official Python web-fetch server.",
+    "command": "uvx mcp-server-fetch",
+    "repo": "",
+    "subdir": "",
+    "language": null
+  },
+  "status": "scanned",
+  "report": {
+    "target": "uvx mcp-server-fetch",
+    "target_kind": "server",
+    "generated_utc": "2026-10-03 09:00:52 UTC",
+    "ruleset_version": "1.0.0",
+    "tool_count": 1,
+    "servers": [
+      "mcp-fetch"
+    ],
+    "server_info": {
+      "name": "mcp-fetch",
+      "version": "1.30.0"
+    },
+    "protocol_version": "2024-11-05",
+    "drift_observations": 2,
+    "risk_score": 17,
+    "risk_band": "LOW",
+    "counts_by_severity": {
+      "CRITICAL": 0,
+      "HIGH": 1,
+      "MEDIUM": 1,
+      "LOW": 0
+    },
+    "findings": [
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "fetch",
+        "server": "mcp-fetch",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "max_length",
+            "raw",
+            "start_index",
+            "url"
+          ],
+          "required": [
+            "url"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "fetch",
+        "server": "mcp-fetch",
+        "description": "Parameter 'max_length' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "max_length"
+        },
+        "remediation": "Declare minimum/maximum for 'max_length'."
+      }
+    ],
+    "probe_result": null
+  }
+}

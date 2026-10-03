@@ -1,0 +1,52 @@
+{
+  "target": {
+    "name": "sequential-thinking",
+    "method": "live-stdio",
+    "source": "@modelcontextprotocol/server-sequential-thinking",
+    "note": "Official dynamic reflective-thinking server.",
+    "command": "npx.cmd -y @modelcontextprotocol/server-sequential-thinking",
+    "repo": "",
+    "subdir": "",
+    "language": null
+  },
+  "status": "scanned",
+  "report": {
+    "target": "npx.cmd -y @modelcontextprotocol/server-sequential-thinking",
+    "target_kind": "server",
+    "generated_utc": "2026-10-03 09:00:41 UTC",
+    "ruleset_version": "1.0.0",
+    "tool_count": 1,
+    "servers": [
+      "sequential-thinking-server"
+    ],
+    "server_info": {
+      "name": "sequential-thinking-server",
+      "version": "2026.8.31"
+    },
+    "protocol_version": "2024-11-05",
+    "drift_observations": 2,
+    "risk_score": 5,
+    "risk_band": "LOW",
+    "counts_by_severity": {
+      "CRITICAL": 0,
+      "HIGH": 0,
+      "MEDIUM": 1,
+      "LOW": 0
+    },
+    "findings": [
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "sequentialthinking",
+        "server": "sequential-thinking-server",
+        "description": "Parameter 'branchId' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "branchId"
+        },
+        "remediation": "Constrain 'branchId' with maxLength and/or a pattern or enum."
+      }
+    ],
+    "probe_result": null
+  }
+}

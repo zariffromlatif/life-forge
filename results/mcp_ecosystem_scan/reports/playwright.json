@@ -1,0 +1,388 @@
+{
+  "target": {
+    "name": "playwright",
+    "method": "live-stdio",
+    "source": "@playwright/mcp",
+    "note": "Microsoft browser-automation server.",
+    "command": "npx.cmd -y @playwright/mcp@latest",
+    "repo": "",
+    "subdir": "",
+    "language": null
+  },
+  "status": "scanned",
+  "report": {
+    "target": "npx.cmd -y @playwright/mcp@latest",
+    "target_kind": "server",
+    "generated_utc": "2026-10-03 09:01:54 UTC",
+    "ruleset_version": "1.0.0",
+    "tool_count": 25,
+    "servers": [
+      "Playwright"
+    ],
+    "server_info": {
+      "name": "Playwright",
+      "version": "1.64.0-alpha-1790635538000"
+    },
+    "protocol_version": "2024-11-05",
+    "drift_observations": 2,
+    "risk_score": 100,
+    "risk_band": "CRITICAL",
+    "counts_by_severity": {
+      "CRITICAL": 0,
+      "HIGH": 3,
+      "MEDIUM": 24,
+      "LOW": 0
+    },
+    "findings": [
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "browser_drag",
+        "server": "Playwright",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "endelement",
+            "endtarget",
+            "startelement",
+            "starttarget"
+          ],
+          "required": [
+            "startTarget",
+            "endTarget"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "browser_drop",
+        "server": "Playwright",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "data",
+            "element",
+            "paths",
+            "target"
+          ],
+          "required": [
+            "target"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "browser_run_code_unsafe",
+        "server": "Playwright",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "code",
+            "filename"
+          ],
+          "required": []
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "browser_click",
+        "server": "Playwright",
+        "description": "Parameter 'element' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "element"
+        },
+        "remediation": "Constrain 'element' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "browser_console_messages",
+        "server": "Playwright",
+        "description": "Parameter 'filename' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "filename"
+        },
+        "remediation": "Constrain 'filename' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "browser_drag",
+        "server": "Playwright",
+        "description": "Parameter 'endElement' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "endElement"
+        },
+        "remediation": "Constrain 'endElement' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "browser_drop",
+        "server": "Playwright",
+        "description": "Parameter 'element' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "element"
+        },
+        "remediation": "Constrain 'element' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "browser_evaluate",
+        "server": "Playwright",
+        "description": "Parameter 'element' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "element"
+        },
+        "remediation": "Constrain 'element' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "browser_find",
+        "server": "Playwright",
+        "description": "Parameter 'filename' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "filename"
+        },
+        "remediation": "Constrain 'filename' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "browser_handle_dialog",
+        "server": "Playwright",
+        "description": "Parameter 'promptText' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "promptText"
+        },
+        "remediation": "Constrain 'promptText' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "browser_hover",
+        "server": "Playwright",
+        "description": "Parameter 'element' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "element"
+        },
+        "remediation": "Constrain 'element' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "browser_navigate",
+        "server": "Playwright",
+        "description": "Parameter 'url' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "url"
+        },
+        "remediation": "Constrain 'url' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "browser_network_request",
+        "server": "Playwright",
+        "description": "Parameter 'filename' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "filename"
+        },
+        "remediation": "Constrain 'filename' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "browser_network_requests",
+        "server": "Playwright",
+        "description": "Parameter 'filename' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "filename"
+        },
+        "remediation": "Constrain 'filename' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "browser_press_key",
+        "server": "Playwright",
+        "description": "Parameter 'key' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "key"
+        },
+        "remediation": "Constrain 'key' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "browser_resize",
+        "server": "Playwright",
+        "description": "Parameter 'height' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "height"
+        },
+        "remediation": "Declare minimum/maximum for 'height'."
+      },
+      {
+        "rule_id": "MCP_MUTATING_NO_REQUIRED",
+        "severity": "MEDIUM",
+        "title": "State-mutating tool declares no required arguments",
+        "tool": "browser_run_code_unsafe",
+        "server": "Playwright",
+        "description": "The tool can mutate state while every argument is optional. The agent can invoke it with an empty or degenerate call, and the schema communicates no intended shape.",
+        "evidence": {
+          "arguments": [
+            "code",
+            "filename"
+          ]
+        },
+        "remediation": "Mark the arguments the tool genuinely needs as required."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "browser_run_code_unsafe",
+        "server": "Playwright",
+        "description": "Parameter 'code' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "code"
+        },
+        "remediation": "Constrain 'code' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "browser_select_option",
+        "server": "Playwright",
+        "description": "Parameter 'element' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "element"
+        },
+        "remediation": "Constrain 'element' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "browser_snapshot",
+        "server": "Playwright",
+        "description": "Parameter 'depth' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "depth"
+        },
+        "remediation": "Declare minimum/maximum for 'depth'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "browser_snapshot",
+        "server": "Playwright",
+        "description": "Parameter 'filename' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "filename"
+        },
+        "remediation": "Constrain 'filename' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "browser_tabs",
+        "server": "Playwright",
+        "description": "Parameter 'index' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "index"
+        },
+        "remediation": "Declare minimum/maximum for 'index'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "browser_tabs",
+        "server": "Playwright",
+        "description": "Parameter 'url' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "url"
+        },
+        "remediation": "Constrain 'url' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "browser_take_screenshot",
+        "server": "Playwright",
+        "description": "Parameter 'element' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "element"
+        },
+        "remediation": "Constrain 'element' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "browser_type",
+        "server": "Playwright",
+        "description": "Parameter 'element' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "element"
+        },
+        "remediation": "Constrain 'element' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "browser_wait_for",
+        "server": "Playwright",
+        "description": "Parameter 'text' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "text"
+        },
+        "remediation": "Constrain 'text' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "browser_wait_for",
+        "server": "Playwright",
+        "description": "Parameter 'time' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "time"
+        },
+        "remediation": "Declare minimum/maximum for 'time'."
+      }
+    ],
+    "probe_result": null
+  }
+}

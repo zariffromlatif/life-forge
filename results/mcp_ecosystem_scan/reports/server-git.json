@@ -1,0 +1,232 @@
+{
+  "target": {
+    "name": "server-git",
+    "method": "live-stdio",
+    "source": "mcp-server-git (PyPI)",
+    "note": "Official Python git server.",
+    "command": "uvx mcp-server-git --repository E:/LIFE-FORGE",
+    "repo": "",
+    "subdir": "",
+    "language": null
+  },
+  "status": "scanned",
+  "report": {
+    "target": "uvx mcp-server-git --repository E:/LIFE-FORGE",
+    "target_kind": "server",
+    "generated_utc": "2026-10-03 09:00:58 UTC",
+    "ruleset_version": "1.0.0",
+    "tool_count": 12,
+    "servers": [
+      "mcp-git"
+    ],
+    "server_info": {
+      "name": "mcp-git",
+      "version": "1.30.0"
+    },
+    "protocol_version": "2024-11-05",
+    "drift_observations": 2,
+    "risk_score": 80,
+    "risk_band": "CRITICAL",
+    "counts_by_severity": {
+      "CRITICAL": 0,
+      "HIGH": 0,
+      "MEDIUM": 16,
+      "LOW": 0
+    },
+    "findings": [
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "git_add",
+        "server": "mcp-git",
+        "description": "Parameter 'repo_path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo_path"
+        },
+        "remediation": "Constrain 'repo_path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "git_branch",
+        "server": "mcp-git",
+        "description": "Parameter 'branch_type' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "branch_type"
+        },
+        "remediation": "Constrain 'branch_type' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "git_checkout",
+        "server": "mcp-git",
+        "description": "Parameter 'branch_name' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "branch_name"
+        },
+        "remediation": "Constrain 'branch_name' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "git_commit",
+        "server": "mcp-git",
+        "description": "Parameter 'message' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "message"
+        },
+        "remediation": "Constrain 'message' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "git_create_branch",
+        "server": "mcp-git",
+        "description": "Parameter 'branch_name' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "branch_name"
+        },
+        "remediation": "Constrain 'branch_name' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "git_diff",
+        "server": "mcp-git",
+        "description": "Parameter 'context_lines' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "context_lines"
+        },
+        "remediation": "Declare minimum/maximum for 'context_lines'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "git_diff",
+        "server": "mcp-git",
+        "description": "Parameter 'repo_path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo_path"
+        },
+        "remediation": "Constrain 'repo_path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "git_diff_staged",
+        "server": "mcp-git",
+        "description": "Parameter 'context_lines' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "context_lines"
+        },
+        "remediation": "Declare minimum/maximum for 'context_lines'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "git_diff_staged",
+        "server": "mcp-git",
+        "description": "Parameter 'repo_path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo_path"
+        },
+        "remediation": "Constrain 'repo_path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "git_diff_unstaged",
+        "server": "mcp-git",
+        "description": "Parameter 'context_lines' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "context_lines"
+        },
+        "remediation": "Declare minimum/maximum for 'context_lines'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "git_diff_unstaged",
+        "server": "mcp-git",
+        "description": "Parameter 'repo_path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo_path"
+        },
+        "remediation": "Constrain 'repo_path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "git_log",
+        "server": "mcp-git",
+        "description": "Parameter 'max_count' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "max_count"
+        },
+        "remediation": "Declare minimum/maximum for 'max_count'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "git_log",
+        "server": "mcp-git",
+        "description": "Parameter 'repo_path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo_path"
+        },
+        "remediation": "Constrain 'repo_path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "git_reset",
+        "server": "mcp-git",
+        "description": "Parameter 'repo_path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo_path"
+        },
+        "remediation": "Constrain 'repo_path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "git_show",
+        "server": "mcp-git",
+        "description": "Parameter 'repo_path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo_path"
+        },
+        "remediation": "Constrain 'repo_path' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "git_status",
+        "server": "mcp-git",
+        "description": "Parameter 'repo_path' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "repo_path"
+        },
+        "remediation": "Constrain 'repo_path' with maxLength and/or a pattern or enum."
+      }
+    ],
+    "probe_result": null
+  }
+}

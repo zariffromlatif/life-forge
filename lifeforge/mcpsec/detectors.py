@@ -65,8 +65,11 @@ POISON_PATTERNS: tuple[tuple[str, str], ...] = (
     (r"ignore\s+(all\s+)?(previous|prior|above|earlier)\s+(instructions|prompts|rules|constraints)", "instruction override"),
     (r"(system|developer)\s*(prompt|message)\s*(override|update|directive)", "authority spoofing"),
     (r"\[\s*(system|admin|root|maintainer)\s*\]", "bracketed authority marker"),
-    (r"you\s+(must|need to|should)\s+(now|immediately)?\s*(call|invoke|execute|transfer)", "coercive tool instruction"),
+    # Coercion only counts when it targets a consequential action: benign
+    # sequencing ("call the resolve tool first") is normal tool documentation
+    # and flagging it would drown the signal in false positives.
     (r"(call|invoke|execute)\s+\w*transfer\w*\s*\(?", "coercive transfer instruction"),
+    (r"you\s+(must|need to|should)[^.]{0,80}(transfer|wire|send)\s+(\$|\d|funds)", "coercive transfer instruction"),
     (r"authorization\s+code|auth\s+code\s*[:=]|EXEC-[A-Z-]+", "credential exfiltration attempt"),
     (r"do\s+not\s+(tell|inform|mention|reveal|disclose)", "concealment instruction"),
     (r"tool[_\s]*policy[_\s]*update|schema[_\s]*directive|maintenance[_\s]*directive", "fake policy channel"),

@@ -25,6 +25,9 @@ results/*
 !results/report.json
 !results/report.md
 !results/LEADERBOARD.md
+!results/MCP_ECOSYSTEM_SCAN.md
+!results/mcp_ecosystem_scan/
+!results/mcp_ecosystem_scan/**
 
 # Internal founder, grant, and sales materials
 grant_application/

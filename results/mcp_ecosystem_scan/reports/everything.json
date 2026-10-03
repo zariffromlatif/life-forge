@@ -1,0 +1,131 @@
+{
+  "target": {
+    "name": "everything",
+    "method": "live-stdio",
+    "source": "@modelcontextprotocol/server-everything",
+    "note": "Official reference/test server.",
+    "command": "npx.cmd -y @modelcontextprotocol/server-everything",
+    "repo": "",
+    "subdir": "",
+    "language": null
+  },
+  "status": "scanned",
+  "report": {
+    "target": "npx.cmd -y @modelcontextprotocol/server-everything",
+    "target_kind": "server",
+    "generated_utc": "2026-10-03 09:00:06 UTC",
+    "ruleset_version": "1.0.0",
+    "tool_count": 13,
+    "servers": [
+      "mcp-servers/everything"
+    ],
+    "server_info": {
+      "name": "mcp-servers/everything",
+      "title": "Everything Reference Server",
+      "version": "2.0.0"
+    },
+    "protocol_version": "2024-11-05",
+    "drift_observations": 2,
+    "risk_score": 42,
+    "risk_band": "MODERATE",
+    "counts_by_severity": {
+      "CRITICAL": 0,
+      "HIGH": 1,
+      "MEDIUM": 6,
+      "LOW": 0
+    },
+    "findings": [
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "simulate-research-query",
+        "server": "mcp-servers/everything",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "ambiguous",
+            "topic"
+          ],
+          "required": [
+            "topic"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "echo",
+        "server": "mcp-servers/everything",
+        "description": "Parameter 'message' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "message"
+        },
+        "remediation": "Constrain 'message' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "get-resource-reference",
+        "server": "mcp-servers/everything",
+        "description": "Parameter 'resourceId' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "resourceId"
+        },
+        "remediation": "Declare minimum/maximum for 'resourceId'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "get-sum",
+        "server": "mcp-servers/everything",
+        "description": "Parameter 'a' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "a"
+        },
+        "remediation": "Declare minimum/maximum for 'a'."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "gzip-file-as-resource",
+        "server": "mcp-servers/everything",
+        "description": "Parameter 'name' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "name"
+        },
+        "remediation": "Constrain 'name' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "simulate-research-query",
+        "server": "mcp-servers/everything",
+        "description": "Parameter 'topic' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "topic"
+        },
+        "remediation": "Constrain 'topic' with maxLength and/or a pattern or enum."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Numeric parameter without range",
+        "tool": "trigger-long-running-operation",
+        "server": "mcp-servers/everything",
+        "description": "Parameter 'duration' is numeric with no minimum or maximum. Out-of-range values (negative amounts, absurd quantities) reach the tool.",
+        "evidence": {
+          "parameter": "duration"
+        },
+        "remediation": "Declare minimum/maximum for 'duration'."
+      }
+    ],
+    "probe_result": null
+  }
+}

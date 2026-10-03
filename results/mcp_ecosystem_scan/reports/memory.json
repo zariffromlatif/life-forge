@@ -1,0 +1,103 @@
+{
+  "target": {
+    "name": "memory",
+    "method": "live-stdio",
+    "source": "@modelcontextprotocol/server-memory",
+    "note": "Official knowledge-graph memory server.",
+    "command": "npx.cmd -y @modelcontextprotocol/server-memory",
+    "repo": "",
+    "subdir": "",
+    "language": null
+  },
+  "status": "scanned",
+  "report": {
+    "target": "npx.cmd -y @modelcontextprotocol/server-memory",
+    "target_kind": "server",
+    "generated_utc": "2026-10-03 09:00:30 UTC",
+    "ruleset_version": "1.0.0",
+    "tool_count": 9,
+    "servers": [
+      "memory-server"
+    ],
+    "server_info": {
+      "name": "memory-server",
+      "version": "0.6.3"
+    },
+    "protocol_version": "2024-11-05",
+    "drift_observations": 2,
+    "risk_score": 41,
+    "risk_band": "MODERATE",
+    "counts_by_severity": {
+      "CRITICAL": 0,
+      "HIGH": 3,
+      "MEDIUM": 1,
+      "LOW": 0
+    },
+    "findings": [
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "delete_entities",
+        "server": "memory-server",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "entitynames"
+          ],
+          "required": [
+            "entityNames"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "delete_observations",
+        "server": "memory-server",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "deletions"
+          ],
+          "required": [
+            "deletions"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_DESTRUCTIVE_UNCONSTRAINED",
+        "severity": "HIGH",
+        "title": "Destructive tool exposes no authorization surface",
+        "tool": "delete_relations",
+        "server": "memory-server",
+        "description": "The tool appears to mutate state or move money, but its schema declares no confirmation, approval-token, or dry-run argument. Execution is gated only on the model choosing to call it.",
+        "evidence": {
+          "arguments": [
+            "relations"
+          ],
+          "required": [
+            "relations"
+          ]
+        },
+        "remediation": "Add a confirmation or authorization argument (or a dry_run default) to every state-mutating tool, and enforce it server-side - not just in the schema."
+      },
+      {
+        "rule_id": "MCP_UNBOUNDED_PARAMETER",
+        "severity": "MEDIUM",
+        "title": "Unbounded string parameter",
+        "tool": "search_nodes",
+        "server": "memory-server",
+        "description": "Parameter 'query' accepts a string with no maximum length, enum, or pattern. It can carry arbitrarily large or arbitrary content into the tool - including flood payloads and injection strings.",
+        "evidence": {
+          "parameter": "query"
+        },
+        "remediation": "Constrain 'query' with maxLength and/or a pattern or enum."
+      }
+    ],
+    "probe_result": null
+  }
+}
