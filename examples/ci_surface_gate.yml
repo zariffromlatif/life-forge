@@ -1,0 +1,28 @@
+# Example: failure-surface regression gate.
+#
+# One-time setup on your main branch (commit the snapshot):
+#   lifeforge surface --record --target src/agent.py:my_agent \
+#     --scenarios 30 --out results/agent_surface.json
+#
+# Every PR then re-runs the same campaign and diffs the topography.
+name: Agent Failure Surface Gate
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+  surface-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: zariffromlatif/life-forge@main
+        with:
+          mode: surface
+          surface-baseline: results/agent_surface.json
+          surface-save-current: results/agent_surface.json   # update baseline on merge
+          surface-agent-target: src/agent.py:my_agent
+          scenarios: "30"
+          seed: "42"
+          fail-on-critical: "true"
+          github-token: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,34 @@
+# Example: MCP server security scan gate.
+#
+# Scans the tool definitions your agent exposes via MCP - in CI, on every PR
+# that touches the server - and fails on critical findings (schema poisoning,
+# rug-pull drift against an approved baseline, unconstrained destructive
+# tools, hidden-character injection).
+name: MCP Server Security Scan
+
+on:
+  pull_request:
+    paths:
+      - "mcp_server/**"
+      - "tools/**"
+
+jobs:
+  mcp-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # Static scan of the checked-in tool manifest
+      - uses: zariffromlatif/life-forge@main
+        with:
+          mode: mcp-scan
+          mcp-manifest: mcp_server/tool_manifest.json
+          mcp-baseline: mcp_server/approved_baseline.json   # rug-pull detection
+          fail-on-critical: "true"
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      # Or scan a live server by launching it:
+      # - uses: zariffromlatif/life-forge@main
+      #   with:
+      #     mode: mcp-scan
+      #     mcp-server: "python -m my_company.mcp_server"
