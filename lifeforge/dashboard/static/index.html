@@ -1318,5 +1318,154 @@
       renderShowdownChart();
     });
   </script>
+
+<!-- ============ Security Reports Panel (surfaces + MCP scans) ============ -->
+<div class="panel" id="security-reports-panel" style="margin: 24px; padding: 20px;">
+  <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+    <h2 style="margin: 0; font-size: 15px; letter-spacing: 0.12em; color: var(--text-primary);">SECURITY REPORTS</h2>
+    <button class="select-input" style="cursor: pointer; padding: 6px 14px;" onclick="refreshSecurityReports()">Refresh</button>
+  </div>
+
+  <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+    <!-- Failure surfaces -->
+    <div>
+      <div style="font-size: 12px; color: var(--accent-cyan); letter-spacing: 0.1em; margin-bottom: 8px;">FAILURE SURFACES</div>
+      <div id="surfaces-list" style="font-size: 12px; color: var(--text-secondary);">Loading...</div>
+      <div id="surface-detail" style="margin-top: 12px; font-size: 12px; color: var(--text-secondary);"></div>
+    </div>
+    <!-- MCP scans -->
+    <div>
+      <div style="font-size: 12px; color: var(--accent-cyan); letter-spacing: 0.1em; margin-bottom: 8px;">MCP SECURITY SCANS</div>
+      <div id="mcpscan-list" style="font-size: 12px; color: var(--text-secondary);">Loading...</div>
+      <div id="mcpscan-detail" style="margin-top: 12px; font-size: 12px; color: var(--text-secondary);"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+function esc(s) {
+  return String(s == null ? "" : s).replace(/[&<>"']/g, c => (
+    {"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]
+  ));
+}
+
+function sevColor(sev) {
+  return sev === "CRITICAL" ? "var(--accent-crimson)"
+       : sev === "HIGH" ? "var(--accent-amber)"
+       : sev === "MEDIUM" ? "var(--accent-blue)"
+       : "var(--text-muted)";
+}
+
+async function refreshSecurityReports() {
+  try {
+    const [surfacesRes, scansRes] = await Promise.all([
+      fetch("/api/surfaces").then(r => r.json()),
+      fetch("/api/mcp_scans").then(r => r.json()),
+    ]);
+    renderSurfacesList(surfacesRes || []);
+    renderScansList(scansRes || []);
+  } catch (e) {
+    document.getElementById("surfaces-list").textContent = "Failed to load: " + e;
+    document.getElementById("mcpscan-list").textContent = "Failed to load: " + e;
+  }
+}
+
+function renderSurfacesList(surfaces) {
+  const el = document.getElementById("surfaces-list");
+  if (!surfaces.length) {
+    el.textContent = "No surface snapshots found. Generate one with: lifeforge surface --record --out results/agent_surface.json";
+    return;
+  }
+  el.innerHTML = surfaces.map(s => `
+    <div style="padding: 8px; border: 1px solid var(--border-subtle); border-radius: 6px; margin-bottom: 6px; cursor: pointer;"
+         onmouseover="this.style.background='var(--bg-surface-hover)'"
+         onmouseout="this.style.background='transparent'"
+         onclick="loadSurface('${esc(s.file)}')">
+      <b style="color: var(--text-primary);">${esc(s.file)}</b><br>
+      agent: ${esc(s.agent_name)} | coverage: ${esc(s.coverage)} | critical cells: ${esc(s.critical_failures_count)}<br>
+      modes: ${esc((s.failure_modes || []).join(", ") || "none")}
+    </div>`).join("");
+}
+
+async function loadSurface(file) {
+  const detail = document.getElementById("surface-detail");
+  detail.textContent = "Loading " + file + " ...";
+  try {
+    const data = await fetch("/api/surface?file=" + encodeURIComponent(file)).then(r => r.json());
+    if (data.error) { detail.textContent = "Error: " + data.error; return; }
+    const s = data.snapshot;
+    let html = `
+      <div style="border: 1px solid var(--border-subtle); border-radius: 6px; padding: 10px;">
+        <b style="color: var(--text-primary);">${esc(file)}</b><br>
+        evaluations: ${esc(s.total_evaluations)} | elites: ${esc(s.elites_count)} |
+        coverage: ${esc(s.coverage)} | criticals: ${esc(s.critical_failures_count)}<br>
+        seed: ${esc(s.seed)} | generations: ${esc(s.generations)} | domain: ${esc(s.domain || "default")}`;
+    if (data.diff) {
+      const d = data.diff;
+      const color = d.verdict === "REGRESSED" ? "var(--accent-crimson)"
+                  : d.verdict === "IMPROVED" ? "var(--accent-emerald)"
+                  : "var(--text-secondary)";
+      html += `
+        <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--border-subtle);">
+          Diff vs <b>${esc(data.baseline_file)}</b>:
+          <span style="color: ${color}; font-weight: bold;">${esc(d.verdict)}</span><br>
+          new failures: ${esc(d.new_failures.length)} | resolved: ${esc(d.resolved_failures.length)} |
+          new criticals: ${esc(d.new_criticals.length)} | coverage delta: ${esc(d.coverage_delta)}
+          ${(d.new_failures || []).map(f => `
+            <div style="margin-top: 4px; color: ${sevColor(f.severity)};">
+              + cell ${esc(f.cell)}: ${esc(f.category)} (${esc(f.severity)})
+            </div>`).join("")}
+        </div>`;
+    }
+    html += "</div>";
+    detail.innerHTML = html;
+  } catch (e) {
+    detail.textContent = "Failed to load: " + e;
+  }
+}
+
+function renderScansList(scans) {
+  const el = document.getElementById("mcpscan-list");
+  if (!scans.length) {
+    el.textContent = "No MCP scan reports found. Generate one with: lifeforge mcp-scan --manifest tools.json --out results/mcp_scan.md --json";
+    return;
+  }
+  el.innerHTML = scans.map(s => `
+    <div style="padding: 8px; border: 1px solid var(--border-subtle); border-radius: 6px; margin-bottom: 6px; cursor: pointer;"
+         onmouseover="this.style.background='var(--bg-surface-hover)'"
+         onmouseout="this.style.background='transparent'"
+         onclick="loadScan('${esc(s.file)}')">
+      <b style="color: var(--text-primary);">${esc(s.file)}</b><br>
+      target: ${esc(s.target)} (${esc(s.target_kind)}) | score: ${esc(s.risk_score)}/100
+      <span style="color: ${sevColor(s.risk_band)};">(${esc(s.risk_band)})</span><br>
+      tools: ${esc(s.tool_count)} | C:${esc(s.critical)} H:${esc(s.high)} M:${esc(s.medium)} L:${esc(s.low)}
+    </div>`).join("");
+}
+
+async function loadScan(file) {
+  const detail = document.getElementById("mcpscan-detail");
+  detail.textContent = "Loading " + file + " ...";
+  try {
+    const data = await fetch("/api/mcp_scan?file=" + encodeURIComponent(file)).then(r => r.json());
+    if (data.error) { detail.textContent = "Error: " + data.error; return; }
+    detail.innerHTML = `
+      <div style="border: 1px solid var(--border-subtle); border-radius: 6px; padding: 10px;">
+        <b style="color: var(--text-primary);">${esc(data.target)}</b> (${esc(data.target_kind)})<br>
+        risk: ${esc(data.risk_score)}/100 (${esc(data.risk_band)}) | tools: ${esc(data.tool_count)} |
+        ruleset v${esc(data.ruleset_version)}
+        ${(data.findings || []).slice(0, 10).map(f => `
+          <div style="margin-top: 6px;">
+            <span style="color: ${sevColor(f.severity)}; font-weight: bold;">[${esc(f.severity)}]</span>
+            ${esc(f.rule_id)} - ${esc(f.tool)}: ${esc(f.title)}
+          </div>`).join("")}
+        ${(data.findings || []).length > 10 ? "<div style='margin-top: 6px;'>... and " + (data.findings.length - 10) + " more</div>" : ""}
+      </div>`;
+  } catch (e) {
+    detail.textContent = "Failed to load: " + e;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", refreshSecurityReports);
+</script>
 </body>
 </html>

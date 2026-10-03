@@ -54,6 +54,92 @@ def get_all_reports(
     return reports
 
 
+def _safe_results_file(results_dir: str | Path, filename: str) -> Path | None:
+    """Resolve a filename inside the results dir, rejecting traversal.
+
+    Returns an absolute path only when it lands inside the results directory;
+    anything else (.., absolute paths, subdirectory escapes) returns None.
+    """
+    base = find_results_dir(results_dir).resolve()
+    candidate = (base / filename).resolve()
+    if candidate.parent != base and base not in candidate.parents:
+        return None
+    if not candidate.is_file():
+        return None
+    return candidate
+
+
+def _read_results_json(results_dir: str | Path, filename: str) -> dict[str, Any] | None:
+    """Load one JSON file from the results dir, or None if absent/invalid."""
+    candidate = _safe_results_file(results_dir, filename)
+    if candidate is None:
+        return None
+    try:
+        return json.loads(candidate.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+
+
+def list_surfaces(results_dir: str | Path = "results") -> list[dict[str, Any]]:
+    """Find failure-surface snapshots in the results directory.
+
+    A snapshot is identified by its schema marker, not its filename, so files
+    saved under any name are still discoverable.
+    """
+    target_dir = find_results_dir(results_dir)
+    surfaces: list[dict[str, Any]] = []
+    for json_file in sorted(target_dir.rglob("*.json")):
+        try:
+            data = json.loads(json_file.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if isinstance(data, dict) and data.get("schema") == "lifeforge.failure_surface":
+            surfaces.append(
+                {
+                    "file": json_file.name,
+                    "agent_name": data.get("agent_name"),
+                    "domain": data.get("domain"),
+                    "seed": data.get("seed"),
+                    "generations": data.get("generations"),
+                    "coverage": data.get("coverage"),
+                    "elites_count": data.get("elites_count"),
+                    "critical_failures_count": data.get("critical_failures_count"),
+                    "failure_modes": sorted((data.get("failure_mode_breakdown") or {}).keys()),
+                }
+            )
+    return surfaces
+
+
+def list_mcp_scans(results_dir: str | Path = "results") -> list[dict[str, Any]]:
+    """Find MCP scan reports in the results directory."""
+    target_dir = find_results_dir(results_dir)
+    scans: list[dict[str, Any]] = []
+    for json_file in sorted(target_dir.rglob("*.json")):
+        try:
+            data = json.loads(json_file.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+        if not isinstance(data, dict):
+            continue
+        if "ruleset_version" in data and "counts_by_severity" in data and "findings" in data:
+            counts = data.get("counts_by_severity", {}) or {}
+            scans.append(
+                {
+                    "file": json_file.name,
+                    "target": data.get("target"),
+                    "target_kind": data.get("target_kind"),
+                    "risk_score": data.get("risk_score"),
+                    "risk_band": data.get("risk_band"),
+                    "tool_count": data.get("tool_count"),
+                    "critical": counts.get("CRITICAL", 0),
+                    "high": counts.get("HIGH", 0),
+                    "medium": counts.get("MEDIUM", 0),
+                    "low": counts.get("LOW", 0),
+                }
+            )
+    return scans
+
+
 def get_aggregate_summary(reports: list[dict[str, Any]]) -> dict[str, Any]:
     """Compute aggregate executive metrics across all evaluated agents."""
     total_evals = sum(r.get("total_evaluations", 0) for r in reports)
@@ -125,6 +211,16 @@ def get_map_elites_grid_data(reports: list[dict[str, Any]]) -> list[dict[str, An
     return cells
 
 
+def _render_diff_markdown_safe(diff: Any) -> str:
+    """Render a surface diff to Markdown, or return an empty string on failure."""
+    try:
+        from lifeforge.reporting.failure_surface import render_diff_markdown
+
+        return render_diff_markdown(diff)
+    except Exception:
+        return ""
+
+
 class LifeForgeDashboardHandler(http.server.BaseHTTPRequestHandler):
     """Custom request handler serving REST endpoints and the UI single-page application."""
 
@@ -151,6 +247,21 @@ class LifeForgeDashboardHandler(http.server.BaseHTTPRequestHandler):
         elif path == "/api/map_elites":
             reports = get_all_reports(self.results_dir, agent_filter=agent_filter)
             self.send_json_response(get_map_elites_grid_data(reports))
+        elif path == "/api/surfaces":
+            self.send_json_response(list_surfaces(self.results_dir))
+        elif path == "/api/surface":
+            snapshot_file = query.get("file", [None])[0]
+            against_file = query.get("against", [None])[0]
+            self.handle_surface(snapshot_file, against_file)
+        elif path == "/api/mcp_scans":
+            self.send_json_response(list_mcp_scans(self.results_dir))
+        elif path == "/api/mcp_scan":
+            scan_file = query.get("file", [None])[0]
+            data = _read_results_json(self.results_dir, scan_file) if scan_file else None
+            if data is None:
+                self.send_json_response({"error": "Scan report not found"}, status=404)
+            else:
+                self.send_json_response(data)
         elif path == "/api/modes/simulate":
             # Real-time CA MODES simulation
             rule = int(query.get("rule", [110])[0])
@@ -188,6 +299,36 @@ class LifeForgeDashboardHandler(http.server.BaseHTTPRequestHandler):
                 self.serve_static_file(static_file, content_type)
             else:
                 self.send_error(404, f"Path not found: {path}")
+
+    def handle_surface(self, snapshot_file: str | None, against_file: str | None) -> None:
+        """Serve one surface snapshot, optionally diffed against a second."""
+        if not snapshot_file:
+            self.send_json_response({"error": "Missing 'file' parameter"}, status=400)
+            return
+
+        snapshot = _read_results_json(self.results_dir, snapshot_file)
+        if snapshot is None or snapshot.get("schema") != "lifeforge.failure_surface":
+            self.send_json_response({"error": "Surface snapshot not found or invalid"}, status=404)
+            return
+
+        response: dict[str, Any] = {"snapshot": snapshot, "file": snapshot_file}
+
+        if against_file:
+            baseline = _read_results_json(self.results_dir, against_file)
+            if baseline is None or baseline.get("schema") != "lifeforge.failure_surface":
+                self.send_json_response({"error": "Baseline snapshot not found or invalid"}, status=404)
+                return
+            try:
+                from lifeforge.reporting.failure_surface import diff_surfaces
+
+                diff = diff_surfaces(baseline, snapshot)
+                response["baseline_file"] = against_file
+                response["diff"] = diff.to_dict()
+                response["diff_markdown"] = _render_diff_markdown_safe(diff)
+            except Exception as exc:  # a broken diff must not break the endpoint
+                response["diff_error"] = str(exc)
+
+        self.send_json_response(response)
 
     def handle_modes_simulation(self, rule: int, steps: int) -> None:
         """Run a lightweight CA simulation and return JSON trajectory + MODES profile."""
