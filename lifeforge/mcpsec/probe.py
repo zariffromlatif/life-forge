@@ -319,6 +319,8 @@ def probe_server_manifest(
     client_name: str = "lifeforge-mcpsec",
     timeout: float = DEFAULT_TIMEOUT,
     drift_delay_seconds: float = 0.0,
+    probe_tool: str | None = None,
+    probe_arguments: dict[str, Any] | None = None,
 ) -> tuple[McpServerManifest, list[McpToolDefinition]]:
     """Connect, handshake, fetch tools twice, and return (manifest, drift diff).
 
@@ -326,6 +328,11 @@ def probe_server_manifest(
     definitions between approval-time and use-time will differ across the two
     observations even without a stored baseline. Pass
     ``drift_delay_seconds`` to widen the observation window.
+
+    When ``probe_tool`` is named, that single tool is executed on the target
+    after the scan fetches and its response recorded as evidence. This is
+    strictly opt-in - the caller owns the blast radius of executing a tool on
+    a live server.
     """
     client = McpClient(transport, client_name=client_name, timeout=timeout)
     try:
@@ -334,6 +341,27 @@ def probe_server_manifest(
         if drift_delay_seconds > 0:
             time.sleep(drift_delay_seconds)
         tools_again = client.list_tools()
+
+        probe_result: dict[str, Any] | None = None
+        if probe_tool:
+            started = time.monotonic()
+            try:
+                response = client.call_tool(probe_tool, dict(probe_arguments or {}))
+                probe_result = {
+                    "tool": probe_tool,
+                    "arguments": dict(probe_arguments or {}),
+                    "elapsed_seconds": round(time.monotonic() - started, 3),
+                    "response": response,
+                    "error": None,
+                }
+            except McpProbeError as exc:
+                probe_result = {
+                    "tool": probe_tool,
+                    "arguments": dict(probe_arguments or {}),
+                    "elapsed_seconds": round(time.monotonic() - started, 3),
+                    "response": None,
+                    "error": str(exc),
+                }
     finally:
         client.close()
 
@@ -342,5 +370,6 @@ def probe_server_manifest(
         server_info=client.server_info,
         source=f"live:{getattr(transport, 'url', getattr(transport, 'command', 'in-process'))}",
         protocol_version=client.protocol_version,
+        probe_result=probe_result,
     )
     return manifest, tools_again

@@ -941,6 +941,22 @@ def cmd_quickstart(args: argparse.Namespace) -> None:
         sys.exit(exit_code)
 
 
+def _parse_probe_args(args: argparse.Namespace) -> dict | None:
+    """Parse --probe-args JSON, exiting with a clear error when malformed."""
+    raw = getattr(args, "probe_args", None)
+    if not raw:
+        return None
+    try:
+        parsed = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        print(f"  [FAIL] --probe-args is not valid JSON: {exc}")
+        sys.exit(1)
+    if not isinstance(parsed, dict):
+        print("  [FAIL] --probe-args must be a JSON object.")
+        sys.exit(1)
+    return parsed
+
+
 def cmd_mcp_scan(args: argparse.Namespace) -> None:
     """Scan MCP tool definitions (manifest file or live server) for attack surface."""
     from lifeforge.mcpsec import McpProbeError, RULESET_VERSION, scan_manifest, scan_server
@@ -982,6 +998,8 @@ def cmd_mcp_scan(args: argparse.Namespace) -> None:
                 baseline_path=getattr(args, "baseline", None),
                 timeout=args.timeout,
                 drift_delay_seconds=args.drift_delay,
+                probe_tool=getattr(args, "probe_tool", None),
+                probe_arguments=_parse_probe_args(args),
             )
         else:
             print(f"  Probing HTTP server: {args.url}")
@@ -991,6 +1009,8 @@ def cmd_mcp_scan(args: argparse.Namespace) -> None:
                 baseline_path=getattr(args, "baseline", None),
                 timeout=args.timeout,
                 drift_delay_seconds=args.drift_delay,
+                probe_tool=getattr(args, "probe_tool", None),
+                probe_arguments=_parse_probe_args(args),
             )
     except McpProbeError as exc:
         print(f"  [FAIL] Probe failed: {exc}")
@@ -1183,6 +1203,8 @@ def main() -> None:
     mcp_parser.add_argument("--out", type=str, default=None, help="Output Markdown report path")
     mcp_parser.add_argument("--json", action="store_true", help="Also write a JSON report alongside the Markdown")
     mcp_parser.add_argument("--fail-on-critical", action="store_true", help="Exit with code 1 when critical findings are present (CI gate)")
+    mcp_parser.add_argument("--probe-tool", type=str, default=None, help="[live scans only] OPT-IN: execute this named tool once on the target and record the response as evidence")
+    mcp_parser.add_argument("--probe-args", type=str, default=None, help="JSON arguments for --probe-tool (default: {})")
     mcp_parser.add_argument("--list-rules", action="store_true", help="List the detection rules, then exit")
 
     # Surface command -- failure-surface capture and diff (continuous red-teaming)

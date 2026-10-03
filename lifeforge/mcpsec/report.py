@@ -55,6 +55,7 @@ class McpScanReport:
     generated_utc: str = ""
     ruleset_version: str = RULESET_VERSION
     drift_observations: int = 0
+    probe_result: dict[str, Any] | None = None
 
     def __post_init__(self) -> None:
         if not self.generated_utc:
@@ -103,6 +104,7 @@ class McpScanReport:
             "risk_band": band,
             "counts_by_severity": self.counts_by_severity(),
             "findings": [finding.to_dict() for finding in self.findings],
+            "probe_result": self.probe_result,
         }
 
     def to_markdown(self) -> str:
@@ -147,6 +149,21 @@ class McpScanReport:
             for key in sorted(self.server_info):
                 lines.append(f"| {key} | `{self.server_info.get(key)}` |")
             lines.append("")
+
+        if self.probe_result is not None:
+            lines.extend(
+                [
+                    "## Live Tool Probe (opt-in)",
+                    "",
+                    f"The scanner executed the named tool once on the target and recorded the "
+                    f"response as evidence.",
+                    "",
+                    "```json",
+                    json.dumps(self.probe_result, indent=2, default=str)[:2000],
+                    "```",
+                    "",
+                ]
+            )
 
         lines.extend(
             [
@@ -226,4 +243,5 @@ def build_report(
         protocol_version=getattr(manifest, "protocol_version", "") or "",
         servers=manifest.server_names() if manifest is not None else [],
         drift_observations=drift_observations,
+        probe_result=getattr(manifest, "probe_result", None),
     )

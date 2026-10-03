@@ -113,6 +113,8 @@ def scan_server(
     baseline_path: Path | str | None = None,
     timeout: float = DEFAULT_TIMEOUT,
     drift_delay_seconds: float = 0.0,
+    probe_tool: str | None = None,
+    probe_arguments: dict[str, Any] | None = None,
 ) -> McpScanReport:
     """Connect to a live MCP server, analyze its tools, and check for drift.
 
@@ -128,6 +130,11 @@ def scan_server(
         Per-request timeout in seconds.
     drift_delay_seconds:
         Delay between the two live fetches, widening the drift window.
+    probe_tool:
+        Opt-in: execute this single named tool on the target and record the
+        response as evidence. The scanner never calls tools unless asked.
+    probe_arguments:
+        Arguments for the probe call.
 
     Raises
     ------
@@ -147,6 +154,8 @@ def scan_server(
         transport,
         timeout=timeout,
         drift_delay_seconds=drift_delay_seconds,
+        probe_tool=probe_tool,
+        probe_arguments=probe_arguments,
     )
 
     findings = scan_tools(manifest.tools, include_shadowing=False)

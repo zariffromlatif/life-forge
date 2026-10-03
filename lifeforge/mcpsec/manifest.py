@@ -57,6 +57,7 @@ class McpServerManifest:
     server_info: dict[str, Any] = field(default_factory=dict)
     source: str = "manifest"
     protocol_version: str = ""
+    probe_result: dict[str, Any] | None = None
 
     def server_names(self) -> list[str]:
         """Return the distinct servers contributing tool definitions."""
