@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import queue
 import shlex
 import subprocess
@@ -81,19 +82,57 @@ class InProcessMcpTransport(McpTransport):
         return response or None
 
 
+#: Largest single JSON-RPC message accepted from a server (stdio line or HTTP
+#: body). A hostile server streaming an endless line cannot exhaust memory.
+MAX_MESSAGE_BYTES = 16 * 1024 * 1024
+
+#: Upper bound on ``tools/list`` pages followed via ``nextCursor``.
+MAX_TOOL_PAGES = 100
+
+
+def split_command(command: str) -> list[str]:
+    """Split a command line into argv, preserving Windows backslash paths.
+
+    POSIX ``shlex`` treats backslashes as escapes, turning
+    ``C:\\tools\\srv.exe`` into ``C:toolssrv.exe``. On Windows the non-POSIX
+    mode is used and surrounding quotes are stripped from each token.
+    """
+    if os.name != "nt":
+        return shlex.split(command)
+    tokens = shlex.split(command, posix=False)
+    cleaned: list[str] = []
+    for token in tokens:
+        if len(token) >= 2 and token[0] == token[-1] and token[0] in "\"'":
+            token = token[1:-1]
+        cleaned.append(token)
+    return cleaned
+
+
+def _ids_match(candidate_id: Any, request_id: Any) -> bool:
+    """JSON-RPC id equality, tolerating servers that echo ints as strings."""
+    if candidate_id is None:
+        return False
+    return candidate_id == request_id or str(candidate_id) == str(request_id)
+
+
 class StdioMcpTransport(McpTransport):
     """Line-delimited JSON-RPC over a subprocess (the MCP stdio transport)."""
 
     def __init__(self, command: str | list[str]) -> None:
-        argv = shlex.split(command) if isinstance(command, str) else list(command)
+        argv = split_command(command) if isinstance(command, str) else list(command)
+        self.command = command
+        popen_kwargs: dict[str, Any] = {}
+        if os.name == "nt":
+            popen_kwargs["creationflags"] = getattr(subprocess, "CREATE_NEW_PROCESS_GROUP", 0)
+        else:
+            popen_kwargs["start_new_session"] = True
         try:
             self.process = subprocess.Popen(
                 argv,
                 stdin=subprocess.PIPE,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
-                text=True,
-                bufsize=1,
+                **popen_kwargs,
             )
         except OSError as exc:
             raise McpProbeError(f"Cannot launch MCP server {argv!r}: {exc}") from exc
@@ -102,25 +141,53 @@ class StdioMcpTransport(McpTransport):
         self._reader.start()
 
     def _read_loop(self) -> None:
-        """Continuously read server output lines into the response queue."""
+        """Continuously read server output lines into the response queue.
+
+        Lines are read in bounded chunks: a line longer than
+        :data:`MAX_MESSAGE_BYTES` is discarded rather than buffered whole.
+        Non-object JSON (arrays, scalars) is dropped here so the client only
+        ever sees dict messages.
+        """
         assert self.process.stdout is not None
-        for line in self.process.stdout:
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                self._responses.put(json.loads(line))
-            except json.JSONDecodeError:
-                continue
+        stream = self.process.stdout
+        try:
+            while True:
+                line = stream.readline(MAX_MESSAGE_BYTES + 1)
+                if not line:
+                    break
+                if len(line) > MAX_MESSAGE_BYTES and not line.endswith(b"\n"):
+                    # Oversized: skip the remainder of this line.
+                    while True:
+                        rest = stream.readline(MAX_MESSAGE_BYTES)
+                        if not rest or rest.endswith(b"\n"):
+                            break
+                    logger.debug("Discarded oversized MCP stdio message")
+                    continue
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    message = json.loads(line.decode("utf-8", errors="replace"))
+                except json.JSONDecodeError:
+                    continue
+                if isinstance(message, dict):
+                    self._responses.put(message)
+                elif isinstance(message, list):
+                    # JSON-RPC batch: enqueue its object members.
+                    for item in message:
+                        if isinstance(item, dict):
+                            self._responses.put(item)
+        except (OSError, ValueError):
+            pass
         self._responses.put(None)
 
     def send(self, payload: dict[str, Any]) -> None:
         """Write one JSON line to the server's stdin."""
         assert self.process.stdin is not None
         try:
-            self.process.stdin.write(json.dumps(payload) + "\n")
+            self.process.stdin.write((json.dumps(payload) + "\n").encode("utf-8"))
             self.process.stdin.flush()
-        except (BrokenPipeError, ValueError) as exc:
+        except (BrokenPipeError, OSError, ValueError) as exc:
             raise McpProbeError(f"MCP server closed stdin: {exc}") from exc
 
     def receive(self, timeout: float) -> dict[str, Any]:
@@ -134,13 +201,57 @@ class StdioMcpTransport(McpTransport):
         return item
 
     def close(self) -> None:
-        """Terminate the subprocess."""
-        if self.process.poll() is None:
-            self.process.terminate()
+        """Terminate the server and every process it spawned.
+
+        Launchers such as ``npx``/``uvx`` (and the ``.cmd`` shims on Windows)
+        start the real server as a grandchild; terminating only the direct
+        child leaves it running. The whole tree/process group is killed.
+        """
+        try:
+            if self.process.stdin is not None:
+                self.process.stdin.close()
+        except (OSError, ValueError):
+            pass
+        if self.process.poll() is not None:
+            return
+        _kill_process_tree(self.process)
+
+
+def _kill_process_tree(process: subprocess.Popen) -> None:
+    """Terminate a process and its descendants, escalating to kill."""
+    if os.name == "nt":
+        try:
+            subprocess.run(
+                ["taskkill", "/T", "/F", "/PID", str(process.pid)],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=10,
+                check=False,
+            )
+        except (OSError, subprocess.SubprocessError):
+            pass
+    else:
+        import signal
+
+        try:
+            os.killpg(process.pid, signal.SIGTERM)
+        except (OSError, ProcessLookupError):
+            pass
+    try:
+        process.wait(timeout=5)
+    except subprocess.TimeoutExpired:  # pragma: no cover - stubborn server
+        if os.name != "nt":
+            import signal
+
             try:
-                self.process.wait(timeout=5)
-            except subprocess.TimeoutExpired:  # pragma: no cover - stubborn server
-                self.process.kill()
+                os.killpg(process.pid, signal.SIGKILL)
+            except (OSError, ProcessLookupError):
+                pass
+        process.kill()
+        try:
+            process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            pass
 
 
 class HttpMcpTransport(McpTransport):
@@ -166,38 +277,44 @@ class HttpMcpTransport(McpTransport):
             request_headers["Mcp-Session-Id"] = self.session_id
         return request_headers
 
-    def _post(self, payload: dict[str, Any], timeout: float) -> tuple[int, str, dict[str, str]]:
-        request = urllib.request.Request(
-            self.url,
-            data=json.dumps(payload).encode("utf-8"),
-            headers=self._headers(),
-            method="POST",
-        )
-        try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:
-                return response.status, response.read().decode("utf-8"), dict(response.headers)
-        except urllib.error.HTTPError as exc:
-            return exc.code, exc.read().decode("utf-8", errors="replace"), dict(exc.headers or {})
-        except (urllib.error.URLError, OSError) as exc:
-            raise McpProbeError(f"MCP HTTP endpoint unreachable: {exc}") from exc
+    @staticmethod
+    def _select_message(candidates: list[Any], request_id: Any) -> dict[str, Any] | None:
+        """Return the JSON-RPC message answering ``request_id`` (None if absent).
+
+        Server-initiated notifications and requests that precede the
+        response on the same stream are skipped - taking the first message
+        blindly let a server hand the scanner an empty result.
+        """
+        for candidate in candidates:
+            if isinstance(candidate, list):
+                found = HttpMcpTransport._select_message(candidate, request_id)
+                if found is not None:
+                    return found
+            elif isinstance(candidate, dict):
+                if request_id is None:
+                    return candidate
+                if _ids_match(candidate.get("id"), request_id) and ("result" in candidate or "error" in candidate):
+                    return candidate
+        return None
 
     @staticmethod
-    def _parse_body(status: int, body: str, content_type: str) -> dict[str, Any] | None:
-        """Extract one JSON-RPC response from a JSON or SSE body."""
+    def _parse_body(status: int, body: str, content_type: str, request_id: Any = None) -> dict[str, Any] | None:
+        """Extract the JSON-RPC response for ``request_id`` from a JSON or SSE body."""
         if status == 202 or not body.strip():
             return None
         if "text/event-stream" in content_type:
-            for line in body.splitlines():
-                if line.startswith("data:"):
-                    data = line[len("data:"):].strip()
-                    if data and data != "[DONE]":
-                        return json.loads(data)
-            return None
+            messages: list[Any] = []
+            for event_data in _sse_events(body.splitlines()):
+                try:
+                    messages.append(json.loads(event_data))
+                except json.JSONDecodeError:
+                    continue
+            return HttpMcpTransport._select_message(messages, request_id)
         try:
             parsed = json.loads(body)
         except json.JSONDecodeError as exc:
             raise McpProbeError(f"MCP HTTP endpoint returned non-JSON body: {body[:120]!r}") from exc
-        return parsed if isinstance(parsed, dict) else None
+        return HttpMcpTransport._select_message([parsed], request_id)
 
     def send(self, payload: dict[str, Any]) -> None:
         return None
@@ -206,12 +323,146 @@ class HttpMcpTransport(McpTransport):
         raise McpProbeError("HttpMcpTransport is driven through request().")
 
     def request(self, payload: dict[str, Any], timeout: float = DEFAULT_TIMEOUT) -> dict[str, Any] | None:
-        """POST one message and return the parsed response (None for 202/empty)."""
-        status, body, headers = self._post(payload, timeout)
+        """POST one message and return its response (None for notifications/202).
+
+        ``timeout`` bounds the WHOLE exchange, not each socket read: an SSE
+        stream kept open with keepalive comments is abandoned at the deadline,
+        and the body is capped at :data:`MAX_MESSAGE_BYTES`.
+        """
+        request_id = payload.get("id")
+        is_notification = "id" not in payload
+        deadline = time.monotonic() + timeout
+        request = urllib.request.Request(
+            self.url,
+            data=json.dumps(payload).encode("utf-8"),
+            headers=self._headers(),
+            method="POST",
+        )
+        try:
+            response = urllib.request.urlopen(request, timeout=timeout)
+        except urllib.error.HTTPError as exc:
+            body = exc.read(MAX_MESSAGE_BYTES).decode("utf-8", errors="replace")
+            self._remember_session(dict(exc.headers or {}))
+            if is_notification:
+                return None
+            return self._parse_body(exc.code, body, (exc.headers or {}).get("Content-Type", ""), request_id)
+        except (urllib.error.URLError, OSError) as exc:
+            raise McpProbeError(f"MCP HTTP endpoint unreachable: {exc}") from exc
+
+        try:
+            headers = dict(response.headers)
+            self._remember_session(headers)
+            content_type = response.headers.get("Content-Type", "") or ""
+            if is_notification or response.status == 202:
+                return None
+            if "text/event-stream" in content_type:
+                return self._read_sse_until_response(response, request_id, deadline)
+            body = _read_bounded(response, deadline)
+            return self._parse_body(response.status, body, content_type, request_id)
+        finally:
+            try:
+                response.close()
+            except OSError:
+                pass
+
+    def _remember_session(self, headers: dict[str, str]) -> None:
         session = headers.get("Mcp-Session-Id") or headers.get("mcp-session-id")
         if session:
             self.session_id = session
-        return self._parse_body(status, body, headers.get("Content-Type", ""))
+
+    def _read_sse_until_response(self, response: Any, request_id: Any, deadline: float) -> dict[str, Any] | None:
+        """Consume an SSE stream until the matching response, EOF, or the deadline."""
+        lines: queue.Queue = queue.Queue()
+
+        def pump() -> None:
+            total = 0
+            try:
+                while True:
+                    raw = response.readline(MAX_MESSAGE_BYTES + 1)
+                    if not raw:
+                        break
+                    total += len(raw)
+                    if total > MAX_MESSAGE_BYTES:
+                        lines.put(McpProbeError("MCP HTTP response exceeded the size limit"))
+                        return
+                    lines.put(raw.decode("utf-8", errors="replace").rstrip("\r\n"))
+            except Exception as exc:  # closed at deadline: any read error ends the pump
+                lines.put(exc)
+                return
+            lines.put(None)
+
+        threading.Thread(target=pump, daemon=True).start()
+        data_lines: list[str] = []
+        while True:
+            remaining = deadline - time.monotonic()
+            if remaining <= 0:
+                raise McpProbeError("MCP HTTP SSE stream produced no matching response before the timeout")
+            try:
+                item = lines.get(timeout=remaining)
+            except queue.Empty as exc:
+                raise McpProbeError("MCP HTTP SSE stream produced no matching response before the timeout") from exc
+            if isinstance(item, McpProbeError):
+                raise item
+            if isinstance(item, Exception) or item is None:
+                item = ""  # flush any pending event, then stop
+                eof = True
+            else:
+                eof = False
+            if item == "":
+                if data_lines:
+                    data = "\n".join(data_lines)
+                    data_lines = []
+                    try:
+                        message = json.loads(data)
+                    except json.JSONDecodeError:
+                        message = None
+                    found = self._select_message([message], request_id) if message is not None else None
+                    if found is not None:
+                        return found
+                if eof:
+                    return None
+                continue
+            if item.startswith("data:"):
+                value = item[len("data:"):]
+                data_lines.append(value[1:] if value.startswith(" ") else value)
+
+
+def _sse_events(lines: list[str]):
+    """Yield the joined ``data:`` payload of each SSE event in ``lines``."""
+    data_lines: list[str] = []
+    for line in list(lines) + [""]:
+        if line == "":
+            if data_lines:
+                data = "\n".join(data_lines)
+                data_lines = []
+                if data.strip() and data.strip() != "[DONE]":
+                    yield data
+            continue
+        if line.startswith("data:"):
+            value = line[len("data:"):]
+            data_lines.append(value[1:] if value.startswith(" ") else value)
+
+
+def _read_bounded(response: Any, deadline: float) -> str:
+    """Read a non-streaming body with a total deadline and a size cap."""
+    result: queue.Queue = queue.Queue()
+
+    def pump() -> None:
+        try:
+            result.put(response.read(MAX_MESSAGE_BYTES + 1))
+        except Exception as exc:  # closed at deadline: any read error ends the pump
+            result.put(exc)
+
+    threading.Thread(target=pump, daemon=True).start()
+    try:
+        body = result.get(timeout=max(0.0, deadline - time.monotonic()))
+    except queue.Empty as exc:
+        raise McpProbeError("MCP HTTP response body not received before the timeout") from exc
+    if isinstance(body, Exception):
+        raise McpProbeError(f"MCP HTTP response could not be read: {body}") from body
+    if len(body) > MAX_MESSAGE_BYTES:
+        raise McpProbeError("MCP HTTP response exceeded the size limit")
+    return body.decode("utf-8", errors="replace")
 
 
 class McpClient:
@@ -261,19 +512,30 @@ class McpClient:
                 if remaining <= 0:
                     raise McpProbeError(f"MCP server did not respond to '{method}' within {self.timeout:.0f}s")
                 candidate = self.transport.receive(remaining)
-                if candidate.get("id") == request_id:
+                # A server-initiated request may reuse the same id number, so
+                # only a message carrying result/error counts as the reply.
+                if (
+                    isinstance(candidate, dict)
+                    and _ids_match(candidate.get("id"), request_id)
+                    and ("result" in candidate or "error" in candidate)
+                ):
                     response = candidate
                     break
                 logger.debug("Discarding non-matching message while awaiting '%s': %s", method, str(candidate)[:120])
 
         if response is None:
             raise McpProbeError(f"MCP server returned no response to '{method}'")
+        if not isinstance(response, dict):
+            raise McpProbeError(f"MCP server sent a non-object response to '{method}'")
         if "error" in response:
             error = response["error"]
-            raise McpProbeError(
-                f"MCP server error on '{method}': {error.get('message', error)} (code {error.get('code')})"
-            )
-        return response.get("result") or {}
+            if isinstance(error, dict):
+                raise McpProbeError(
+                    f"MCP server error on '{method}': {error.get('message', error)} (code {error.get('code')})"
+                )
+            raise McpProbeError(f"MCP server error on '{method}': {str(error)[:200]}")
+        result = response.get("result")
+        return result if isinstance(result, dict) else {}
 
     def _send_notification(self, method: str, params: dict[str, Any] | None = None) -> None:
         notification = {"jsonrpc": "2.0", "method": method, "params": params or {}}
@@ -302,9 +564,27 @@ class McpClient:
         return result
 
     def list_tools(self) -> list[McpToolDefinition]:
-        """Fetch and normalize the server's tool definitions."""
-        result = self._send_request("tools/list")
-        raw_tools = result.get("tools") if isinstance(result.get("tools"), list) else []
+        """Fetch and normalize the server's tool definitions, following pagination.
+
+        ``tools/list`` is paginated via ``nextCursor``; reading only the first
+        page let a server hide tools (and their poisoned descriptions) on
+        later pages. Pages are followed up to :data:`MAX_TOOL_PAGES`, and a
+        repeated cursor ends the walk.
+        """
+        raw_tools: list[Any] = []
+        cursor: Any = None
+        seen_cursors: set[str] = set()
+        for _ in range(MAX_TOOL_PAGES):
+            result = self._send_request("tools/list", {"cursor": cursor} if cursor is not None else None)
+            page = result.get("tools")
+            if isinstance(page, list):
+                raw_tools.extend(page)
+            cursor = result.get("nextCursor")
+            if cursor in (None, "") or str(cursor) in seen_cursors:
+                break
+            seen_cursors.add(str(cursor))
+        else:
+            raise McpProbeError(f"MCP server paginated tools/list beyond {MAX_TOOL_PAGES} pages")
         server_name = str(self.server_info.get("name", "server")) if self.server_info else "server"
         return tools_from_wire(raw_tools, server=server_name)
 

@@ -38,6 +38,13 @@
       "pattern_misses": 4,
       "tools_extracted": 2,
       "language": "typescript"
-    }
+    },
+    "original_scoring": {
+      "ruleset_version": "1.0.0",
+      "risk_score": 0,
+      "risk_band": "LOW"
+    },
+    "scoring_note": "Re-scored 2026-10-10 with the corrected mcpsec 1.1.0 scorer (band anchored on the most severe finding). Findings themselves are from ruleset 1.0.0 and were not re-collected.",
+    "validity_note": "INVALID: a static-extraction bug in ruleset 1.0.0 dropped every parameter of tools declared as JSON-schema constants, so this server's parameters were never scanned. Needs a fresh scan."
   }
 }

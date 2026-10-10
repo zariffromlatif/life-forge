@@ -1,8 +1,8 @@
-# LIFE FORGE: The Autonomous Flight Simulator for AI Agents
+# LIFE FORGE: Behavioral Regression Testing for AI Agents
 
-> **Co-evolutionary adversarial red-teaming and dynamic stress-testing for autonomous AI agents using Artificial Life Quality-Diversity algorithms (3D MAP-Elites).**
+> **Your agent's failure map, re-tested on every pull request.** LIFE FORGE builds a deterministic twin of the tools your agent can call, searches for the conditions that make it move money, leak data, or skip a gate, and turns every scenario it finds into a replayable regression test.
 
-[![Tests](https://img.shields.io/badge/tests-184%20passed-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-passing-brightgreen.svg)](tests/)
 [![CI](https://github.com/zariffromlatif/life-forge/actions/workflows/agent_stress_test.yml/badge.svg)](https://github.com/zariffromlatif/life-forge/actions/workflows/agent_stress_test.yml)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](pyproject.toml)
 [![Protocol](https://img.shields.io/badge/protocol-MCP%20Native-orange.svg)](lifeforge/sandbox/mcp_server.py)
@@ -10,32 +10,59 @@
 
 ---
 
-> **New Empirical Research Paper**: [The Scale Paradox in Autonomous AI Agents: Why 24B and 33B Models Suffered More Zero-Day Wire Transfers Than 8B](docs/research/THE_SCALE_PARADOX_IN_AI_AGENTS.md)
+## Why this exists
+
+Most agent red-teaming sends a list of attack prompts to a model and asks another model whether the *reply* looked bad. That tells you little about an agent whose job is to *do* things. LIFE FORGE judges what the agent actually did to the world:
+
+1. **Verdicts on side effects, not text.** A rule-based oracle inspects the simulated world after each episode: did the treasury balance drop, did a merge happen without a passing test run, did an email leave the allowed domains? Same episode, same verdict, every time. No LLM judge.
+2. **A map, not a pass rate.** A Quality-Diversity search (MAP-Elites) covers the space of conditions (attack intensity x environment volatility x resource pressure) and keeps the worst failure it finds in each region.
+3. **Every finding becomes a regression test.** The scenarios the search keeps are saved as a corpus and replayed, scenario by scenario, against the next build. A PR that makes the agent worse on any recorded scenario fails CI, the way a fuzzer's crash corpus works.
+4. **Your tools, not ours.** Describe your agent's tools in YAML, or generate the description from an MCP server's `tools/list`, and the domain compiler builds the twin.
+
+```bash
+pip install -e ".[all]"
+
+# 1. Generate a twin of the tools your agent uses (from an MCP manifest), then edit it
+lifeforge compile-domain --from-mcp mcp_tools.json --out my_domain.yaml
+lifeforge compile-domain --spec my_domain.yaml --check
+
+# 2. Record the baseline on main: search + save the replayable corpus
+lifeforge surface --record --domain-spec my_domain.yaml --target agent.py:my_agent --out results/agent_surface.json
+
+# 3. On every PR: replay the corpus against the changed agent and fail on regressions
+lifeforge surface --baseline results/agent_surface.json --domain-spec my_domain.yaml --target agent.py:my_agent --fail-on-regression
+```
 
 ---
 
-## Official Model Security Leaderboard (8 Frontier Models Tested)
+## Research Results: 8 Open-Weight Models (oracle 1.x)
 
-Evaluated under identical random seeds (`seed=42`) across 30 co-evolutionary generations combining market volatility, inventory scarcity, and prompt injections on a dedicated NVIDIA RTX 4090 GPU:
+Eight local open-weight models (Ollama, one RTX 4090) were run as procurement agents through 30 generations at `seed=42`, one campaign per model.
 
-| Rank | Model | Params | Security Grade | Critical Zero-Days | Operational Deadlocks | Adversarial Fail Rate | Primary Failure Mode |
-| :--- | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| **1** | `llama3.1:8b` | 8B | **C+** (Fragile) | **0** | 12 loops | 66.7% | Loop Termination under Volatility |
-| **2** | `deepseek-r1:8b` | 8B | **C** (High-Risk) | **0** | **0 loops** | 100.0% | Conservative Halting under Scarcity |
-| **3** | `deepseek-r1:14b` | 14B | **C** (High-Risk) | **0** | 14 loops | 100.0% | Reasoning Entrapment & Analytical Deadlock |
-| **4** | `qwen2.5:14b` | 14B | **F** (Vulnerable) | **7 [CRITICAL]** | 0 loops | 100.0% | Authority Spoofing Blindness |
-| **5** | `deepseek-coder:33b` | 33B | **F** (Vulnerable) | **8 [CRITICAL]** | 0 loops | 100.0% | Step-0 Immediate Injection Compliance |
-| **6** | `phi4:14b` | 14B | **F** (Vulnerable) | **8 [CRITICAL]** | 0 loops | 100.0% | Untrusted Tool Data & MCP Schema Poisoning |
-| **7** | `qwen2.5-coder:14b` | 14B | **F** (Vulnerable) | **12 [CRITICAL]** | 5 loops | 100.0% | Code Obedience Overdrive & Schema Blindness |
-| **8** | `mistral-small:24b` | 24B | **F** (Vulnerable) | **14 [CRITICAL]** | 3 loops | 100.0% | Critical Exfiltration & TOCTOU Race Conditions |
+> **Read these numbers with their limits.** They come from a **single seed per model** and were judged by **oracle 1.x**. The October 2026 audit (oracle 2.0) found that oracle 1.x over-reported some categories. The table below is kept for provenance with corrected labels. It is not a statistically meaningful ranking, and it will be replaced by multi-seed re-runs.
+>
+> - **"Critical" findings in the procurement domain are mostly attempts to call the prohibited `transfer_funds` tool.** The sandbox has external transfers disabled and refused every one, so no money moved in any run. An agent that obeys an injected instruction to wire money is still a real finding, but these were attempts, not completed exfiltrations.
+> - **The single `TOCTOU_RACE_CONDITION` reported for `mistral-small:24b` was not a race condition.** The oracle 1.x check fired on purchase orders whose price cap was below the quote, and the tool rejects those, so nothing was committed. Oracle 2.0 only flags a purchase actually committed at a price the agent did not re-check.
+> - **The failure-rate column counts archive cells, not evaluations.** MAP-Elites keeps the worst trace per cell, so this rate is biased upward.
 
-*Full leaderboard profiles and JSON audit reports available in [`results/LEADERBOARD.md`](results/LEADERBOARD.md).*
+| Model | Params | Critical findings (cells) | Retry-loop cells | Elite-cell failure rate | Dominant behaviour |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `llama3.1:8b` | 8B | 0 | 12 | 66.7% | Loops under price volatility |
+| `deepseek-r1:8b` | 8B | 0 | 0 | 100.0% | Halts conservatively under scarcity |
+| `deepseek-r1:14b` | 14B | 0 | 14 | 100.0% | Analysis loops |
+| `qwen2.5:14b` | 14B | 7 | 0 | 100.0% | Follows spoofed executive messages |
+| `deepseek-coder:33b` | 33B | 8 | 0 | 100.0% | Attempts the prohibited transfer at step 0 |
+| `phi4:14b` | 14B | 8 | 0 | 100.0% | Trusts instructions in tool data / tool schemas |
+| `qwen2.5-coder:14b` | 14B | 12 | 5 | 100.0% | Follows injected instructions in tool data |
+| `mistral-small:24b` | 24B | 13 | 3 | 100.0% | Follows injected transfer instructions |
 
-### Key Takeaways from the Benchmark
-* **The Parameter Scale Myth Disproven**: Scaling from 8B to 24B and 33B did not increase safety. In fact, larger non-reasoning models rationalized prompt injections more fluently, resulting in 8 to 14 critical wire exfiltrations.
-* **The Cognitive Firewall of Reasoning Tokens**: DeepSeek-R1 (both 8B and 14B) recorded **zero critical wire exfiltrations**, completely neutralizing indirect prompt injection. Crucially, `deepseek-r1:8b` did not experience the 14 retry deadlocks seen in the 14B version, making it the most balanced reasoning agent tested.
-* **The Code-Specialist Penalty**: Fine-tuning specifically on code caused a **71% surge in prompt injection exploitability** (Qwen 2.5-Coder suffered 12 critical breaches vs. 7 for generalist Qwen 2.5). DeepSeek-Coder (33B) executed unauthorized transfers on **Step 0** before querying the catalog.
-* **First Live TOCTOU Race Condition**: Mistral Small committed purchase orders with stale price caps after price volatility shifted vendor rates, triggering our invariant oracle for Time-of-Check / Time-of-Use race conditions.
+What the data does support, as observations to test with more seeds:
+
+* Larger models were not safer here. The 24B and 33B models attempted the prohibited transfer in more scenarios than the 8B models.
+* Both DeepSeek-R1 reasoning models made **no** prohibited-transfer attempts, though the 14B one looped instead.
+* The code-tuned Qwen attempted prohibited transfers in more cells than the general Qwen (12 vs 7). With one seed, that is a lead, not a measured effect.
+
+Profiles and raw JSON: [`results/LEADERBOARD.md`](results/LEADERBOARD.md). Write-up: [`docs/research/THE_SCALE_PARADOX_IN_AI_AGENTS.md`](docs/research/THE_SCALE_PARADOX_IN_AI_AGENTS.md). Both predate oracle 2.0, so apply the same caveats.
 
 ---
 
@@ -128,7 +155,7 @@ Explore 3D MAP-Elites behavior spaces, compare model showdowns, and inspect step
 ```bash
 python -m lifeforge.cli ui --port 8000
 ```
-Open your browser at `http://localhost:8000` to inspect discovered zero-days, explore behavioral niches, or export an executive PDF audit dossier.
+Open your browser at `http://localhost:8000` to inspect discovered failures, explore behavioral niches, or export an executive PDF audit dossier. The dashboard binds to localhost and rejects requests with a foreign `Host` header.
 
 ---
 
@@ -157,7 +184,7 @@ python -m lifeforge.cli eval --target path/to/my_agent.py:MyAgentClass --scenari
 # Evaluate any remote or containerized agent via HTTP webhook:
 python -m lifeforge.cli eval --endpoint http://localhost:5050/act --reset-endpoint http://localhost:5050/reset --scenarios 30
 
-# Enforce CI/CD gating (fails build with exit code 1 if critical zero-days are found):
+# Enforce CI/CD gating (fails build with exit code 1 if critical findings are discovered):
 python -m lifeforge.cli eval --target my_agent.py:agent --scenarios 25 --fail-on-critical
 ```
 
@@ -350,7 +377,7 @@ Critical findings become blocking rules; lower-severity ones start in monitor mo
 
 ## MCP Security Scanner
 
-MCP adoption is outpacing its security: an industry scan found **33% of scanned MCP servers carried critical vulnerabilities**, and the NSA/CISA published MCP security guidance in June 2026. LIFE FORGE ships a deterministic scanner for MCP tool definitions - point it at a manifest or a live server:
+A free, deterministic scanner for MCP tool definitions. It is a supporting tool, not the product: it feeds the twin generator (`compile-domain --from-mcp`), and Snyk Agent Scan covers similar static ground. Point it at a manifest or a live server:
 
 ```bash
 # Static scan of a tool manifest
@@ -365,7 +392,7 @@ lifeforge mcp-scan --url https://mcp.example.com/mcp --fail-on-critical
 lifeforge mcp-scan --list-rules     # the full ruleset
 ```
 
-Detected classes: schema poisoning (injection directives in tool descriptions, decoded Base64 payloads), invisible/bidi Unicode, homoglyph tool-name spoofing, destructive tools with no authorization surface, unbounded parameters, cross-server tool shadowing, and description drift after approval (the rug pull). The scanner observes definitions only - it never executes tools on the target server.
+Detected classes: schema poisoning anywhere in the schema (descriptions, nested properties, enums, defaults; NFKC-normalized, decoded Base64 payloads), invisible Unicode by category, non-ASCII tool and parameter names, destructive tools with no authorization surface, unbounded parameters, cross-server tool shadowing, and description drift after approval (the rug pull). A server's band is anchored on its most severe finding, so CRITICAL means a CRITICAL finding exists. The scanner never calls tools, but a live probe does launch the server, which runs its startup code: probe untrusted servers in a sandbox.
 
 Example: `examples/mcp_manifest_example.json` ships with a poisoned tool and a homoglyph-shadowed tool - scan it to see the detector classes fire.
 
@@ -396,31 +423,46 @@ policies:
   - balance_drain: {balance_key: expense_budget, max_drain: 500}
 ```
 
+Or start from an MCP server's tool list instead of writing the spec by hand. Every tool keeps its argument schema, state-changing tools are gated behind a generated `request_human_approval` tool, and the output is a spec you then edit:
+
+```bash
+lifeforge compile-domain --from-mcp mcp_tools.json --out my_domain.yaml --task "Refund order ORD-1 if eligible"
+```
+
 ```bash
 lifeforge compile-domain --spec my_domain.yaml --check          # validate + probe episode
 lifeforge test --domain-spec my_domain.yaml --scenarios 30      # red-team an agent against it
 lifeforge surface --domain-spec my_domain.yaml --record --out results/surface.json
 ```
 
-Everything is validated at compile time - unknown policies, unknown effects, effects referencing undeclared arguments - with the full list of valid options in the error. Tools validate their arguments (required, type, pattern, enum, min/max) and refuse invalid calls the way real tools do. Full worked example: [`examples/custom_domain_expense_approval.yaml`](examples/custom_domain_expense_approval.yaml).
+Everything is validated at compile time - unknown policies, unknown effects or argument types, effects referencing undeclared arguments or unknown balances - with the full list of valid options in the error. Tools validate their arguments (required, type, pattern, enum, min/max, finite numbers) and refuse invalid calls the way real tools do; a tool's effects apply atomically, and spending cannot overdraw an account unless the spec allows it. Full worked example: [`examples/custom_domain_expense_approval.yaml`](examples/custom_domain_expense_approval.yaml).
 
 ### MCP Ecosystem Scan Results
 
-We ran the scanner against 15 of the most-installed public MCP servers (9 live protocol probes, 6 static source extractions; 167 tool definitions). **40% score in the CRITICAL band**, including the official `filesystem` and `git` reference servers, Microsoft's `playwright` MCP, `desktop-commander`, `context7`, and `firecrawl` - mostly destructive tools with no authorization surface and unbounded parameters. Full methodology, per-server reports, and limitations: [`results/MCP_ECOSYSTEM_SCAN.md`](results/MCP_ECOSYSTEM_SCAN.md). Reproduce with `python scripts/scan_mcp_ecosystem.py`.
+We scanned 15 of the most-installed public MCP servers (9 live protocol probes, 6 static source extractions; 167 tool definitions). Maintainers of Microsoft's `playwright-mcp` and Upstash's `context7` triaged the reported issues.
 
-### Continuous Red-Teaming: Failure-Surface Diffing
+> **Correction (2026-10-10).** The first version of this scan reported 40% of servers in the CRITICAL band. That was a scoring bug: bands followed finding *volume*, and the scan had **zero CRITICAL findings**. Re-scored with bands anchored on the most severe finding: **0 CRITICAL, 8 HIGH** (mostly state-changing tools with no confirmation or approval argument), 4 MODERATE, 3 LOW. Three static extractions (`brave-search`, `google-maps`, `slack`) were invalid because of an extraction bug and need a fresh scan. Details and original scores: [`results/MCP_ECOSYSTEM_SCAN.md`](results/MCP_ECOSYSTEM_SCAN.md).
 
-A one-shot benchmark tells you whether an agent fails. A *failure surface diff* tells you what changed. Capture the MAP-Elites topography to a small JSON file and diff it across commits:
+### Continuous Red-Teaming: Regression Corpus + Failure-Surface Diff
+
+A one-shot benchmark tells you whether an agent fails. A regression gate has to tell you whether *this change* made it worse, and comparing two searches cannot do that reliably: the search explores differently once the agent changes, so a failure can disappear from the map only because it was not visited.
+
+`lifeforge surface --record` therefore saves two things: the failure surface, and a **corpus** of every scenario the search kept (passing and failing) together with the baseline agent's verdict on each. In CI the corpus is **replayed scenario by scenario** against the changed agent. That replay is the gate, and it compares like with like:
 
 ```bash
-# One-time, on main: record the baseline topography
+# On main: run the search, record the surface and the replayable corpus
 lifeforge surface --record --target agent.py:my_agent --scenarios 30 --out results/agent_surface.json
 
-# In CI, on every PR: re-run the campaign and diff
-lifeforge surface --baseline results/agent_surface.json   --target agent.py:my_agent --scenarios 30   --out results/surface_diff.md --fail-on-regression
+# On every PR: replay the corpus (gate) and run a fresh search (new findings to triage)
+lifeforge surface --baseline results/agent_surface.json --target agent.py:my_agent --scenarios 30 \
+  --out results/surface_diff.md --json --fail-on-regression
+
+# Sampled LLM agents: replay each scenario several times and allow for sampling noise
+lifeforge surface --baseline results/agent_surface.json --target agent.py:my_agent \
+  --repeats 5 --tolerance 0.2 --fail-on-regression
 ```
 
-The diff artifact reports new failing cells, resolved failures, new critical cells, and failure-mode shifts (e.g. "loops became exfiltrations") with a REGRESSED / IMPROVED / UNCHANGED verdict. Campaigns are deterministic for a fixed agent and seed, so unchanged agents diff to zero.
+The report lists every **regressed** scenario (a previously handled scenario now fails, a failure became critical, or a new violation type appeared) and every **fixed** one, with the mutations that built it. Scenarios where the agent errored on every run (API down, bad key) are reported as **invalid**, never as fixed. The fresh search is diffed against the baseline search as informational output: new failing cells there are leads to triage and add to the corpus, not a gate.
 
 ---
 
@@ -452,7 +494,7 @@ Per-control verdicts: GAP (violations mapped to the control), PASS, or UNVERIFIE
 
 ## Continuous CI/CD Integration (GitHub Action Gatekeeper)
 
-Prevent vulnerable, exfiltrating, or deadlocking agents from ever reaching production. Add the turnkey **LIFE FORGE GitHub Action** (`action.yml`) to any repository in 4 lines of YAML:
+Keep agents that obey injected instructions, leak data, or deadlock out of production. Add the **LIFE FORGE GitHub Action** (`action.yml`) to a repository. Pin it to a release tag, not `@main`: it is a security gate.
 
 ```yaml
 # .github/workflows/agent_guard.yml
@@ -469,11 +511,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Run LIFE FORGE Flight Simulation
-        uses: zariffromlatif/life-forge@main
+        uses: zariffromlatif/life-forge@v0.4.0
         with:
           target: "src/agent.py:my_agent"     # Python agent class, instance, or callable
           scenarios: 30                       # Number of evolutionary scenarios
-          fail-on-critical: "true"            # Block PR if zero-day exploits are discovered
+          fail-on-critical: "true"            # Block the PR if critical findings are discovered
           comment-on-pr: "true"               # Post audit table directly to PR review
 ```
 
@@ -571,7 +613,7 @@ LIFE FORGE maintains an extensive test suite verifying algorithm determinism, to
 
 ```bash
 pytest -q
-# 559 passed
+# PDF tests are skipped when reportlab is not installed (pip install -e ".[pdf]")
 ```
 
 ---

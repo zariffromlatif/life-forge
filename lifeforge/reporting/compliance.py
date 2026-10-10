@@ -23,7 +23,6 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -247,8 +246,41 @@ class CompliancePack:
         }
 
 
-def _utc_now() -> str:
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+def _utc_now(explicit: str | None = None) -> str:
+    """Generation timestamp: explicit value, else SOURCE_DATE_EPOCH, else now."""
+    from .report import resolve_generated_utc
+
+    return resolve_generated_utc(explicit)
+
+
+def _violation_register_source(report: dict[str, Any]) -> tuple[dict[str, int] | None, str]:
+    """Pick the per-violation counts a register is built from.
+
+    Prefers ``violation_breakdown`` (every violation type observed on any
+    elite) over ``failure_mode_breakdown`` (primary category per elite only,
+    which silently drops secondary violations).  Returns ``(None, reason)``
+    when the report carries no usable register at all.
+    """
+    for key in ("violation_breakdown", "failure_mode_breakdown"):
+        value = report.get(key)
+        if isinstance(value, dict):
+            if key == "violation_breakdown" and not value and report.get("failure_mode_breakdown"):
+                # An empty full register next to a non-empty primary one is
+                # inconsistent; trust the primary breakdown.
+                continue
+            return value, key
+    return None, "missing"
+
+
+def _report_claims_failures(report: dict[str, Any]) -> bool:
+    """True when the report's headline metrics say failures occurred."""
+    for key in ("critical_failures", "failure_rate", "evaluation_failure_rate", "failed_evaluations"):
+        try:
+            if float(report.get(key) or 0) > 0:
+                return True
+        except (TypeError, ValueError):
+            continue
+    return False
 
 
 def verify_audit_trail(trail_path: Path | str | None) -> dict[str, Any]:
@@ -295,8 +327,15 @@ def build_compliance_pack(
     customer: str | None = None,
     trail_path: Path | str | None = None,
     environment: dict[str, Any] | None = None,
+    generated_utc: str | None = None,
 ) -> CompliancePack:
     """Assess every control of a framework against a benchmark report.
+
+    Controls are only assessed PASS when the report carries a violation
+    register that is consistent with its headline metrics.  A report with no
+    register, or an empty register while ``critical_failures`` /
+    ``failure_rate`` say failures occurred, yields UNVERIFIED instead of a
+    false PASS.
 
     Parameters
     ----------
@@ -316,8 +355,20 @@ def build_compliance_pack(
         )
     controls = _FRAMEWORKS[framework]
 
-    breakdown: dict[str, int] = report.get("failure_mode_breakdown", {}) or {}
+    register_source, register_key = _violation_register_source(report)
+    breakdown: dict[str, int] = register_source or {}
     findings: list[dict[str, Any]] = report.get("findings", []) or []
+    register_unusable = register_source is None or (not breakdown and _report_claims_failures(report))
+    if register_source is None:
+        register_note = (
+            "The report carries no violation register (no 'violation_breakdown' or "
+            "'failure_mode_breakdown'); this control cannot be assessed from it."
+        )
+    else:
+        register_note = (
+            f"The report's '{register_key}' is empty but its headline metrics record failures; "
+            "the register is inconsistent and this control cannot be assessed from it."
+        )
 
     # Violation register: every recorded category with severity and article mapping.
     gap_register: list[dict[str, Any]] = []
@@ -341,6 +392,9 @@ def build_compliance_pack(
         mapped = [entry for entry in gap_register if control["id"] in entry["controls"]]
         notes = ""
         status = "GAP" if mapped else "PASS"
+        if status == "PASS" and register_unusable and not control.get("requires_trail"):
+            status = "UNVERIFIED"
+            notes = register_note
         if control.get("requires_trail"):
             if not trail_verification.get("provided"):
                 status = "UNVERIFIED"
@@ -375,7 +429,7 @@ def build_compliance_pack(
     return CompliancePack(
         framework=framework,
         framework_title="EU AI Act (Regulation (EU) 2024/1689)",
-        generated_utc=_utc_now(),
+        generated_utc=_utc_now(generated_utc),
         target_agent=str(report.get("agent_name", "unknown")),
         assessments=assessments,
         gap_register=gap_register,
@@ -435,6 +489,14 @@ def render_compliance_markdown(pack: CompliancePack, *, customer: str | None = N
                 f"**{len(gaps)} control(s) have documented gaps.** "
                 f"{len(unverified)} cannot be assessed from the supplied artifacts.",
                 "",
+            ]
+        )
+
+    # The register is evidence in its own right: render it whenever any
+    # violation was recorded, even if none maps onto a framework control.
+    if pack.gap_register:
+        lines.extend(
+            [
                 "---",
                 "",
                 "## Gap Register",
@@ -449,7 +511,16 @@ def render_compliance_markdown(pack: CompliancePack, *, customer: str | None = N
                 f"| {', '.join(entry['controls']) or '-'} |"
             )
         lines.append("")
+        if not gaps:
+            lines.extend(
+                [
+                    "Recorded violations above do not map onto any control of this framework; "
+                    "they are listed so the register is complete.",
+                    "",
+                ]
+            )
 
+    if gaps:
         lines.extend(
             [
                 "---",
@@ -529,14 +600,20 @@ def write_compliance_pack(
     customer: str | None = None,
     trail_path: Path | str | None = None,
     environment: dict[str, Any] | None = None,
+    generated_utc: str | None = None,
 ) -> tuple[Path, Path]:
-    """Write the evidence pack as Markdown + JSON; returns (markdown, json) paths."""
+    """Write the evidence pack as Markdown + JSON; returns (markdown, json) paths.
+
+    Pass ``generated_utc`` (or set ``SOURCE_DATE_EPOCH``) to make both files
+    byte-reproducible; otherwise the current time is stamped.
+    """
     pack = build_compliance_pack(
         report,
         framework=framework,
         customer=customer,
         trail_path=trail_path,
         environment=environment,
+        generated_utc=generated_utc,
     )
     md_path = Path(output_path)
     md_path.parent.mkdir(parents=True, exist_ok=True)

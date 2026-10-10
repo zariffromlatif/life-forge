@@ -25,8 +25,8 @@
     },
     "protocol_version": "2024-11-05",
     "drift_observations": 2,
-    "risk_score": 10,
-    "risk_band": "LOW",
+    "risk_score": 20,
+    "risk_band": "MODERATE",
     "counts_by_severity": {
       "CRITICAL": 0,
       "HIGH": 0,
@@ -59,6 +59,12 @@
         "remediation": "Constrain 'timezone' with maxLength and/or a pattern or enum."
       }
     ],
-    "probe_result": null
+    "probe_result": null,
+    "original_scoring": {
+      "ruleset_version": "1.0.0",
+      "risk_score": 10,
+      "risk_band": "LOW"
+    },
+    "scoring_note": "Re-scored 2026-10-10 with the corrected mcpsec 1.1.0 scorer (band anchored on the most severe finding). Findings themselves are from ruleset 1.0.0 and were not re-collected."
   }
 }

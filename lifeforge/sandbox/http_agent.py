@@ -3,10 +3,31 @@ from __future__ import annotations
 
 import json
 import urllib.error
+import urllib.parse
 import urllib.request
 from typing import Any
 
 from lifeforge.sandbox.agent import AgentAction, AgentInterface
+
+
+class _SameHostRedirectHandler(urllib.request.HTTPRedirectHandler):
+    """Follow redirects only within the same scheme and host.
+
+    Custom headers (often an Authorization token) are attached to every
+    request; following a redirect to another host would hand them to it.
+    """
+
+    def redirect_request(self, req, fp, code, msg, headers, newurl):  # noqa: D401 - urllib hook
+        old = urllib.parse.urlsplit(req.full_url)
+        new = urllib.parse.urlsplit(newurl)
+        if (old.scheme, old.netloc) != (new.scheme, new.netloc):
+            raise urllib.error.HTTPError(
+                req.full_url, code, f"refusing cross-host redirect to {new.netloc}", headers, fp
+            )
+        return super().redirect_request(req, fp, code, msg, headers, newurl)
+
+
+_OPENER = urllib.request.build_opener(_SameHostRedirectHandler)
 
 
 class HTTPAgentAdapter(AgentInterface):
@@ -46,7 +67,7 @@ class HTTPAgentAdapter(AgentInterface):
                 headers=req_headers,
                 method="POST",
             )
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            with _OPENER.open(req, timeout=self.timeout) as resp:
                 pass
         except Exception:
             # Non-fatal if remote agent does not maintain external episode state
@@ -68,7 +89,7 @@ class HTTPAgentAdapter(AgentInterface):
         data_bytes = json.dumps(payload, default=str).encode("utf-8")
         req_headers = {
             "Content-Type": "application/json",
-            "User-Agent": "LIFE-FORGE-Agent-Evaluator/0.3",
+            "User-Agent": "LIFE-FORGE-Agent-Evaluator/0.4",
             **self.headers,
         }
 
@@ -80,19 +101,22 @@ class HTTPAgentAdapter(AgentInterface):
         )
 
         try:
-            with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+            with _OPENER.open(req, timeout=self.timeout) as resp:
                 body = resp.read().decode("utf-8")
                 res_data = json.loads(body)
                 return self._parse_action_response(res_data)
+        # Transport failures are reported as "error", never "finish": a dead or
+        # misconfigured endpoint has not demonstrated safe behaviour, and
+        # scoring it as a clean stop would rank a broken agent as resilient.
         except urllib.error.HTTPError as http_err:
             return AgentAction(
-                action_type="finish",
+                action_type="error",
                 thought=f"Remote agent HTTP Error {http_err.code}: {http_err.reason}",
-                message=f"HTTP Webhook failure: {http_err.code}",
+                message=f"HTTP Webhook failure: {http_err.code} {http_err.reason}",
             )
         except Exception as exc:
             return AgentAction(
-                action_type="finish",
+                action_type="error",
                 thought=f"Remote agent communication error: {exc}",
                 message=f"Webhook connection failure: {exc}",
             )
@@ -101,8 +125,9 @@ class HTTPAgentAdapter(AgentInterface):
         """Normalize varied JSON action schemas from external agents into AgentAction."""
         if not isinstance(data, dict):
             return AgentAction(
-                action_type="finish",
-                thought="Remote agent returned non-dictionary payload.",
+                action_type="error",
+                thought="Remote agent returned a non-object JSON payload.",
+                message="Remote agent returned a non-object JSON payload.",
             )
 
         # 1. Determine action type

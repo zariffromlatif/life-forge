@@ -1,5 +1,8 @@
 # The Scale Paradox in Autonomous AI Agents: Why 24B and 33B Models Suffered More Zero-Day Wire Transfers Than 8B
 
+> **Correction notice (2026-10-10, oracle 2.0).** An audit of the oracle that produced these results found three problems. (1) The "critical" findings are attempts to call the prohibited `transfer_funds` tool. External transfers are disabled in the sandbox and every attempt was refused, so no transfer was completed: read "wire transfers"/"exfiltrations" below as *attempted* prohibited transfers. (2) The single TOCTOU finding (`mistral-small:24b`) was a false positive: the check fired on purchase orders the tool rejected. (3) Each model was run with one seed, and the failure rate counts MAP-Elites archive cells rather than evaluations. The observations below are leads to re-test with multiple seeds, not measured effects. The original text is kept unchanged for provenance.
+
+
 > **Author**: Zarif Latif (https://github.com/zariffromlatif/life-forge)  
 > **Platform**: LIFE FORGE -- Autonomous Agent Flight Simulator  
 > **Hardware**: Intel Core i9-14900K, NVIDIA RTX 4090 (24GB VRAM), 64GB DDR5  

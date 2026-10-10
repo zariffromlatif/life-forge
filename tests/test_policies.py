@@ -36,6 +36,7 @@ def _calls(*entries: tuple[str, dict]) -> list[dict]:
                     "thought": None,
                     "message": None,
                 },
+                "result": {"success": True, "output": {}, "error": None, "cost": 0.0},
             }
         )
     return trace
@@ -69,8 +70,11 @@ def _results(*entries: tuple[str, dict, bool]) -> list[dict]:
 
 def _context(trace: list[dict], state: WorldState | None = None, declared: set[str] | None = None) -> PolicyContext:
     """Build a PolicyContext over one world state."""
-    world = state or WorldState.default_purchasing_world()
-    return PolicyContext(initial_state=world, final_state=world, trace=trace, declared_tools=declared)
+    # The initial state is always the pristine world: policies judge what
+    # changed during the episode, so a supplied state is the *final* state.
+    initial = WorldState.default_purchasing_world()
+    world = state or initial
+    return PolicyContext(initial_state=initial, final_state=world, trace=trace, declared_tools=declared)
 
 
 def _types(violations: list) -> list[str]:
@@ -523,8 +527,9 @@ class TestGoalSpecificationPolicyIntegration:
         state = WorldState.default_purchasing_world()
         trace = _calls(("query_database", {"table": "balances"}))
         violations = goal.evaluate(state, state, trace)
-        # The broken policy is skipped; the healthy one still reports.
-        assert _types(violations) == ["EXCESSIVE_DATA_QUERYING"]
+        # The broken policy does not abort the verdict, but it is reported:
+        # a check that could not run must never read as a pass.
+        assert sorted(_types(violations)) == ["EXCESSIVE_DATA_QUERYING", "ORACLE_POLICY_ERROR"]
 
     def test_inert_policies_are_skipped(self):
         goal = GoalSpecification(

@@ -36,6 +36,17 @@ class EvolutionaryRunSummary:
     novel_failure_modes: list[str]
     critical_failures_count: int
     elites: list[EliteScenario]
+    # Per-evaluation outcome counts (every episode run, not only the elites
+    # retained in the archive).  ``None`` when the summary was built by code
+    # that predates these counters, so consumers can fall back gracefully.
+    failed_evaluations: int | None = None
+    critical_evaluations: int | None = None
+    seed: int | None = None
+
+
+#: Lineage marker recorded on the unmutated baseline elite.  It is not a
+#: mutation, so it is stripped from the lineage children inherit.
+SEED_BASELINE_LABEL = "seed_baseline"
 
 
 class EvolutionEngine:
@@ -62,6 +73,7 @@ class EvolutionEngine:
         self.domain = domain
         self.runner = runner or (domain.build_runner() if domain is not None else SandboxRunner())
         self.archive = archive or MapElitesArchive(bins=(4, 4, 4))
+        self.seed = seed
         self.rng = random.Random(seed)
         self.delay = delay
 
@@ -107,7 +119,13 @@ class EvolutionEngine:
         if self.domain is not None:
             return self.domain.behavior_coords(base_state, scenario, mutations)
 
-        # 1. Adversarial intensity: proportion of adversarial mutations
+        # 1. Adversarial intensity: proportion of adversarial mutations.
+        # Known limitation (kept deliberately so published seed=42 coordinates
+        # stay reproducible): ``mutations`` is the full inherited lineage, so
+        # ancestor adversarial mutations keep counting even when a later
+        # mutation removed their payload (e.g. ConflictingSpecificationMutator
+        # replaces the inbox, a second note injection overwrites the first).
+        # Intensity therefore measures lineage depth, not live payloads.
         adv_mutations = sum(
             1
             for m in mutations
@@ -166,7 +184,7 @@ class EvolutionEngine:
         seed_coords = self.calculate_coords(base_state, base_state, [])
         self.archive.add(
             scenario=base_state,
-            mutations=["seed_baseline"],
+            mutations=[SEED_BASELINE_LABEL],
             trace=seed_trace,
             coords=seed_coords,
             generation=0,
@@ -178,7 +196,12 @@ class EvolutionEngine:
             elites = self.archive.get_elites()
             parent = self.rng.choice(elites) if elites else None
             parent_state = parent.scenario if parent else base_state
-            parent_mutations = list(parent.mutations_applied) if parent else []
+            # The baseline marker is not a mutation; children must not inherit
+            # it into their recorded lineage or causal trigger.  It matches no
+            # adversarial mutator name, so coordinates are unaffected.
+            parent_mutations = (
+                [m for m in parent.mutations_applied if m != SEED_BASELINE_LABEL] if parent else []
+            )
 
             # Sample 1 to 2 mutators
             num_mutations = self.rng.choice([1, 2])
@@ -226,4 +249,7 @@ class EvolutionEngine:
             novel_failure_modes=sorted(list(self.archive.novel_failure_modes_discovered)),
             critical_failures_count=critical_count,
             elites=all_elites,
+            failed_evaluations=getattr(self.archive, "failed_evaluations", None),
+            critical_evaluations=getattr(self.archive, "critical_evaluations", None),
+            seed=self.seed,
         )

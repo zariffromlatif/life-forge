@@ -571,7 +571,8 @@ class TestAuditBundle:
         written = build_audit_bundle(report, tmp_path / "bundle", model="llama3.1:8b")
         script = written["reproduction_commands"].read_text(encoding="utf-8")
         assert script.startswith("#!/usr/bin/env bash")
-        assert "lifeforge eval" in script
+        # A model run is reproduced with `lifeforge test --model` (eval has no --model flag).
+        assert "lifeforge test \\" in script and "--model llama3.1:8b" in script
         assert "--seed 42" in script
 
     def test_generated_remediation_compiles(self, report, tmp_path):

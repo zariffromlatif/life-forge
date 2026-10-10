@@ -2,10 +2,40 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import asdict
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .analyzer import DiagnosticMetrics
+
+#: Timestamp format shared by every generated deliverable.
+TIMESTAMP_FORMAT = "%Y-%m-%d %H:%M:%S UTC"
+
+
+def resolve_generated_utc(explicit: str | None = None, fmt: str = TIMESTAMP_FORMAT) -> str:
+    """Timestamp to stamp on a generated artifact.
+
+    Precedence: an explicit value, then the reproducible-builds
+    ``SOURCE_DATE_EPOCH`` environment variable (integer seconds), then the
+    current UTC time.  Pinning either of the first two makes artifacts that
+    embed a generation time byte-reproducible.
+    """
+    if explicit:
+        return str(explicit)
+    epoch = os.environ.get("SOURCE_DATE_EPOCH", "").strip()
+    if epoch:
+        try:
+            return datetime.fromtimestamp(int(epoch), tz=timezone.utc).strftime(fmt)
+        except (ValueError, OverflowError, OSError):
+            pass
+    return datetime.now(timezone.utc).strftime(fmt)
+
+
+def format_trigger(trigger: list[str] | None) -> str:
+    """Render a causal-trigger list; an empty list means the unmutated baseline."""
+    items = [str(item) for item in (trigger or []) if item]
+    return ", ".join(items) if items else "none (fails on the unmutated baseline scenario)"
 
 
 class ReportGenerator:
@@ -13,6 +43,14 @@ class ReportGenerator:
 
     @staticmethod
     def generate_markdown(metrics: DiagnosticMetrics) -> str:
+        eval_rate = getattr(metrics, "evaluation_failure_rate", None)
+        if eval_rate is not None:
+            eval_rate_cell = (
+                f"**{eval_rate}%** ({metrics.failed_evaluations or 0:,} of "
+                f"{metrics.total_evaluations:,} simulations failed)"
+            )
+        else:
+            eval_rate_cell = "not recorded"
         lines: list[str] = [
             "# LIFE FORGE: Agent Evolution Report",
             "",
@@ -29,8 +67,9 @@ class ReportGenerator:
             f"| **Target Agent** | `{metrics.agent_name}` |",
             f"| **Total Simulations Run** | {metrics.total_evaluations:,} |",
             f"| **Distinct Scenarios Explored** | {metrics.scenarios_generated:,} |",
-            f"| **Baseline Success Rate** | **{metrics.success_rate}%** |",
-            f"| **Adversarial Failure Rate** | **{metrics.failure_rate}%** |",
+            f"| **Evaluation Failure Rate** (all simulations) | {eval_rate_cell} |",
+            f"| **Elite-Cell Failure Rate** (archive cells; biased toward failure by selection) | **{metrics.failure_rate}%** |",
+            f"| **Elite-Cell Success Rate** | {metrics.success_rate}% |",
             f"| **Critical Vulnerabilities Discovered** | **{metrics.critical_failures}** |",
             f"| **Novel Failure Modes Identified** | {metrics.novel_failure_modes_count} |",
             f"| **Most Vulnerable Capability** | *{metrics.most_vulnerable_capability}* |",
@@ -86,7 +125,7 @@ class ReportGenerator:
                     "",
                     f"- **Severity**: `[{finding.severity}]`",
                     f"- **Failure Class**: `{finding.category}`",
-                    f"- **Minimal Causal Trigger**: `{', '.join(finding.minimal_causal_trigger)}`",
+                    f"- **Minimal Causal Trigger**: `{format_trigger(finding.minimal_causal_trigger)}`",
                     "",
                     f"**Mechanistic Explanation**:",
                     f"{finding.description}",

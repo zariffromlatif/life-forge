@@ -1,18 +1,21 @@
 # MCP Ecosystem Security Scan
 
 **Generated**: 2026-10-03 12:52 UTC  
-**Scanner**: LIFE FORGE mcpsec v1.0.0 (deterministic ruleset; findings reproduce byte for byte)
+**Scanner**: findings from LIFE FORGE mcpsec ruleset 1.0.0; scores and bands re-computed with mcpsec 1.1.0 (see revision note)
 **Method**: live protocol probes (stdio, definitions read off the wire) for servers launchable without credentials; static source extraction for popular credential-gated servers. The scanner observes definitions only - it never executes tools.
+
+
+> **Revision 2026-10-10 - read first.** This report was first published (2026-10-03) with **40% of servers in the CRITICAL band**. That figure was wrong. The 1.0.0 scorer banded servers by raw finding *volume*, so a server with many MEDIUM "unbounded parameter" findings and **no CRITICAL finding** was labelled CRITICAL; the scan contained **zero CRITICAL-severity findings**. Bands are now anchored on the most severe finding (mcpsec 1.1.0), and the stored findings were re-scored without re-collecting them. Two further 1.0.0 defects mean the findings themselves need a fresh scan: (1) static extraction dropped every parameter of tools declared as JSON-schema constants, so **`brave-search`, `google-maps`, and `slack` were never actually scanned** (their 0-finding results are invalid); (2) live scans collapsed per-parameter findings, undercounting MEDIUM findings on live-probed servers. Original scores are preserved in each per-server JSON under `original_scoring`.
 
 ---
 
 ## Headline Numbers
 
-- **1** of 1 targeted servers scanned (0 not launchable without credentials, 0 scan errors)
-- **14** tool definitions analyzed
-- **100.0%** of scanned servers carry at least one finding
-- **100.0%** of scanned servers score in the CRITICAL band (`filesystem`)
-- Findings by severity: **0 CRITICAL** / 1 HIGH / 14 MEDIUM / 0 LOW
+- **15** of 16 targeted servers scanned (1 not launchable without credentials, 0 scan errors)
+- **167** tool definitions analyzed
+- **80.0%** of scanned servers carry at least one finding (a lower bound: three static extractions were invalid, see revision note)
+- **0.0%** of scanned servers score in the CRITICAL band (none)
+- Findings by severity: **0 CRITICAL** / 25 HIGH / 245 MEDIUM / 0 LOW
 
 Context: an industry scan reported 33% of MCP servers with critical vulnerabilities (Practical DevSecOps, 2026). This scan runs an independent, reproducible ruleset and publishes every raw report.
 
@@ -22,8 +25,9 @@ Context: an industry scan reported 33% of MCP servers with critical vulnerabilit
 
 | Rule | Occurrences |
 | :--- | :--- |
-| `MCP_UNBOUNDED_PARAMETER` | 14 |
-| `MCP_DESTRUCTIVE_UNCONSTRAINED` | 1 |
+| `MCP_UNBOUNDED_PARAMETER` | 242 |
+| `MCP_DESTRUCTIVE_UNCONSTRAINED` | 25 |
+| `MCP_MUTATING_NO_REQUIRED` | 3 |
 
 ---
 
@@ -31,13 +35,52 @@ Context: an industry scan reported 33% of MCP servers with critical vulnerabilit
 
 | Server | Source | Method | Tools | Score | Band | C/H/M/L |
 | :--- | :--- | :--- | :--- | :--- | :--- | :--- |
-| `filesystem` | @modelcontextprotocol/server-filesystem | live-stdio | 14 | 82 | CRITICAL | 0/1/14/0 |
+| `brave-search` | modelcontextprotocol/servers-archived | static-source | 2 | 0 | LOW | 0/0/0/0 |
+| `context7` | @upstash/context7-mcp | live-stdio | 2 | 20 | MODERATE | 0/0/2/0 |
+| `desktop-commander` | @wonderwhy-er/desktop-commander | live-stdio | 26 | 57 | HIGH | 0/8/27/0 |
+| `everything` | @modelcontextprotocol/server-everything | live-stdio | 13 | 50 | HIGH | 0/1/6/0 |
+| `filesystem` | @modelcontextprotocol/server-filesystem | live-stdio | 14 | 50 | HIGH | 0/1/14/0 |
+| `firecrawl` | firecrawl/firecrawl-mcp-server | static-source | 19 | 59 | HIGH | 0/7/58/0 |
+| `github` | modelcontextprotocol/servers-archived | static-source | 26 | 50 | HIGH | 0/1/93/0 |
+| `google-maps` | modelcontextprotocol/servers-archived | static-source | 7 | 0 | LOW | 0/0/0/0 |
+| `memory` | @modelcontextprotocol/server-memory | live-stdio | 9 | 50 | HIGH | 0/3/1/0 |
+| `playwright` | @playwright/mcp | live-stdio | 25 | 50 | HIGH | 0/3/24/0 |
+| `sequential-thinking` | @modelcontextprotocol/server-sequential-thinking | live-stdio | 1 | 20 | MODERATE | 0/0/1/0 |
+| `server-fetch` | mcp-server-fetch (PyPI) | live-stdio | 1 | 50 | HIGH | 0/1/1/0 |
+| `server-git` | mcp-server-git (PyPI) | live-stdio | 12 | 20 | MODERATE | 0/0/16/0 |
+| `server-sqlite` | mcp-server-sqlite (PyPI) | live-stdio | - | - | not launchable | - |
+| `server-time` | mcp-server-time (PyPI) | live-stdio | 2 | 20 | MODERATE | 0/0/2/0 |
+| `slack` | modelcontextprotocol/servers-archived | static-source | 8 | 0 | LOW | 0/0/0/0 |
 
 ---
 
 ## Notable Findings
 
+- **`desktop-commander`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `edit_block`
+- **`desktop-commander`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `get_prompts`
+- **`desktop-commander`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `interact_with_process`
+- **`desktop-commander`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `list_sessions`
+- **`desktop-commander`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `start_process`
+- **`desktop-commander`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `start_search`
+- **`desktop-commander`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `write_file`
+- **`desktop-commander`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `write_pdf`
+- **`everything`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `simulate-research-query`
 - **`filesystem`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `write_file`
+- **`firecrawl`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `firecrawl_agent`
+- **`firecrawl`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `firecrawl_credit_usage`
+- **`firecrawl`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `firecrawl_developer_search`
+- **`firecrawl`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `firecrawl_monitor_create`
+- **`firecrawl`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `firecrawl_monitor_delete`
+- **`firecrawl`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `firecrawl_monitor_run`
+- **`firecrawl`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `firecrawl_search`
+- **`github`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `merge_pull_request`
+- **`memory`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `delete_entities`
+- **`memory`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `delete_observations`
+- **`memory`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `delete_relations`
+- **`playwright`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `browser_drag`
+- **`playwright`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `browser_drop`
+- **`playwright`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `browser_run_code_unsafe`
+- **`server-fetch`** `MCP_DESTRUCTIVE_UNCONSTRAINED` (HIGH): Destructive tool exposes no authorization surface - tool `fetch`
 
 ---
 

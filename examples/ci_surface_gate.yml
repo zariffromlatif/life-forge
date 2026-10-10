@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: zariffromlatif/life-forge@main
+      - uses: zariffromlatif/life-forge@v0.4.0
         with:
           mode: surface
           surface-baseline: results/agent_surface.json

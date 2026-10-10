@@ -155,7 +155,9 @@ def test_http_agent_adapter_act_and_reset(mock_agent_server: tuple[str, str]) ->
 def test_http_agent_adapter_connection_error() -> None:
     adapter = HTTPAgentAdapter(endpoint="http://127.0.0.1:59999/act", timeout=1.0)
     action = adapter.act({}, [])
-    assert action.action_type == "finish"
+    # A dead endpoint is an invalid episode, never a clean "finish" (which
+    # would score an unreachable agent as perfectly safe).
+    assert action.action_type == "error"
     assert "error" in (action.thought or "").lower() or "failure" in (action.message or "").lower()
 
 

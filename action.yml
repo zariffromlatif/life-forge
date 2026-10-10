@@ -108,6 +108,14 @@ inputs:
     description: "[surface] Campaign against the hardened built-in reference agent"
     required: false
     default: "false"
+  surface-repeats:
+    description: "[surface] Replays per recorded scenario (use >1 for sampled LLM agents; empty = as recorded)"
+    required: false
+    default: ""
+  surface-tolerance:
+    description: "[surface] Allowed rise in a scenario's failure/critical rate before it counts as regressed"
+    required: false
+    default: "0"
 
   # ---- mcp-scan mode inputs ------------------------------------------
   mcp-manifest:
@@ -164,51 +172,38 @@ runs:
       id: run-eval
       if: ${{ inputs.mode == 'eval' }}
       shell: bash
+      # Inputs travel through env and a bash array: never interpolated into the
+      # script body (no injection) and never word-split (paths with spaces work).
+      env:
+        LF_SCENARIOS: ${{ inputs.scenarios }}
+        LF_SEED: ${{ inputs.seed }}
+        LF_DELAY: ${{ inputs.delay }}
+        LF_REPORT: ${{ inputs.report-path }}
+        LF_TARGET: ${{ inputs.target }}
+        LF_ENDPOINT: ${{ inputs.endpoint }}
+        LF_RESET_ENDPOINT: ${{ inputs.reset-endpoint }}
+        LF_TIMEOUT: ${{ inputs.timeout }}
+        LF_AGENT_NAME: ${{ inputs.agent-name }}
+        LF_DOMAIN: ${{ inputs.domain }}
+        LF_DOMAIN_SPEC: ${{ inputs.domain-spec }}
+        LF_FRONTIER: ${{ inputs.frontier }}
+        LF_JSON: ${{ inputs.json }}
+        LF_FAIL_ON_CRITICAL: ${{ inputs.fail-on-critical }}
       run: |
-        CMD="python -m lifeforge.cli eval --scenarios ${{ inputs.scenarios }} --seed ${{ inputs.seed }} --delay ${{ inputs.delay }} --out ${{ inputs.report-path }}"
-
-        if [ -n "${{ inputs.target }}" ]; then
-          CMD="$CMD --target ${{ inputs.target }}"
-        fi
-
-        if [ -n "${{ inputs.endpoint }}" ]; then
-          CMD="$CMD --endpoint ${{ inputs.endpoint }}"
-        fi
-
-        if [ -n "${{ inputs.reset-endpoint }}" ]; then
-          CMD="$CMD --reset-endpoint ${{ inputs.reset-endpoint }}"
-        fi
-
-        if [ -n "${{ inputs.timeout }}" ]; then
-          CMD="$CMD --timeout ${{ inputs.timeout }}"
-        fi
-
-        if [ -n "${{ inputs.agent-name }}" ]; then
-          CMD="$CMD --agent-name ${{ inputs.agent-name }}"
-        fi
-
-        if [ -n "${{ inputs.domain }}" ]; then
-          CMD="$CMD --domain ${{ inputs.domain }}"
-        fi
-
-        if [ -n "${{ inputs.domain-spec }}" ]; then
-          CMD="$CMD --domain-spec ${{ inputs.domain-spec }}"
-        fi
-
-        if [ "${{ inputs.frontier }}" = "true" ]; then
-          CMD="$CMD --frontier"
-        fi
-
-        if [ "${{ inputs.json }}" = "true" ]; then
-          CMD="$CMD --json"
-        fi
-
-        if [ "${{ inputs.fail-on-critical }}" = "true" ]; then
-          CMD="$CMD --fail-on-critical"
-        fi
-
-        echo "[*] Executing: $CMD"
-        $CMD
+        set -uo pipefail
+        CMD=(python -m lifeforge.cli eval --scenarios "$LF_SCENARIOS" --seed "$LF_SEED" --delay "$LF_DELAY" --out "$LF_REPORT")
+        if [ -n "$LF_TARGET" ]; then CMD+=(--target "$LF_TARGET"); fi
+        if [ -n "$LF_ENDPOINT" ]; then CMD+=(--endpoint "$LF_ENDPOINT"); fi
+        if [ -n "$LF_RESET_ENDPOINT" ]; then CMD+=(--reset-endpoint "$LF_RESET_ENDPOINT"); fi
+        if [ -n "$LF_TIMEOUT" ]; then CMD+=(--timeout "$LF_TIMEOUT"); fi
+        if [ -n "$LF_AGENT_NAME" ]; then CMD+=(--agent-name "$LF_AGENT_NAME"); fi
+        if [ -n "$LF_DOMAIN" ]; then CMD+=(--domain "$LF_DOMAIN"); fi
+        if [ -n "$LF_DOMAIN_SPEC" ]; then CMD+=(--domain-spec "$LF_DOMAIN_SPEC"); fi
+        if [ "$LF_FRONTIER" = "true" ]; then CMD+=(--frontier); fi
+        if [ "$LF_JSON" = "true" ]; then CMD+=(--json); fi
+        if [ "$LF_FAIL_ON_CRITICAL" = "true" ]; then CMD+=(--fail-on-critical); fi
+        echo "[*] Executing: ${CMD[*]}"
+        "${CMD[@]}"
 
     # ---------------------------------------------------------------
     # Mode: surface - failure-surface diff gate
@@ -218,64 +213,62 @@ runs:
       if: ${{ inputs.mode == 'surface' }}
       shell: bash
       env:
-        SURFACE_TARGET: ${{ inputs.surface-agent-target || inputs.target }}
-        SURFACE_ENDPOINT: ${{ inputs.surface-endpoint || inputs.endpoint }}
+        LF_BASELINE: ${{ inputs.surface-baseline }}
+        LF_SCENARIOS: ${{ inputs.scenarios }}
+        LF_SEED: ${{ inputs.seed }}
+        LF_REPORT: ${{ inputs.report-path }}
+        LF_TARGET: ${{ inputs.surface-agent-target || inputs.target }}
+        LF_ENDPOINT: ${{ inputs.surface-endpoint || inputs.endpoint }}
+        LF_HARDENED: ${{ inputs.surface-hardened }}
+        LF_AGENT_NAME: ${{ inputs.surface-agent-name }}
+        LF_SAVE_CURRENT: ${{ inputs.surface-save-current }}
+        LF_DOMAIN: ${{ inputs.domain }}
+        LF_DOMAIN_SPEC: ${{ inputs.domain-spec }}
+        LF_FRONTIER: ${{ inputs.frontier }}
+        LF_JSON: ${{ inputs.json }}
+        LF_FAIL_ON_REGRESSION: ${{ inputs.surface-fail-on-regression }}
+        LF_REPEATS: ${{ inputs.surface-repeats }}
+        LF_TOLERANCE: ${{ inputs.surface-tolerance }}
       run: |
-        if [ -z "${{ inputs.surface-baseline }}" ]; then
+        set -uo pipefail
+        if [ -z "$LF_BASELINE" ]; then
           echo "[FAIL] surface mode requires 'surface-baseline' (record one with: lifeforge surface --record --out results/agent_surface.json)"
           exit 1
         fi
-
-        CMD="python -m lifeforge.cli surface --baseline ${{ inputs.surface-baseline }} --scenarios ${{ inputs.scenarios }} --seed ${{ inputs.seed }} --out ${{ inputs.report-path }}"
-
-        if [ -n "$SURFACE_TARGET" ]; then
-          CMD="$CMD --target $SURFACE_TARGET"
-        elif [ -n "$SURFACE_ENDPOINT" ]; then
-          CMD="$CMD --endpoint $SURFACE_ENDPOINT"
-        elif [ "${{ inputs.surface-hardened }}" = "true" ]; then
-          CMD="$CMD --hardened"
-        elif [ -n "${{ inputs.surface-agent-name }}" ]; then
-          CMD="$CMD --agent-name ${{ inputs.surface-agent-name }}"
+        CMD=(python -m lifeforge.cli surface --baseline "$LF_BASELINE" --scenarios "$LF_SCENARIOS" --seed "$LF_SEED" --out "$LF_REPORT")
+        if [ -n "$LF_TARGET" ]; then
+          CMD+=(--target "$LF_TARGET")
+        elif [ -n "$LF_ENDPOINT" ]; then
+          CMD+=(--endpoint "$LF_ENDPOINT")
+        elif [ "$LF_HARDENED" = "true" ]; then
+          CMD+=(--hardened)
+        elif [ -n "$LF_AGENT_NAME" ]; then
+          CMD+=(--agent-name "$LF_AGENT_NAME")
         fi
-
-        if [ -n "${{ inputs.surface-save-current }}" ]; then
-          CMD="$CMD --save-current ${{ inputs.surface-save-current }}"
-        fi
-
-        if [ -n "${{ inputs.domain }}" ]; then
-          CMD="$CMD --domain ${{ inputs.domain }}"
-        fi
-
-        if [ -n "${{ inputs.domain-spec }}" ]; then
-          CMD="$CMD --domain-spec ${{ inputs.domain-spec }}"
-        fi
-
-        if [ "${{ inputs.frontier }}" = "true" ]; then
-          CMD="$CMD --frontier"
-        fi
-
-        if [ "${{ inputs.json }}" = "true" ]; then
-          CMD="$CMD --json"
-        fi
-
-        if [ "${{ inputs.surface-fail-on-regression }}" = "true" ]; then
-          CMD="$CMD --fail-on-regression"
-        fi
-
-        echo "[*] Executing: $CMD"
-        $CMD
+        if [ -n "$LF_SAVE_CURRENT" ]; then CMD+=(--save-current "$LF_SAVE_CURRENT"); fi
+        if [ -n "$LF_DOMAIN" ]; then CMD+=(--domain "$LF_DOMAIN"); fi
+        if [ -n "$LF_DOMAIN_SPEC" ]; then CMD+=(--domain-spec "$LF_DOMAIN_SPEC"); fi
+        if [ "$LF_FRONTIER" = "true" ]; then CMD+=(--frontier); fi
+        if [ "$LF_JSON" = "true" ]; then CMD+=(--json); fi
+        if [ "$LF_FAIL_ON_REGRESSION" = "true" ]; then CMD+=(--fail-on-regression); fi
+        if [ -n "$LF_REPEATS" ]; then CMD+=(--repeats "$LF_REPEATS"); fi
+        if [ -n "$LF_TOLERANCE" ]; then CMD+=(--tolerance "$LF_TOLERANCE"); fi
+        echo "[*] Executing: ${CMD[*]}"
+        "${CMD[@]}"
 
     - name: Export surface verdict
       if: ${{ inputs.mode == 'surface' && always() }}
       shell: bash
+      env:
+        LF_REPORT: ${{ inputs.report-path }}
       run: |
         VERDICT="UNKNOWN"
-        if [ -f "${{ inputs.report-path }}" ]; then
-          if grep -q "Verdict: REGRESSED" "${{ inputs.report-path }}"; then
+        if [ -f "$LF_REPORT" ]; then
+          if grep -q "Verdict: REGRESSED" "$LF_REPORT"; then
             VERDICT="REGRESSED"
-          elif grep -q "Verdict: IMPROVED" "${{ inputs.report-path }}"; then
+          elif grep -q "Verdict: IMPROVED" "$LF_REPORT"; then
             VERDICT="IMPROVED"
-          elif grep -q "Verdict: UNCHANGED" "${{ inputs.report-path }}"; then
+          elif grep -q "Verdict: UNCHANGED" "$LF_REPORT"; then
             VERDICT="UNCHANGED"
           fi
         fi
@@ -289,42 +282,39 @@ runs:
       id: run-mcp-scan
       if: ${{ inputs.mode == 'mcp-scan' }}
       shell: bash
+      env:
+        LF_REPORT: ${{ inputs.report-path }}
+        LF_MANIFEST: ${{ inputs.mcp-manifest }}
+        LF_SERVER: ${{ inputs.mcp-server }}
+        LF_URL: ${{ inputs.mcp-url }}
+        LF_BASELINE: ${{ inputs.mcp-baseline }}
+        LF_TIMEOUT: ${{ inputs.mcp-timeout }}
+        LF_JSON: ${{ inputs.json }}
+        LF_FAIL_ON_CRITICAL: ${{ inputs.fail-on-critical }}
       run: |
+        set -uo pipefail
         SOURCE_COUNT=0
-        if [ -n "${{ inputs.mcp-manifest }}" ]; then SOURCE_COUNT=$((SOURCE_COUNT+1)); fi
-        if [ -n "${{ inputs.mcp-server }}" ]; then SOURCE_COUNT=$((SOURCE_COUNT+1)); fi
-        if [ -n "${{ inputs.mcp-url }}" ]; then SOURCE_COUNT=$((SOURCE_COUNT+1)); fi
+        if [ -n "$LF_MANIFEST" ]; then SOURCE_COUNT=$((SOURCE_COUNT+1)); fi
+        if [ -n "$LF_SERVER" ]; then SOURCE_COUNT=$((SOURCE_COUNT+1)); fi
+        if [ -n "$LF_URL" ]; then SOURCE_COUNT=$((SOURCE_COUNT+1)); fi
         if [ "$SOURCE_COUNT" -ne 1 ]; then
           echo "[FAIL] mcp-scan mode requires exactly one of: mcp-manifest, mcp-server, mcp-url"
           exit 1
         fi
-
-        CMD="python -m lifeforge.cli mcp-scan --out ${{ inputs.report-path }}"
-
-        if [ -n "${{ inputs.mcp-manifest }}" ]; then
-          CMD="$CMD --manifest ${{ inputs.mcp-manifest }}"
-        elif [ -n "${{ inputs.mcp-server }}" ]; then
-          CMD="$CMD --server ${{ inputs.mcp-server }}"
+        CMD=(python -m lifeforge.cli mcp-scan --out "$LF_REPORT" --timeout "$LF_TIMEOUT")
+        if [ -n "$LF_MANIFEST" ]; then
+          CMD+=(--manifest "$LF_MANIFEST")
+        elif [ -n "$LF_SERVER" ]; then
+          # One argument: the CLI splits the server command line itself.
+          CMD+=(--server "$LF_SERVER")
         else
-          CMD="$CMD --url ${{ inputs.mcp-url }}"
+          CMD+=(--url "$LF_URL")
         fi
-
-        if [ -n "${{ inputs.mcp-baseline }}" ]; then
-          CMD="$CMD --baseline ${{ inputs.mcp-baseline }}"
-        fi
-
-        CMD="$CMD --timeout ${{ inputs.mcp-timeout }}"
-
-        if [ "${{ inputs.json }}" = "true" ]; then
-          CMD="$CMD --json"
-        fi
-
-        if [ "${{ inputs.fail-on-critical }}" = "true" ]; then
-          CMD="$CMD --fail-on-critical"
-        fi
-
-        echo "[*] Executing: $CMD"
-        $CMD
+        if [ -n "$LF_BASELINE" ]; then CMD+=(--baseline "$LF_BASELINE"); fi
+        if [ "$LF_JSON" = "true" ]; then CMD+=(--json); fi
+        if [ "$LF_FAIL_ON_CRITICAL" = "true" ]; then CMD+=(--fail-on-critical); fi
+        echo "[*] Executing: ${CMD[*]}"
+        "${CMD[@]}"
 
     # ---------------------------------------------------------------
     # Reporting (all modes)
@@ -332,10 +322,13 @@ runs:
     - name: Publish Summary to GitHub Step Summary
       if: always()
       shell: bash
+      env:
+        LF_REPORT: ${{ inputs.report-path }}
+        LF_MODE: ${{ inputs.mode }}
       run: |
-        if [ -f "${{ inputs.report-path }}" ]; then
-          echo "## LIFE FORGE Security Report (mode: ${{ inputs.mode }})" >> $GITHUB_STEP_SUMMARY
-          cat "${{ inputs.report-path }}" >> $GITHUB_STEP_SUMMARY
+        if [ -f "$LF_REPORT" ]; then
+          echo "## LIFE FORGE Security Report (mode: $LF_MODE)" >> "$GITHUB_STEP_SUMMARY"
+          cat "$LF_REPORT" >> "$GITHUB_STEP_SUMMARY"
         fi
 
     - name: Post PR Review Comment
@@ -343,10 +336,20 @@ runs:
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
+        LF_COMMENT: ${{ inputs.comment-on-pr }}
+        LF_REPORT: ${{ inputs.report-path }}
+        LF_EVENT: ${{ github.event_name }}
+        LF_PR: ${{ github.event.pull_request.number }}
       run: |
-        if [ "${{ inputs.comment-on-pr }}" = "true" ] && [ "${{ github.event_name }}" = "pull_request" ]; then
-          if [ -f "${{ inputs.report-path }}" ] && [ -n "${{ github.event.pull_request.number }}" ]; then
-            echo "[*] Posting report to PR #${{ github.event.pull_request.number }}..."
-            gh pr comment "${{ github.event.pull_request.number }}" --body-file "${{ inputs.report-path }}" || echo "[WARN] PR comment step failed or token lacks write permission."
+        if [ "$LF_COMMENT" = "true" ] && [ "$LF_EVENT" = "pull_request" ]; then
+          if [ -f "$LF_REPORT" ] && [ -n "$LF_PR" ]; then
+            echo "[*] Posting report to PR #$LF_PR..."
+            # GitHub rejects comment bodies over 65536 characters.
+            BODY="$RUNNER_TEMP/lifeforge_comment.md"
+            head -c 60000 "$LF_REPORT" > "$BODY"
+            # Edit our previous comment instead of adding one per push.
+            gh pr comment "$LF_PR" --body-file "$BODY" --edit-last 2>/dev/null \
+              || gh pr comment "$LF_PR" --body-file "$BODY" \
+              || echo "[WARN] PR comment step failed or token lacks write permission."
           fi
         fi

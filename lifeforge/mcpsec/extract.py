@@ -29,6 +29,10 @@ class ExtractionStats:
         self.files_scanned = 0
         self.pattern_hits = 0
         self.pattern_misses = 0
+        #: Candidate source files not read because ``max_files`` was reached.
+        self.files_over_limit = 0
+        #: Same-named tools whose definitions differ (all variants are kept).
+        self.conflicting_definitions = 0
 
     def to_dict(self) -> dict[str, int]:
         """Serialize the counters."""
@@ -36,6 +40,8 @@ class ExtractionStats:
             "files_scanned": self.files_scanned,
             "pattern_hits": self.pattern_hits,
             "pattern_misses": self.pattern_misses,
+            "files_over_limit": self.files_over_limit,
+            "conflicting_definitions": self.conflicting_definitions,
         }
 
 
@@ -221,13 +227,35 @@ def _zod_to_schema(expr: str) -> dict[str, Any]:
             break
 
     core = text.strip()
+    if description is None:
+        # .describe() earlier in the chain (``z.string().describe("x").max(5)``).
+        inner_describe = re.search(r"\.describe\(\s*(" + _TS_STRING + r")\s*\)", core)
+        if inner_describe:
+            description = inner_describe.group(1)[1:-1]
+            core = core[: inner_describe.start()] + core[inner_describe.end():]
     enum_match = re.match(r"z\.enum\(\[(.*)\]\)", core, re.DOTALL)
-    array_match = re.match(r"z\.array\(\s*(.*)\s*\)$", core, re.DOTALL)
+    array_match = None
+    array_chain = ""
+    if re.match(r"z\.array\(", core):
+        array_open = core.index("(")
+        array_close = _balanced_parens(core, array_open)
+        if array_close != -1:
+            array_match = re.match(r"(.*)", core[array_open + 1: array_close].strip(), re.DOTALL)
+            array_chain = core[array_close + 1:]
+    literal_match = re.match(r"z\.literal\(\s*(" + _TS_STRING + r"|-?\d+(?:\.\d+)?|true|false)\s*\)", core)
+    native_enum_match = re.match(r"z\.nativeEnum\(", core)
 
-    if enum_match:
+    if literal_match:
+        value = literal_match.group(1)
+        schema = {"type": "string", "enum": [_unquote(value)]}
+    elif native_enum_match:
+        # Values live in a TS enum elsewhere; the parameter is still closed.
+        schema = {"type": "string", "enum": ["<nativeEnum>"]}
+    elif enum_match:
         schema = {"type": "string", "enum": [item.strip().strip("\"'") for item in enum_match.group(1).split(",") if item.strip()]}
     elif array_match:
         inner = _zod_to_schema(array_match.group(1))
+        inner.pop("_optional", None)
         schema = {"type": "array", "items": inner}
     else:
         type_match = re.match(r"z\.(\w+)", core)
@@ -241,12 +269,44 @@ def _zod_to_schema(expr: str) -> dict[str, Any]:
             base = type_match.group(1) if type_match else ""
             schema = {"type": _ZOD_PRIMITIVES.get(base, "string")}
 
-    min_match = re.search(r"\.min\(\s*(\d+)", core)
-    max_match = re.search(r"\.max\(\s*(\d+)", core)
-    if min_match and schema.get("type") in ("string", "array"):
-        schema["minLength" if schema["type"] == "string" else "minItems"] = int(min_match.group(1))
-    if max_match and schema.get("type") in ("string", "array"):
-        schema["maxLength" if schema["type"] == "string" else "maxItems"] = int(max_match.group(1))
+    # Modifiers belong to the outer chain only; an array's element chain was
+    # handled by the recursive call.
+    chain = array_chain if array_match else core
+    min_match = re.search(r"\.(?:min|gte)\(\s*(-?\d+(?:\.\d+)?)", chain)
+    max_match = re.search(r"\.(?:max|lte)\(\s*(-?\d+(?:\.\d+)?)", chain)
+    length_match = re.search(r"\.length\(\s*(\d+)", chain)
+    schema_type = schema.get("type")
+
+    def _num(raw: str) -> int | float:
+        value = float(raw)
+        return int(value) if value.is_integer() else value
+
+    if schema_type in ("string", "array"):
+        low_key, high_key = ("minLength", "maxLength") if schema_type == "string" else ("minItems", "maxItems")
+        if min_match:
+            schema[low_key] = int(_num(min_match.group(1)))
+        if max_match:
+            schema[high_key] = int(_num(max_match.group(1)))
+        if length_match:
+            schema[low_key] = schema[high_key] = int(length_match.group(1))
+    elif schema_type in ("number", "integer"):
+        if min_match:
+            schema["minimum"] = _num(min_match.group(1))
+        if max_match:
+            schema["maximum"] = _num(max_match.group(1))
+        if re.search(r"\.(?:positive|nonnegative)\(\)", chain):
+            schema.setdefault("minimum", 0)
+        if re.search(r"\.(?:negative|nonpositive)\(\)", chain):
+            schema.setdefault("maximum", 0)
+        if re.search(r"\.int\(\)", chain):
+            schema["type"] = "integer"
+    if schema_type == "string":
+        format_match = re.search(r"\.(url|email|uuid|cuid2?|ulid|datetime|date|time|ip|ipv4|ipv6|emoji|base64|nanoid)\(", chain)
+        if format_match:
+            schema["format"] = format_match.group(1)
+        regex_match = re.search(r"\.regex\(\s*/((?:[^/\\]|\\.)+)/", chain)
+        if regex_match:
+            schema["pattern"] = regex_match.group(1)
     if description:
         schema["description"] = description
 
@@ -490,6 +550,17 @@ def _json_schema_from_inputschema(body: str) -> dict[str, Any]:
             enum_match = re.search(r"\benum\s*:\s*\[([^\]]*)\]", rest, re.DOTALL)
             if enum_match:
                 prop["enum"] = [item.strip().strip("\"'") for item in enum_match.group(1).split(",") if item.strip()]
+            # Bounds keywords, so a declared maxLength/minimum is not reported
+            # as an unbounded parameter.
+            for keyword in ("maxLength", "minLength", "minimum", "maximum", "maxItems", "minItems"):
+                bound_match = re.search(r"\b" + keyword + r"\s*:\s*(-?\d+(?:\.\d+)?)", rest)
+                if bound_match:
+                    value = float(bound_match.group(1))
+                    prop[keyword] = int(value) if value.is_integer() else value
+            for keyword in ("pattern", "format"):
+                text_match = re.search(r"\b" + keyword + r"\s*:\s*(" + _TS_STRING + r")", rest)
+                if text_match:
+                    prop[keyword] = _unquote(text_match.group(1))
             properties[name] = prop
 
     schema: dict[str, Any] = {"type": "object", "properties": properties}
@@ -600,6 +671,7 @@ def extract_listtools_tools(
             description = _unquote(description_match.group(1))
 
         schema_props: dict[str, Any] = {}
+        json_required: list[str] | None = None
         zod_ref = re.search(r"zodToJsonSchema\s*\(\s*(\w+)\s*\.\s*(\w+)\s*\)", body)
         input_schema = re.search(r"inputSchema\s*:\s*\{", body)
         if zod_ref:
@@ -608,8 +680,16 @@ def extract_listtools_tools(
             if zod_body is not None:
                 schema_props = _props_body_to_schema(zod_body)
         elif input_schema:
-            schema_props = _json_schema_from_inputschema(body)
-            if not schema_props.get("properties"):
+            # _json_schema_from_inputschema returns a WHOLE schema
+            # ({type, properties, required}); only its properties map is the
+            # per-argument view. Treating the whole schema as the properties
+            # map hid every real argument under a fake one named "properties".
+            parsed_schema = _json_schema_from_inputschema(body)
+            json_properties = parsed_schema.get("properties") or {}
+            if json_properties:
+                schema_props = json_properties
+                json_required = list(parsed_schema.get("required") or [])
+            else:
                 # Not a plain JSON schema (e.g. a zod expression inline):
                 # fall back to the zod properties parse over the schema object.
                 open_index = body.index("{", input_schema.end() - 1)
@@ -625,11 +705,16 @@ def extract_listtools_tools(
             del schema_props[key]
         stats.pattern_misses += len(malformed)
 
-        required = sorted(
-            prop
-            for prop, spec in schema_props.items()
-            if isinstance(spec, dict) and spec.pop("required", True)
-        )
+        if json_required is not None:
+            # Plain JSON schema: required-ness comes from its own list, not
+            # from the zod-style per-property marker.
+            required = sorted(name for name in json_required if name in schema_props)
+        else:
+            required = sorted(
+                prop
+                for prop, spec in schema_props.items()
+                if isinstance(spec, dict) and spec.pop("required", True)
+            )
         schema: dict[str, Any] = {"type": "object", "properties": schema_props}
         if required:
             schema["required"] = required
@@ -832,7 +917,7 @@ def extract_from_directory(
     stats = ExtractionStats()
     tools: list[McpToolDefinition] = []
 
-    paths = sorted(
+    all_paths = sorted(
         path
         for path in root.rglob("*")
         if path.is_file()
@@ -841,7 +926,11 @@ def extract_from_directory(
             (language in (None, "typescript") and path.suffix in _TS_EXTENSIONS)
             or (language in (None, "python") and path.suffix == ".py")
         )
-    )[:max_files]
+    )
+    paths = all_paths[:max_files]
+    # Truncation is reported, never silent: callers must be able to say the
+    # extraction did not cover the whole repository.
+    stats.files_over_limit = max(0, len(all_paths) - len(paths))
 
     ts_sources: dict[Path, str] = {}
     for path in paths:
@@ -866,8 +955,19 @@ def extract_from_directory(
                 extract_listtools_tools(source, path, zod_index, server=root.name, stats=stats)
             )
 
-    # Deduplicate across files (same tool name registered once, defined once).
-    unique: dict[str, McpToolDefinition] = {}
+    # Deduplicate identical definitions found more than once (registration and
+    # handler passes can both see one tool). Same-named tools whose
+    # description or schema DIFFER are all kept: first-wins dedupe let a
+    # benign stub in an earlier file hide a poisoned definition from the scan.
+    unique: list[McpToolDefinition] = []
+    seen: dict[str, list[tuple[str, str]]] = {}
     for tool in tools:
-        unique.setdefault(tool.name, tool)
-    return list(unique.values()), stats
+        signature = (tool.description, repr(sorted(tool.input_schema.items(), key=lambda item: item[0])))
+        variants = seen.setdefault(tool.name, [])
+        if signature in variants:
+            continue
+        if variants:
+            stats.conflicting_definitions += 1
+        variants.append(signature)
+        unique.append(tool)
+    return unique, stats

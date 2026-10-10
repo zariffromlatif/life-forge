@@ -141,11 +141,19 @@ class SurfaceDiff:
     critical_count_delta: int = 0
     baseline_summary: dict[str, Any] = field(default_factory=dict)
     current_summary: dict[str, Any] = field(default_factory=dict)
+    #: Cells failing in both runs whose failure category changed; each item
+    #: carries ``previous_category``.
+    changed_failures: list[dict[str, Any]] = field(default_factory=list)
+    #: category -> [baseline count, current count] for every shifted category.
+    mode_counts: dict[str, list[int]] = field(default_factory=dict)
+    #: Comparability warnings (e.g. different seed or domain).
+    warnings: list[str] = field(default_factory=list)
 
     @property
     def has_regressions(self) -> bool:
-        """True when the current run failed somewhere the baseline did not."""
-        return bool(self.new_failures or self.new_criticals)
+        """True when the current run failed somewhere the baseline did not,
+        a cell became critical, or a failing cell changed failure category."""
+        return bool(self.new_failures or self.new_criticals or self.changed_failures)
 
     def to_dict(self) -> dict[str, Any]:
         """Serialize the diff."""
@@ -159,6 +167,9 @@ class SurfaceDiff:
             "mode_deltas": self.mode_deltas,
             "coverage_delta": self.coverage_delta,
             "critical_count_delta": self.critical_count_delta,
+            "changed_failures": self.changed_failures,
+            "mode_counts": self.mode_counts,
+            "warnings": self.warnings,
         }
 
 
@@ -187,6 +198,8 @@ def diff_surfaces(baseline: dict[str, Any], current: dict[str, Any]) -> SurfaceD
     new_criticals: list[dict[str, Any]] = []
     resolved_criticals: list[dict[str, Any]] = []
 
+    changed_failures: list[dict[str, Any]] = []
+
     for cell, record in curr_cells.items():
         if not record.get("failed"):
             continue
@@ -195,6 +208,16 @@ def diff_surfaces(baseline: dict[str, Any], current: dict[str, Any]) -> SurfaceD
             new_failures.append(_brief(record))
             if record.get("critical"):
                 new_criticals.append(_brief(record))
+            continue
+        # Cell failed in both runs: an escalation to critical, or a change of
+        # failure category (e.g. loop -> exfiltration), is still a regression.
+        if record.get("critical") and not base_record.get("critical"):
+            new_criticals.append(_brief(record))
+        if record.get("category") != base_record.get("category"):
+            changed = _brief(record)
+            changed["previous_category"] = base_record.get("category")
+            changed["previous_severity"] = base_record.get("severity")
+            changed_failures.append(changed)
 
     for cell, record in base_cells.items():
         if not record.get("failed"):
@@ -204,6 +227,9 @@ def diff_surfaces(baseline: dict[str, Any], current: dict[str, Any]) -> SurfaceD
             resolved_failures.append(_brief(record))
             if record.get("critical"):
                 resolved_criticals.append(_brief(record))
+        elif record.get("critical") and not curr_record.get("critical"):
+            # Still failing, but no longer critical (de-escalation).
+            resolved_criticals.append(_brief(record))
 
     base_modes: dict[str, int] = baseline.get("failure_mode_breakdown", {}) or {}
     curr_modes: dict[str, int] = current.get("failure_mode_breakdown", {}) or {}
@@ -212,11 +238,23 @@ def diff_surfaces(baseline: dict[str, Any], current: dict[str, Any]) -> SurfaceD
         for category in sorted(set(base_modes) | set(curr_modes))
     }
     mode_deltas = {category: delta for category, delta in mode_deltas.items() if delta != 0}
+    mode_counts = {
+        category: [int(base_modes.get(category, 0)), int(curr_modes.get(category, 0))]
+        for category in mode_deltas
+    }
 
-    coverage_delta = round(float(current.get("coverage", 0.0)) - float(baseline.get("coverage", 0.0)), 9)
-    critical_delta = int(current.get("critical_failures_count", 0)) - int(baseline.get("critical_failures_count", 0))
+    coverage_delta = round(float(current.get("coverage") or 0.0) - float(baseline.get("coverage") or 0.0), 9)
+    critical_delta = int(current.get("critical_failures_count") or 0) - int(baseline.get("critical_failures_count") or 0)
 
-    if new_failures:
+    warnings: list[str] = []
+    for key in ("domain", "seed"):
+        if key in baseline and key in current and baseline.get(key) != current.get(key):
+            warnings.append(
+                f"Snapshots differ in {key} ({baseline.get(key)!r} vs {current.get(key)!r}); "
+                "cell-level comparisons may not be meaningful."
+            )
+
+    if new_failures or new_criticals or changed_failures:
         verdict = VERDICT_REGRESSED
     elif resolved_failures:
         verdict = VERDICT_IMPROVED
@@ -227,8 +265,11 @@ def diff_surfaces(baseline: dict[str, Any], current: dict[str, Any]) -> SurfaceD
         verdict=verdict,
         new_failures=sorted(new_failures, key=lambda item: (item["cell"] or "")),
         resolved_failures=sorted(resolved_failures, key=lambda item: (item["cell"] or "")),
-        new_criticals=new_criticals,
+        new_criticals=sorted(new_criticals, key=lambda item: (item["cell"] or "")),
         resolved_criticals=resolved_criticals,
+        changed_failures=sorted(changed_failures, key=lambda item: (item["cell"] or "")),
+        mode_counts=mode_counts,
+        warnings=warnings,
         mode_deltas=mode_deltas,
         coverage_delta=coverage_delta,
         critical_count_delta=critical_delta,
@@ -245,9 +286,9 @@ def diff_surfaces(baseline: dict[str, Any], current: dict[str, Any]) -> SurfaceD
 def render_diff_markdown(diff: SurfaceDiff, *, title: str = "Failure Surface Diff") -> str:
     """Render a diff as a CI-friendly Markdown artifact."""
     verdict_banner = {
-        VERDICT_REGRESSED: "[REGRESSED] New agent failures were discovered in this change.",
+        VERDICT_REGRESSED: "[REGRESSED] New, newly critical, or re-categorised agent failures were discovered in this change.",
         VERDICT_IMPROVED: "[IMPROVED] Previously failing behaviors were fixed; no new failures.",
-        VERDICT_UNCHANGED: "[UNCHANGED] The failure surface is identical to the baseline.",
+        VERDICT_UNCHANGED: "[UNCHANGED] No failing cell was added, escalated, re-categorised, or resolved relative to the baseline.",
     }
     lines: list[str] = [
         f"# {title}",
@@ -263,10 +304,20 @@ def render_diff_markdown(diff: SurfaceDiff, *, title: str = "Failure Surface Dif
     lines.append("")
 
     lines.append(f"> {verdict_banner[diff.verdict]}")
+    for warning in diff.warnings:
+        lines.extend(["", f"> **Warning**: {warning}"])
     lines.extend(["", "---", "", "## Summary", ""])
 
     base = diff.baseline_summary
     curr = diff.current_summary
+
+    def _num(value: Any) -> float:
+        # Older or hand-written snapshots may lack a key (stored as None).
+        try:
+            return float(value or 0.0)
+        except (TypeError, ValueError):
+            return 0.0
+
     lines.extend(
         [
             "| Measure | Baseline | Current | Delta |",
@@ -275,10 +326,10 @@ def render_diff_markdown(diff: SurfaceDiff, *, title: str = "Failure Surface Dif
             f"| Domain | {base.get('domain') or 'default'} | {curr.get('domain') or 'default'} | - |",
             f"| Seed / generations | {base.get('seed', 'n/a')} / {base.get('generations', 'n/a')} "
             f"| {curr.get('seed', 'n/a')} / {curr.get('generations', 'n/a')} | - |",
-            f"| Archive coverage | {base.get('coverage', 0.0):.4f} | {curr.get('coverage', 0.0):.4f} "
+            f"| Archive coverage | {_num(base.get('coverage')):.4f} | {_num(curr.get('coverage')):.4f} "
             f"| {diff.coverage_delta:+.4f} |",
-            f"| Critical cells | {base.get('critical_failures_count', 0)} "
-            f"| {curr.get('critical_failures_count', 0)} | {diff.critical_count_delta:+d} |",
+            f"| Critical cells | {base.get('critical_failures_count') or 0} "
+            f"| {curr.get('critical_failures_count') or 0} | {diff.critical_count_delta:+d} |",
             "",
             "---",
             "",
@@ -290,7 +341,9 @@ def render_diff_markdown(diff: SurfaceDiff, *, title: str = "Failure Surface Dif
     if diff.mode_deltas:
         lines.extend(["| Failure category | Baseline -> Current | Delta |", "| :--- | :--- | :--- |"])
         for category, delta in sorted(diff.mode_deltas.items(), key=lambda item: (_SEVERITY_RANK.get(_severity_of(item[0]), 4), item[0])):
-            lines.append(f"| `{category}` | {delta:+d} | {delta:+d} |")
+            counts = diff.mode_counts.get(category)
+            transition = f"{counts[0]} -> {counts[1]}" if counts else "n/a"
+            lines.append(f"| `{category}` | {transition} | {delta:+d} |")
     else:
         lines.append("No category-level shifts.")
 
@@ -305,6 +358,15 @@ def render_diff_markdown(diff: SurfaceDiff, *, title: str = "Failure Surface Dif
                 lines.append(f"  - mutations: {', '.join(item['mutations'])}")
     else:
         lines.append("None.")
+
+    if diff.changed_failures:
+        lines.extend(["", "## Re-categorised Failures", ""])
+        for item in diff.changed_failures:
+            lines.append(
+                f"- **Cell `{item['cell']}`** - `{item.get('previous_category')}` -> "
+                f"`{item.get('category')}` (severity `{item.get('previous_severity')}` -> "
+                f"`{item.get('severity')}`)"
+            )
 
     lines.extend(["", "## Resolved Failures", ""])
     if diff.resolved_failures:

@@ -26,6 +26,35 @@ When the task is complete (or cannot be continued):
 Rules: "tool_name" must be a sandbox tool name taken from the observation; "arguments" must be a JSON object (never a string); emit one action per turn and wait for the tool result before choosing the next action."""
 
 
+def describe_sandbox_tools(observation: dict[str, Any], configured: Any = None) -> str:
+    """Render the sandbox tools the agent may call, or "" when none are known.
+
+    Sources, in order: tools passed to the adapter's constructor, then an
+    ``available_tools`` (or ``tools``) entry in the observation. Entries may
+    be names, or dicts with ``name``/``description``/``parameters``.
+    """
+    tools = configured if configured else observation.get("available_tools") or observation.get("tools")
+    if not tools:
+        return ""
+    lines = ["=== SANDBOX TOOLS (call these by name via the ACTION PROTOCOL) ==="]
+    for tool in tools:
+        if isinstance(tool, dict):
+            name = tool.get("name", "?")
+            description = str(tool.get("description", "")).strip()
+            params = tool.get("parameters") or tool.get("parameters_schema") or tool.get("inputSchema")
+            line = f"- {name}"
+            if description:
+                line += f": {description[:300]}"
+            if params:
+                line += f" | arguments schema: {json.dumps(params, default=str)[:600]}"
+            lines.append(line)
+        else:
+            name = getattr(tool, "name", tool)
+            description = getattr(tool, "description", "")
+            lines.append(f"- {name}" + (f": {str(description)[:300]}" if description else ""))
+    return "\n".join(lines)
+
+
 def extract_json_payload(text: str) -> dict[str, Any] | None:
     """Pull the first JSON object out of a model reply.
 

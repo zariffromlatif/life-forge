@@ -26,6 +26,14 @@ Typical usage
 The adapter supports both streaming and non-streaming compiled graphs.  When
 the graph supports ``.stream()``, only ``.invoke()`` is used here to keep the
 interface synchronous and compatible with the LIFE FORGE step loop.
+
+.. warning::
+   Graphs with their own tool nodes (e.g. ``create_react_agent(llm, tools)``)
+   run those tools FOR REAL inside ``invoke()`` and loop until the model
+   stops calling them. The sandbox never sees or intercepts those calls, so
+   their side effects land on real systems and are invisible to the oracle.
+   Evaluate graphs with no real tools bound (or stubs) and let the agent act
+   on the sandbox through the ACTION PROTOCOL reply this adapter requests.
 """
 from __future__ import annotations
 
@@ -35,10 +43,18 @@ from typing import Any
 
 from lifeforge.sandbox.agent import AgentAction, AgentInterface
 
+from ._parsing import (
+    ACTION_PROTOCOL,
+    describe_sandbox_tools,
+    extract_json_payload,
+    parse_action_payload,
+    result_to_text,
+)
+
 logger = logging.getLogger(__name__)
 
 
-def _format_observation_for_langgraph(observation: dict[str, Any]) -> str:
+def _format_observation_for_langgraph(observation: dict[str, Any], sandbox_tools: Any = None) -> str:
     """Serialize a LIFE FORGE observation into a human-readable string.
 
     The resulting string is used as the content of a HumanMessage passed to
@@ -64,6 +80,10 @@ def _format_observation_for_langgraph(observation: dict[str, Any]) -> str:
     if not parts:
         parts.append("No new information. Decide next action or finish.")
 
+    tools_text = describe_sandbox_tools(observation, sandbox_tools)
+    if tools_text:
+        parts.append(tools_text)
+    parts.append(ACTION_PROTOCOL)
     return "\n".join(parts)
 
 
@@ -107,9 +127,11 @@ class LangGraphAdapter(AgentInterface):
         self,
         app: Any,
         name: str = "LangGraphAdapter",
+        sandbox_tools: Any = None,
     ) -> None:
         self.app = app
         self.name = name
+        self.sandbox_tools = sandbox_tools
 
     # ------------------------------------------------------------------
     # AgentInterface implementation
@@ -146,7 +168,7 @@ class LangGraphAdapter(AgentInterface):
                 "  # or: pip install langgraph langchain-core"
             ) from exc
 
-        formatted_obs = _format_observation_for_langgraph(observation)
+        formatted_obs = _format_observation_for_langgraph(observation, self.sandbox_tools)
 
         try:
             result: Any = self.app.invoke(
@@ -199,12 +221,12 @@ class LangGraphAdapter(AgentInterface):
                 break
 
         if ai_message is None:
-            # No AI message found -- treat the raw result as a finish message
-            fallback_text = str(result)
-            return AgentAction(
-                action_type="finish",
-                thought="No AIMessage found in graph output.",
-                message=fallback_text[:500] if fallback_text else "Graph returned no output.",
+            # No AI message found -- the raw result may still carry an
+            # ACTION PROTOCOL reply (custom graphs returning text/dicts).
+            fallback_text = result_to_text(result)
+            return parse_action_payload(
+                extract_json_payload(fallback_text),
+                fallback_text=fallback_text or "Graph returned no output.",
             )
 
         # Check for tool calls on the AIMessage
@@ -212,13 +234,16 @@ class LangGraphAdapter(AgentInterface):
         if tool_calls:
             return self._action_from_tool_call(tool_calls[0])
 
-        # Plain text response
-        content: str = getattr(ai_message, "content", None) or str(ai_message)
-        return AgentAction(
-            action_type="finish",
-            thought=content[:200] if content else "Task complete.",
-            message=content or "Agent completed task.",
-        )
+        # Text response: parse it through the shared ACTION PROTOCOL so a
+        # JSON tool_call reply reaches the sandbox; plain prose -> finish.
+        content = getattr(ai_message, "content", None)
+        if isinstance(content, list):
+            # Multi-part content blocks: join their text parts.
+            content = "\n".join(
+                str(block.get("text", "")) if isinstance(block, dict) else str(block) for block in content
+            )
+        text = content if isinstance(content, str) and content else str(ai_message)
+        return parse_action_payload(extract_json_payload(text), fallback_text=text or "Agent completed task.")
 
     @staticmethod
     def _action_from_tool_call(tool_call: Any) -> AgentAction:

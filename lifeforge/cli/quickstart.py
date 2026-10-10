@@ -5,12 +5,15 @@ project directory, detects which agent framework (LangChain, LangGraph,
 CrewAI, AutoGen, LlamaIndex, smolagents, OpenAI Agents SDK) the project is
 built with, guesses module-level agent/executor definitions, writes a small
 ``lifeforge_harness.py`` that wraps the user's agent with the matching LIFE
-FORGE adapter, and then delegates to the existing ``lifeforge eval`` flow.
+FORGE adapter, and runs that harness to evaluate the agent.
 
 Nothing here executes user code during detection: ``scan_directory`` only
-reads text and ``find_agent_candidates`` only parses the AST.  The generated
-harness is the executable artifact and it degrades with a clear error message
-when the selected framework or adapter cannot be imported.
+reads text and ``find_agent_candidates`` only parses the AST.  Evaluation DOES
+execute user code (the target file is imported and a class/factory target is
+called), so it only happens with explicit consent (``--yes``); without it the
+command prints what would run and stops, exactly like ``--dry-run``.  The
+generated harness is the executable artifact and it degrades with a clear
+error message when the selected framework or adapter cannot be imported.
 
 All console output is plain ASCII with ``[TAG]`` prefixes, matching the style
 used by :mod:`lifeforge.cli.main`.
@@ -22,6 +25,8 @@ import ast
 import datetime
 import os
 import re
+import subprocess
+import sys
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -109,6 +114,7 @@ module load time.
 """
 from __future__ import annotations
 
+import argparse
 import importlib
 import importlib.util
 import pathlib
@@ -122,6 +128,14 @@ CREATED = "{created}"
 GENERATIONS = 30
 SEED = 42
 REPORT_OUT = "results/eval_report.md"
+
+
+def _parse_args(argv):
+    parser = argparse.ArgumentParser(description="LIFE FORGE quickstart harness")
+    parser.add_argument("--generations", type=int, default=GENERATIONS)
+    parser.add_argument("--seed", type=int, default=SEED)
+    parser.add_argument("--out", type=str, default=REPORT_OUT)
+    return parser.parse_args(argv)
 
 _ADAPTER_MODULES = {{
     "LangChainAdapter": "lifeforge.adapters.langchain",
@@ -198,7 +212,10 @@ def _wrap_target(target):
         )
 
 
-def main():
+def main(argv=None):
+    options = _parse_args(sys.argv[1:] if argv is None else argv)
+    print("[RUN] Importing and executing " + TARGET_MODULE + " (module-level code runs; "
+          "'" + TARGET_ATTRIBUTE + "' is instantiated/called if it is a class or factory).")
     target = _load_target_module()
     try:
         target = _resolve_target(target)
@@ -215,15 +232,15 @@ def main():
     from lifeforge.sandbox.world_state import WorldState
 
     seed_state = WorldState.default_purchasing_world()
-    engine = EvolutionEngine(seed=SEED)
-    print("[RUN] Evaluating " + agent.name + " over " + str(GENERATIONS) + " generations...")
-    summary = engine.run(agent, seed_state, generations=GENERATIONS)
+    engine = EvolutionEngine(seed=options.seed)
+    print("[RUN] Evaluating " + agent.name + " over " + str(options.generations) + " generations...")
+    summary = engine.run(agent, seed_state, generations=options.generations)
 
     analyzer = CausalAnalyzer()
     diagnostics = analyzer.analyze(agent, summary, seed_state)
     report = ReportGenerator.generate_markdown(diagnostics)
 
-    out_path = pathlib.Path(REPORT_OUT)
+    out_path = pathlib.Path(options.out)
     if not out_path.is_absolute():
         out_path = pathlib.Path(__file__).resolve().parent / out_path
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -581,11 +598,21 @@ def run_quickstart(
     scenarios: int = 30,
     seed: int = 42,
     out: str = "results/eval_report.md",
+    yes: bool = False,
 ) -> int:
     """Detect a framework under ``root``, generate a harness, and evaluate the agent.
 
-    Returns 0 on success and 1 when nothing usable was detected or the
-    evaluation could not be started.
+    Evaluating means importing the detected file (its module-level code runs)
+    and calling the detected attribute when it is a class or factory. That is
+    arbitrary code execution from the scanned project, so it only happens
+    when ``yes`` is True; otherwise the run stops after detection exactly like
+    ``dry_run`` and prints what would be executed.
+
+    The evaluation runs the generated harness (which wraps the target in the
+    framework adapter) in a subprocess, passing ``scenarios``/``seed``/``out``.
+
+    Returns 0 on success (or on a detection-only run) and non-zero when
+    nothing usable was detected or the evaluation failed.
     """
     root_path = Path(root)
 
@@ -633,11 +660,31 @@ def run_quickstart(
     print("[CONFIGURE] Target spec: " + best_spec)
 
     harness_path = root_path / HARNESS_FILENAME
+    spec_module, spec_attribute = best_spec.rsplit(":", 1)
+    spec_path = Path(spec_module)
+    if not spec_path.is_absolute():
+        spec_path = (root_path / spec_path).resolve()
+
+    print(
+        "[NOTICE] Evaluating will IMPORT AND EXECUTE " + str(spec_path)
+        + ": its module-level code runs with your permissions, and '" + spec_attribute
+        + "' is instantiated/called if it is a class or factory function. Tools bound "
+        "inside the framework agent may also run for real."
+    )
+
     if dry_run:
         print(
             "[CONFIGURE] Dry run: skipping harness generation ("
             + str(harness_path)
             + ") and evaluation."
+        )
+        return 0
+
+    if not yes:
+        print(
+            "[CONFIGURE] Not executing without consent: re-run with --yes to write "
+            + str(harness_path)
+            + " and run the evaluation. Nothing was written or executed."
         )
         return 0
 
@@ -648,54 +695,41 @@ def run_quickstart(
         return 1
     print("[CONFIGURE] Harness written: " + str(written))
 
-    # The evaluation path resolves the target relative to the process working
-    # directory, so make the spec absolute while the harness keeps the
-    # root-relative form.
-    spec_module, spec_attribute = best_spec.rsplit(":", 1)
-    spec_path = Path(spec_module)
-    if not spec_path.is_absolute():
-        spec_path = (root_path / spec_path).resolve()
-    eval_target = f"{spec_path}:{spec_attribute}"
-
     out_path = Path(out)
     if not out_path.is_absolute():
         out_path = root_path / out_path
 
-    namespace = argparse.Namespace(
-        target=eval_target,
-        endpoint=None,
-        reset_endpoint=None,
-        timeout=30.0,
-        agent_name=None,
-        scenarios=scenarios,
-        delay=0.0,
-        seed=seed,
-        out=str(out_path),
-        json=True,
-        fail_on_critical=False,
-    )
-
     print(
-        "[RUN] Starting LIFE FORGE evaluation ("
+        "[RUN] Starting LIFE FORGE evaluation via the harness ("
         + str(scenarios)
         + " generations, seed "
         + str(seed)
         + ")..."
     )
 
-    # Imported lazily so importing this module never pulls in the full CLI
-    # (and to avoid a circular import when main.py registers the subparser).
+    # The harness wraps the target in the framework adapter; it runs in its
+    # own interpreter so the user's module (and any sys.exit it performs)
+    # cannot take down or pollute this process.
+    command = [
+        sys.executable,
+        str(written),
+        "--generations",
+        str(int(scenarios)),
+        "--seed",
+        str(int(seed)),
+        "--out",
+        str(out_path),
+    ]
+    sys.stdout.flush()
     try:
-        from lifeforge.cli.main import cmd_eval
-    except ImportError as exc:
-        print("[FAIL] Could not import the LIFE FORGE evaluation command: " + str(exc))
+        completed = subprocess.run(command, cwd=str(root_path), check=False)
+    except (OSError, KeyboardInterrupt) as exc:
+        print("[FAIL] Evaluation could not be started: " + repr(exc))
         return 1
 
-    try:
-        cmd_eval(namespace)
-    except Exception as exc:
-        print("[FAIL] Evaluation failed: " + repr(exc))
-        return 1
+    if completed.returncode != 0:
+        print("[FAIL] Evaluation failed (harness exit code " + str(completed.returncode) + ").")
+        return completed.returncode if completed.returncode > 0 else 1
 
     print("[OK] Quickstart complete. Report: " + str(out_path))
     return 0
@@ -751,6 +785,11 @@ def add_quickstart_parser(subparsers: argparse._SubParsersAction) -> argparse.Ar
         default="results/eval_report.md",
         help="Output markdown report path",
     )
+    parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="Consent to importing and executing the detected agent file (required to evaluate)",
+    )
     parser.set_defaults(func=cmd_quickstart)
     return parser
 
@@ -764,4 +803,5 @@ def cmd_quickstart(args: argparse.Namespace) -> int:
         scenarios=int(getattr(args, "scenarios", 30)),
         seed=int(getattr(args, "seed", 42)),
         out=str(getattr(args, "out", "results/eval_report.md")),
+        yes=bool(getattr(args, "yes", False)),
     )

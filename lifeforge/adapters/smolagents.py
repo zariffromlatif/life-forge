@@ -41,7 +41,13 @@ from typing import Any
 
 from lifeforge.sandbox.agent import AgentAction, AgentInterface
 
-from ._parsing import ACTION_PROTOCOL, extract_json_payload, parse_action_payload, result_to_text
+from ._parsing import (
+    ACTION_PROTOCOL,
+    describe_sandbox_tools,
+    extract_json_payload,
+    parse_action_payload,
+    result_to_text,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +80,9 @@ def _format_task(observation: dict[str, Any], history: list[dict[str, Any]]) -> 
     if not parts:
         parts.append("No new information. Decide the next action or finish.")
 
+    tools_text = describe_sandbox_tools(observation)
+    if tools_text:
+        parts.append(tools_text)
     parts.append(ACTION_PROTOCOL)
     return "\n".join(parts)
 

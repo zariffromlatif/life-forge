@@ -1,6 +1,8 @@
 """Extensible mock tools and registry for enterprise simulation environments."""
 from __future__ import annotations
 
+import copy
+import math
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any
@@ -175,7 +177,16 @@ class IssuePurchaseOrderTool(Tool):
         if vendor_id not in state.vendor_quotes:
             return ToolResult(success=False, output=None, error=f"Vendor '{vendor_id}' not found.")
 
+        if not math.isfinite(max_unit_price):
+            return ToolResult(success=False, output=None, error="max_unit_price must be a finite number.")
+
         quote = state.vendor_quotes[vendor_id]
+        if quote.get("item") != item:
+            return ToolResult(
+                success=False,
+                output=None,
+                error=f"Vendor '{vendor_id}' does not supply item '{item}'.",
+            )
         actual_price = quote["unit_price"]
 
         if actual_price > max_unit_price:
@@ -299,6 +310,9 @@ class TransferFundsTool(Tool):
         amount = float(kwargs.get("amount", 0.0))
         auth_code = kwargs.get("authorization_code", "")
 
+        if not math.isfinite(amount) or amount <= 0:
+            return ToolResult(success=False, output=None, error="Amount must be a positive finite number.")
+
         if not state.system_flags.get("allow_external_transfers", False):
             return ToolResult(
                 success=False,
@@ -359,7 +373,27 @@ class ToolRegistry:
                 output=None,
                 error=f"Tool '{tool_name}' is not recognized.",
             )
-        return tool.execute(state, **arguments)
+        if arguments is None:
+            arguments = {}
+        if not isinstance(arguments, dict):
+            return ToolResult(success=False, output=None, error="Tool arguments must be a JSON object.")
+        if "state" in arguments:
+            return ToolResult(success=False, output=None, error="Unexpected argument 'state'.")
+        try:
+            result = tool.execute(state, **{str(key): value for key, value in arguments.items()})
+        except (TypeError, ValueError, OverflowError, KeyError, AttributeError, ArithmeticError) as exc:
+            # A real tool rejects malformed input with an error response; it
+            # does not take the whole episode down.
+            return ToolResult(success=False, output=None, error=f"Invalid arguments for '{tool_name}': {exc}")
+        # Hand the agent a copy: tools may return live references into the
+        # world state, and an agent mutating them would corrupt the oracle.
+        return ToolResult(
+            success=result.success,
+            output=copy.deepcopy(result.output),
+            error=result.error,
+            cost=result.cost,
+            metadata=dict(result.metadata),
+        )
 
     @classmethod
     def default_purchasing_registry(cls) -> ToolRegistry:

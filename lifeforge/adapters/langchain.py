@@ -8,13 +8,22 @@ LangChain is NOT imported at module level.  The import is deferred to
 __init__ so that the rest of LIFE FORGE continues to work when LangChain is
 not installed.
 
+.. warning::
+   The sandbox only sees the action the wrapped agent *returns*. Tools bound
+   to an AgentExecutor (``AgentExecutor(tools=[...])``) are executed by
+   LangChain itself, inside ``invoke()``, against whatever real systems they
+   touch - the sandbox cannot intercept or undo them, and their effects are
+   invisible to the oracle. Evaluate an executor with NO real tools bound (or
+   with stubs), and let it act on the sandbox through the ACTION PROTOCOL
+   JSON reply this adapter requests.
+
 Typical usage
 -------------
     from langchain.agents import AgentExecutor, create_tool_calling_agent
     from langchain_openai import ChatOpenAI
 
     llm = ChatOpenAI(model="gpt-4o-mini")
-    agent_executor = AgentExecutor(agent=..., tools=[...])
+    agent_executor = AgentExecutor(agent=..., tools=[])
 
     from lifeforge.adapters import LangChainAdapter
     adapter = LangChainAdapter(executor=agent_executor, name="my-lc-agent")
@@ -33,15 +42,23 @@ from typing import Any
 
 from lifeforge.sandbox.agent import AgentAction, AgentInterface
 
+from ._parsing import (
+    ACTION_PROTOCOL,
+    describe_sandbox_tools,
+    extract_json_payload,
+    parse_action_payload,
+    result_to_text,
+)
+
 logger = logging.getLogger(__name__)
 
 
-def _format_observation(observation: dict[str, Any]) -> str:
+def _format_observation(observation: dict[str, Any], sandbox_tools: Any = None) -> str:
     """Convert a LIFE FORGE observation dict into a plain text input string.
 
-    The string includes the first inbox message (if any) and the last tool
-    result so the LangChain agent has all the context it needs to pick its
-    next action.
+    The string carries the inbox, the last tool result, the sandbox tools the
+    agent may call (when known), and the ACTION PROTOCOL describing the JSON
+    reply the adapter parses.
     """
     parts: list[str] = []
 
@@ -62,6 +79,10 @@ def _format_observation(observation: dict[str, Any]) -> str:
     if not parts:
         parts.append("No new information. Decide next action or finish.")
 
+    tools_text = describe_sandbox_tools(observation, sandbox_tools)
+    if tools_text:
+        parts.append(tools_text)
+    parts.append(ACTION_PROTOCOL)
     return "\n".join(parts)
 
 
@@ -72,14 +93,19 @@ class LangChainAdapter(AgentInterface):
 
         executor.invoke({"input": formatted_observation_string})
 
-    The response is inspected for a ``tool_calls`` attribute (present on
-    LangChain AIMessage objects).  If tool calls are found, the first one is
-    returned as an AgentAction with action_type="tool_call".  If the response
-    has only text output, a "finish" action is returned instead.
+    The input ends with the shared ACTION PROTOCOL (and the sandbox tool list
+    when known). The response is parsed in this order:
+
+    1. native ``tool_calls`` on an AIMessage-like object (or in a dict),
+    2. the text output (``{"output": ...}`` from AgentExecutor, message
+       content, or a plain string) parsed through the shared JSON action
+       protocol - so an executor replying with a ``tool_call`` JSON object
+       reaches the sandbox as a tool call,
+    3. anything unparseable degrades to a ``finish`` action.
 
     Any exception raised by the executor is caught and returned as a "finish"
-    action with the error description, so LIFE FORGE episodes always terminate
-    cleanly regardless of framework errors.
+    action, so episodes always terminate cleanly. See the module warning:
+    tools bound to the executor itself run for real, outside the sandbox.
 
     Parameters
     ----------
@@ -88,12 +114,16 @@ class LangChainAdapter(AgentInterface):
         an ``.invoke(dict) -> Any`` method.
     name:
         Human-readable identifier shown in trace logs and reports.
+    sandbox_tools:
+        Optional sandbox tool names/specs to list in every prompt. When
+        omitted, an ``available_tools`` entry in the observation is used.
     """
 
     def __init__(
         self,
         executor: Any,
         name: str = "LangChainAdapter",
+        sandbox_tools: Any = None,
     ) -> None:
         # Validate that langchain is reachable without hard-importing it at
         # module level.  This raises a clear ImportError with install guidance
@@ -109,6 +139,12 @@ class LangChainAdapter(AgentInterface):
 
         self.executor = executor
         self.name = name
+        self.sandbox_tools = sandbox_tools
+        if getattr(executor, "tools", None):
+            logger.warning(
+                "LangChainAdapter: the wrapped executor has its own tools bound; LangChain executes "
+                "them for real inside invoke(), outside the LIFE FORGE sandbox."
+            )
 
     # ------------------------------------------------------------------
     # AgentInterface implementation
@@ -119,22 +155,8 @@ class LangChainAdapter(AgentInterface):
         observation: dict[str, Any],
         history: list[dict[str, Any]],
     ) -> AgentAction:
-        """Format the observation, invoke the executor, and parse its response.
-
-        Parameters
-        ----------
-        observation:
-            Current sandbox observation produced by SandboxRunner.
-        history:
-            List of prior step records for the current episode.
-
-        Returns
-        -------
-        AgentAction
-            A tool_call action when the executor selects a tool, or a finish
-            action when it produces only text output or encounters an error.
-        """
-        formatted_input = _format_observation(observation)
+        """Format the observation, invoke the executor, and parse its response."""
+        formatted_input = _format_observation(observation, self.sandbox_tools)
 
         try:
             response = self.executor.invoke({"input": formatted_input})
@@ -163,14 +185,6 @@ class LangChainAdapter(AgentInterface):
 
         The runnable must accept a dict with an ``"input"`` key and return
         either an AIMessage-like object or a plain string.
-
-        Example
-        -------
-            from langchain_openai import ChatOpenAI
-            from langchain_core.output_parsers import StrOutputParser
-
-            chain = ChatOpenAI(model="gpt-4o-mini") | StrOutputParser()
-            adapter = LangChainAdapter.from_runnable(chain, name="gpt4o-chain")
         """
         return cls(executor=runnable, name=name)
 
@@ -179,38 +193,16 @@ class LangChainAdapter(AgentInterface):
     # ------------------------------------------------------------------
 
     def _parse_response(self, response: Any) -> AgentAction:
-        """Translate a LangChain executor response into an AgentAction.
-
-        Handles three response shapes:
-          - dict with an "output" key (AgentExecutor default)
-          - AIMessage object with optional tool_calls attribute
-          - Plain string
-        """
-        # AgentExecutor returns {"output": "...", ...}
+        """Translate a LangChain executor response into an AgentAction."""
         if isinstance(response, dict):
-            output_text: str = str(response.get("output", ""))
-            # Some chains return intermediate tool call info in the dict
-            tool_calls = response.get("tool_calls") or []
-            if tool_calls:
-                return self._action_from_tool_call(tool_calls[0])
-            return AgentAction(
-                action_type="finish",
-                thought=output_text[:200] if output_text else "Task complete.",
-                message=output_text or "Agent completed task.",
-            )
+            native_calls = response.get("tool_calls")
+        else:
+            native_calls = getattr(response, "tool_calls", None)
+        if native_calls:
+            return self._action_from_tool_call(native_calls[0])
 
-        # AIMessage / BaseMessage object (LCEL chain without a str output parser)
-        tool_calls = getattr(response, "tool_calls", None)
-        if tool_calls:
-            return self._action_from_tool_call(tool_calls[0])
-
-        # Plain text content
-        content: str = getattr(response, "content", None) or str(response)
-        return AgentAction(
-            action_type="finish",
-            thought=content[:200] if content else "Task complete.",
-            message=content or "Agent completed task.",
-        )
+        text = result_to_text(response)
+        return parse_action_payload(extract_json_payload(text), fallback_text=text or "Agent completed task.")
 
     @staticmethod
     def _action_from_tool_call(tool_call: Any) -> AgentAction:
@@ -228,11 +220,13 @@ class LangChainAdapter(AgentInterface):
 
         if isinstance(raw_args, str):
             try:
-                arguments: dict[str, Any] = json.loads(raw_args)
+                arguments: Any = json.loads(raw_args)
             except json.JSONDecodeError:
                 arguments = {"raw": raw_args}
         else:
             arguments = dict(raw_args) if raw_args else {}
+        if not isinstance(arguments, dict):
+            arguments = {"raw": arguments}
 
         return AgentAction(
             action_type="tool_call",

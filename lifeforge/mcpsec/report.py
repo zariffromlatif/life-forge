@@ -16,28 +16,55 @@ from .detectors import McpFinding, RULESET_VERSION
 _SEVERITY_WEIGHTS = {"CRITICAL": 25, "HIGH": 12, "MEDIUM": 5, "LOW": 2}
 
 
+#: Band order, lowest first, and each band's inclusive score range.
+_BANDS = ("LOW", "MODERATE", "HIGH", "CRITICAL")
+_BAND_RANGES = {"LOW": (0, 19), "MODERATE": (20, 49), "HIGH": (50, 79), "CRITICAL": (80, 100)}
+
+#: Band implied by the most severe finding present.
+_SEVERITY_BAND = {"CRITICAL": "CRITICAL", "HIGH": "HIGH", "MEDIUM": "MODERATE", "LOW": "LOW"}
+
+
+def _raw_volume_score(findings: list[McpFinding]) -> float:
+    """Severity-weighted volume with diminishing returns per rule.
+
+    The k-th finding of the same rule contributes ``weight / k`` (a harmonic
+    series, so n repeats grow like ``weight * ln n``). A server with many
+    parameters cannot reach a high score on one low-grade rule alone.
+    """
+    per_rule: dict[str, int] = {}
+    total = 0.0
+    for finding in sorted(findings, key=McpFinding.sort_key):
+        count = per_rule.get(finding.rule_id, 0) + 1
+        per_rule[finding.rule_id] = count
+        total += _SEVERITY_WEIGHTS.get(finding.severity, 2) / count
+    return total
+
+
 def compute_scan_score(findings: list[McpFinding]) -> tuple[int, str]:
     """Return (score 0-100, band) for a set of scan findings.
 
-    Weighted by severity, floored at 80 when any critical finding exists (a
-    poisoned tool description cannot be averaged away), and banded LOW /
-    MODERATE / HIGH / CRITICAL.
+    The band is anchored on the most severe finding: CRITICAL requires a
+    CRITICAL finding, a HIGH finding gives HIGH, MEDIUM gives MODERATE, LOW
+    gives LOW. Volume (the diminishing-returns score) may raise the band by at
+    most one step and never into CRITICAL, so MEDIUM-only results top out at
+    HIGH. The score is then clamped into the band's range so the number and
+    the label can never disagree.
     """
-    score = 0
-    for finding in findings:
-        score += _SEVERITY_WEIGHTS.get(finding.severity, 2)
-    if any(finding.severity == "CRITICAL" for finding in findings):
-        score = max(score, 80)
-    score = max(0, min(100, score))
+    if not findings:
+        return 0, "LOW"
 
-    if score >= 80:
-        band = "CRITICAL"
-    elif score >= 50:
-        band = "HIGH"
-    elif score >= 20:
-        band = "MODERATE"
-    else:
-        band = "LOW"
+    worst = min(findings, key=McpFinding.sort_key).severity
+    band = _SEVERITY_BAND.get(worst, "LOW")
+    raw = _raw_volume_score(findings)
+
+    index = _BANDS.index(band)
+    if band != "CRITICAL" and index + 1 < len(_BANDS) - 1:
+        next_band = _BANDS[index + 1]
+        if raw >= _BAND_RANGES[next_band][0]:
+            band = next_band
+
+    low, high = _BAND_RANGES[band]
+    score = int(round(max(low, min(high, raw))))
     return score, band
 
 
@@ -123,6 +150,9 @@ class McpScanReport:
             "## Risk Posture",
             "",
             f"**Risk score: {score}/100 ({band})**",
+            "",
+            "The band follows the most severe finding (a CRITICAL band requires a CRITICAL "
+            "finding); finding volume can raise it by at most one step, never into CRITICAL.",
             "",
             "| Measure | Result |",
             "| :--- | :--- |",

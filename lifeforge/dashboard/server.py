@@ -60,11 +60,19 @@ def _safe_results_file(results_dir: str | Path, filename: str) -> Path | None:
     Returns an absolute path only when it lands inside the results directory;
     anything else (.., absolute paths, subdirectory escapes) returns None.
     """
-    base = find_results_dir(results_dir).resolve()
-    candidate = (base / filename).resolve()
-    if candidate.parent != base and base not in candidate.parents:
+    if not filename or "\x00" in filename:
         return None
-    if not candidate.is_file():
+    base = find_results_dir(results_dir).resolve()
+    try:
+        candidate = (base / filename).resolve()
+    except (OSError, ValueError):
+        return None
+    if base not in candidate.parents:
+        return None
+    try:
+        if not candidate.is_file():
+            return None
+    except OSError:
         return None
     return candidate
 
@@ -221,12 +229,74 @@ def _render_diff_markdown_safe(diff: Any) -> str:
         return ""
 
 
+def _safe_static_file(relative_url_path: str) -> Path | None:
+    """Resolve a URL path inside STATIC_DIR, rejecting traversal.
+
+    The path is percent-decoded first (so ``..%2f`` is treated as ``../``),
+    then resolved; drive letters, absolute paths, backslash separators, and
+    symlinks pointing outside the static directory all fail containment.
+    """
+    decoded = urllib.parse.unquote(relative_url_path).replace("\\", "/").lstrip("/")
+    if not decoded or "\x00" in decoded:
+        return None
+    base = STATIC_DIR.resolve()
+    try:
+        candidate = (base / decoded).resolve()
+    except (OSError, ValueError):
+        return None
+    if base not in candidate.parents:
+        return None
+    if not candidate.is_file():
+        return None
+    return candidate
+
+
+#: Hostnames the dashboard answers to. Anything else (in particular a
+#: DNS-rebinding attacker's domain resolving to 127.0.0.1) is rejected.
+_LOOPBACK_HOSTS = frozenset({"localhost", "127.0.0.1", "[::1]", "::1"})
+
+
+def _host_allowed(host_header: str | None, bound_host: str, port: int) -> bool:
+    """Return True when the request's Host header names this server on loopback."""
+    if not host_header:
+        return False
+    host_header = host_header.strip().lower()
+    if host_header.startswith("["):
+        name, _, rest = host_header.partition("]")
+        name += "]"
+        header_port = rest[1:] if rest.startswith(":") else ""
+    else:
+        name, _, header_port = host_header.partition(":")
+    allowed = set(_LOOPBACK_HOSTS)
+    if bound_host and bound_host not in ("0.0.0.0", "::", ""):
+        allowed.add(bound_host.lower())
+    if name not in allowed:
+        return False
+    if header_port and header_port != str(port):
+        return False
+    return True
+
+
+def _query_int(query: dict[str, list[str]], key: str, default: int) -> int | None:
+    """Parse one integer query parameter; None when it is not an integer."""
+    raw = query.get(key, [str(default)])[0]
+    try:
+        return int(raw)
+    except (TypeError, ValueError):
+        return None
+
+
 class LifeForgeDashboardHandler(http.server.BaseHTTPRequestHandler):
     """Custom request handler serving REST endpoints and the UI single-page application."""
 
     results_dir: str | Path = "results"
 
     def do_GET(self) -> None:
+        bound_host, port = self.server.server_address[:2]
+        if not _host_allowed(self.headers.get("Host"), str(bound_host), int(port)):
+            self.send_error(403, "Host not allowed")
+            return
+
         parsed_url = urllib.parse.urlparse(self.path)
         path = parsed_url.path
         query = urllib.parse.parse_qs(parsed_url.query)
@@ -264,13 +334,18 @@ class LifeForgeDashboardHandler(http.server.BaseHTTPRequestHandler):
                 self.send_json_response(data)
         elif path == "/api/modes/simulate":
             # Real-time CA MODES simulation
-            rule = int(query.get("rule", [110])[0])
-            steps = min(int(query.get("steps", [50])[0]), 100)
-            self.handle_modes_simulation(rule, steps)
+            rule = _query_int(query, "rule", 110)
+            steps = _query_int(query, "steps", 50)
+            if rule is None or steps is None or not 0 <= rule <= 255:
+                self.send_json_response(
+                    {"error": "'rule' must be an integer in 0-255 and 'steps' an integer"}, status=400
+                )
+                return
+            self.handle_modes_simulation(rule, max(1, min(steps, 100)))
         elif path == "/api/export":
             filename = query.get("file", ["MODEL_SHOWDOWN.md"])[0]
-            target_file = find_results_dir(self.results_dir) / filename
-            if target_file.exists() and target_file.is_file():
+            target_file = _safe_results_file(self.results_dir, filename)
+            if target_file is not None:
                 content = target_file.read_bytes()
                 mime = "application/json" if target_file.suffix == ".json" else "text/markdown"
                 self.send_response(200)
@@ -285,8 +360,8 @@ class LifeForgeDashboardHandler(http.server.BaseHTTPRequestHandler):
             self.serve_static_file(STATIC_DIR / "index.html", "text/html")
         else:
             # Attempt static file resolution
-            static_file = STATIC_DIR / path.lstrip("/")
-            if static_file.exists() and static_file.is_file():
+            static_file = _safe_static_file(path)
+            if static_file is not None:
                 content_type = "text/plain"
                 if static_file.suffix == ".html":
                     content_type = "text/html"
@@ -369,12 +444,15 @@ class LifeForgeDashboardHandler(http.server.BaseHTTPRequestHandler):
         self.wfile.write(content)
 
     def send_json_response(self, data: Any, status: int = 200) -> None:
-        """Send JSON encoded response with appropriate CORS headers."""
+        """Send a JSON response.
+
+        No ``Access-Control-Allow-Origin`` header is sent: the UI is served
+        same-origin, and a wildcard would let any website read local reports.
+        """
         body = json.dumps(data, indent=2, default=str).encode("utf-8")
         self.send_response(status)
         self.send_header("Content-Type", "application/json; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
-        self.send_header("Access-Control-Allow-Origin", "*")
         self.send_header("Cache-Control", "no-cache")
         self.end_headers()
         self.wfile.write(body)
@@ -392,8 +470,16 @@ def create_server(
     """Create and return a configured HTTPServer instance."""
     LifeForgeDashboardHandler.results_dir = results_dir
 
-    class ReusableTCPServer(socketserver.TCPServer):
+    class ReusableTCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         allow_reuse_address = True
+        daemon_threads = True
+
+        def handle_error(self, request: Any, client_address: Any) -> None:
+            # A client hanging up mid-request is routine; anything else is
+            # reported through the default handler.
+            if isinstance(sys.exc_info()[1], (ConnectionError, TimeoutError)):
+                return
+            super().handle_error(request, client_address)
 
     server = ReusableTCPServer((host, port), LifeForgeDashboardHandler)
     return server

@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib
 import importlib.util
 import inspect
+import sys
 from pathlib import Path
 from typing import Any, Callable
 
@@ -54,9 +55,13 @@ def load_agent_from_spec(spec: str, name: str | None = None) -> AgentInterface:
             raise AgentLoadError(f"Could not load module specification from: {module_path}")
 
         module = importlib.util.module_from_spec(spec_obj)
+        # Register before executing: dataclasses, pickle, and typing helpers
+        # look the module up in sys.modules while it is being executed.
+        sys.modules[module_name] = module
         try:
             spec_obj.loader.exec_module(module)
         except Exception as exc:
+            sys.modules.pop(module_name, None)
             raise AgentLoadError(f"Error executing agent module '{module_path}': {exc}") from exc
     else:
         # Load from standard python import path

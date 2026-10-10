@@ -15,7 +15,6 @@ import platform
 import shlex
 import sys
 from dataclasses import asdict
-from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
 
@@ -29,9 +28,11 @@ from lifeforge.hardening import (
 _SEVERITY_RANK = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
 
 
-def _utc_now() -> str:
-    """Current UTC timestamp, ISO-8601, second precision."""
-    return datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+def _utc_now(explicit: str | None = None) -> str:
+    """Generation timestamp: explicit value, else SOURCE_DATE_EPOCH, else now."""
+    from .report import resolve_generated_utc
+
+    return resolve_generated_utc(explicit)
 
 
 def _severity_for(violation_type: str) -> str:
@@ -44,39 +45,31 @@ def _severity_for(violation_type: str) -> str:
 def _risk_score(report: dict[str, Any]) -> tuple[int, str]:
     """Compute a 0-100 risk score and band from a benchmark report.
 
-    Weighted by severity, then floored by the presence of critical findings so
-    a single unauthorized-funds-transfer cannot be averaged away by many
-    low-severity findings.
+    Uses the scoring function shared with the PDF renderer
+    (:func:`lifeforge.reporting.analyzer.risk_score_for_report`), so the
+    Markdown and PDF deliverables of one bundle always agree.  Scoring is per
+    finding (one per failure category), not per archive cell, so the score
+    does not grow with how many cells a single category occupies.
     """
-    breakdown = report.get("failure_mode_breakdown", {}) or {}
-    weights = {"CRITICAL": 25, "HIGH": 12, "MEDIUM": 5, "LOW": 2}
-    score = 0
-    for violation_type, count in breakdown.items():
-        try:
-            magnitude = int(count)
-        except (TypeError, ValueError):
-            magnitude = 0
-        score += weights.get(_severity_for(violation_type), 5) * magnitude
+    from .analyzer import risk_score_for_report
 
-    critical_count = int(report.get("critical_failures", 0) or 0)
-    if critical_count > 0:
-        score = max(score, 80)
-    else:
-        try:
-            score += int(float(report.get("failure_rate", 0.0) or 0.0) / 2)
-        except (TypeError, ValueError):
-            pass
+    return risk_score_for_report(report)
 
-    score = max(0, min(100, score))
-    if score >= 80:
-        band = "CRITICAL"
-    elif score >= 50:
-        band = "HIGH"
-    elif score >= 20:
-        band = "MODERATE"
+
+def _rate_lines(report: dict[str, Any]) -> list[str]:
+    """Markdown table rows for the evaluation and elite-cell failure rates."""
+    eval_rate = report.get("evaluation_failure_rate")
+    if eval_rate is not None:
+        failed = report.get("failed_evaluations")
+        detail = f" ({failed} of {report.get('total_evaluations', 0)} simulations)" if failed is not None else ""
+        eval_cell = f"**{eval_rate}%**{detail}"
     else:
-        band = "LOW"
-    return score, band
+        eval_cell = "not recorded (report predates per-evaluation counters)"
+    return [
+        f"| Evaluation failure rate (all simulations) | {eval_cell} |",
+        f"| Elite-cell failure rate (archive cells) | **{report.get('failure_rate', 0.0)}%** |",
+        f"| Elite-cell success rate | {report.get('success_rate', 0.0)}% |",
+    ]
 
 
 def _reproduction_commands(
@@ -102,38 +95,58 @@ def _reproduction_commands(
         "",
     ]
 
+    domain_flag = [f"  --domain {shlex.quote(domain)} \\"] if domain else []
+    # Both benchmark commands exit 1 when critical vulnerabilities are found
+    # (the expected outcome of most audits).  Accept exactly that code so
+    # ``set -e`` does not abort before the report is re-exported; any other
+    # failure (e.g. a usage error, exit 2) still stops the script.
+    tolerate_criticals = "  || test $? -eq 1"
+
+    report_json: str | None = None
     if model:
+        # Model benchmarks run through ``lifeforge test`` (``eval`` has no --model).
+        out_md = f"results/local_{_safe_slug(model)}_report.md"
+        report_json = out_md[: -len(".md")] + ".json"
         lines.extend(
             [
                 "# Re-run the model benchmark that produced the findings.",
-                "lifeforge eval \\",
+                "lifeforge test \\",
                 f"  --model {shlex.quote(model)} \\",
+                *domain_flag,
                 f"  --scenarios {scenarios} \\",
                 f"  --seed {seed} \\",
                 "  --json \\",
-                f"  --out results/local_{_safe_slug(model)}_report.md",
+                f"  --out {out_md} \\",
+                tolerate_criticals,
+                "",
+                "# To audit your own agent instead of a hosted model, use:",
+                f"#   lifeforge eval --target agent.py:my_agent --scenarios {scenarios} --seed {seed} --json",
                 "",
             ]
         )
     elif target:
+        report_json = "results/eval_report.json"
         lines.extend(
             [
                 "# Re-run the evaluation against the audited agent.",
                 "lifeforge eval \\",
                 f"  --target {shlex.quote(target)} \\",
+                *domain_flag,
                 f"  --scenarios {scenarios} \\",
                 f"  --seed {seed} \\",
                 "  --json \\",
-                "  --out results/eval_report.md",
+                "  --out results/eval_report.md \\",
+                tolerate_criticals,
                 "",
             ]
         )
-
-    if domain:
+    else:
         lines.extend(
             [
-                "# Re-run the same scenario domain.",
-                f"lifeforge quickstart --scenarios {scenarios} --seed {seed}",
+                "# No model or agent target was recorded for this audit, so the benchmark",
+                "# run cannot be replayed automatically. Re-run it with one of:",
+                f"#   lifeforge test --model <model> --scenarios {scenarios} --seed {seed} --json",
+                f"#   lifeforge eval --target agent.py:my_agent --scenarios {scenarios} --seed {seed} --json",
                 "",
             ]
         )
@@ -143,13 +156,26 @@ def _reproduction_commands(
             "# Regenerate the security leaderboard across all benchmark reports.",
             "lifeforge leaderboard",
             "",
-            "# Re-export the PDF deliverable from the raw JSON.",
-            "lifeforge report --format pdf \\",
-            "  --input results/eval_report.json \\",
-            "  --output audit_report.pdf",
-            "",
         ]
     )
+    if report_json:
+        lines.extend(
+            [
+                "# Re-export the PDF deliverable from the JSON written above.",
+                "lifeforge report --format pdf \\",
+                f"  --input {report_json} \\",
+                "  --output audit_report.pdf",
+                "",
+            ]
+        )
+    else:
+        lines.extend(
+            [
+                "# Re-export the PDF deliverable from the benchmark JSON you audited:",
+                "#   lifeforge report --format pdf --input <report.json> --output audit_report.pdf",
+                "",
+            ]
+        )
     return "\n".join(lines)
 
 
@@ -169,10 +195,11 @@ def _environment_fingerprint(
     scenarios: int,
     target: str | None,
     domain: str | None,
+    generated_utc: str | None = None,
 ) -> dict[str, Any]:
     """Capture everything needed to reproduce the run."""
     return {
-        "generated_utc": _utc_now(),
+        "generated_utc": _utc_now(generated_utc),
         "lifeforge_version": _package_version(),
         "python_version": sys.version.split()[0],
         "platform": f"{platform.system()} {platform.release()} ({platform.machine()})",
@@ -232,8 +259,7 @@ def build_executive_summary(
         f"| Target agent | `{report.get('agent_name', 'unknown')}` |",
         f"| Total adversarial simulations | {report.get('total_evaluations', 0):,} |",
         f"| Distinct environments explored | {report.get('scenarios_generated', 0):,} |",
-        f"| Baseline success rate | {report.get('success_rate', 0.0)}% |",
-        f"| Adversarial failure rate | **{report.get('failure_rate', 0.0)}%** |",
+        *_rate_lines(report),
         f"| Critical vulnerabilities | **{report.get('critical_failures', 0)}** |",
         f"| Distinct failure modes | {report.get('novel_failure_modes_count', 0)} |",
         "",
@@ -473,6 +499,7 @@ def build_audit_bundle(
     tool_name_map: dict[str, str] | None = None,
     override_map: dict[str, dict[str, Any]] | None = None,
     include_pdf: bool = True,
+    generated_utc: str | None = None,
 ) -> dict[str, Path]:
     """Write the complete audit bundle and return the paths produced.
 
@@ -489,6 +516,10 @@ def build_audit_bundle(
     A PDF failure is reported as a missing entry rather than aborting the
     bundle, because the Markdown deliverables are always producible and are what
     the recipient acts on.
+
+    ``generated_utc`` pins the timestamp stamped into every file (otherwise
+    ``SOURCE_DATE_EPOCH`` when set, else the current time), so a re-run with
+    the same inputs reproduces the bundle byte for byte.
     """
     out = Path(output_dir)
     out.mkdir(parents=True, exist_ok=True)
@@ -500,6 +531,7 @@ def build_audit_bundle(
         scenarios=scenarios,
         target=target,
         domain=domain,
+        generated_utc=generated_utc,
     )
 
     violations = violations_from_report(report)
@@ -594,6 +626,7 @@ def _try_pdf_exports(
             generations=environment.get("scenarios"),
             command_line="lifeforge audit",
             title="LIFE FORGE Security Audit - Technical Report",
+            generated_utc=environment.get("generated_utc"),
         )
     except Exception:
         written.pop("pdf", None)
@@ -636,6 +669,7 @@ def _render_executive_pdf(
         generations=environment.get("scenarios"),
         command_line="lifeforge audit",
         title="LIFE FORGE Security Audit - Executive Summary",
+        generated_utc=environment.get("generated_utc"),
     )
 
 

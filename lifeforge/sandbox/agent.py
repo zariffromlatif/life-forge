@@ -11,7 +11,7 @@ from typing import Any, Callable
 class AgentAction:
     """Action selected by an agent during a simulation step."""
 
-    action_type: str  # "tool_call", "finish", "message"
+    action_type: str  # "tool_call", "finish", "message", or "error" (agent failed; episode invalid)
     tool_name: str | None = None
     arguments: dict[str, Any] = field(default_factory=dict)
     thought: str | None = None

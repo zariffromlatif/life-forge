@@ -171,6 +171,12 @@ def _format_observation_for_crewai(
     if not parts:
         parts.append("No new information. Decide the next action or finish.")
 
+    from ._parsing import describe_sandbox_tools
+
+    tools_text = describe_sandbox_tools(observation)
+    if tools_text:
+        parts.append(tools_text)
+
     return "\n".join(parts)
 
 

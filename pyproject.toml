@@ -4,8 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "lifeforge"
-version = "0.3.0"
-description = "Autonomous AI Agent Flight Simulator -- co-evolutionary adversarial red-teaming and stress-testing via 3D MAP-Elites."
+version = "0.4.0"
+description = "Behavioral regression testing for AI agents that take actions: deterministic tool twins, Quality-Diversity search, and a replayable regression corpus for CI."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "MIT"
@@ -38,6 +38,7 @@ classifiers = [
 ]
 dependencies = [
     "numpy>=1.24.0",
+    "pyyaml>=6.0",
 ]
 
 [project.optional-dependencies]

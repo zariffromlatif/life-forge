@@ -24,7 +24,7 @@ jobs:
 
       # Option A: Test a Python Agent (Class, Instance, or Callable)
       - name: Run LIFE FORGE Flight Simulation (Python Agent)
-        uses: zariffromlatif/life-forge@main
+        uses: zariffromlatif/life-forge@v0.4.0
         with:
           target: "src/agent.py:my_procurement_agent"
           scenarios: 30
@@ -38,7 +38,7 @@ jobs:
       #   run: docker run -d -p 5000:5000 my-agent-image:latest
       #
       # - name: Run LIFE FORGE Flight Simulation (Webhook Agent)
-      #   uses: zariffromlatif/life-forge@main
+      #   uses: zariffromlatif/life-forge@v0.4.0
       #   with:
       #     endpoint: "http://localhost:5000/act"
       #     reset-endpoint: "http://localhost:5000/reset"

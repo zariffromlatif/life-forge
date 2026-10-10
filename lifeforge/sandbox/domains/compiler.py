@@ -51,6 +51,7 @@ fail loudly with the full list of valid options.
 from __future__ import annotations
 
 import json
+import math
 import re
 from pathlib import Path
 from typing import Any
@@ -74,6 +75,12 @@ class DomainSpecError(ValueError):
 
 #: Effect kinds a compiled tool can apply to the world state.
 EFFECT_KINDS = ("spend", "add_inventory", "set_flag", "record")
+
+#: Argument types a spec may declare (JSON Schema primitive names).
+ARGUMENT_TYPES = ("string", "number", "integer", "boolean", "array", "object")
+
+#: Per-argument keys a spec may use.
+ARGUMENT_KEYS = ("type", "required", "pattern", "enum", "minimum", "maximum", "description")
 
 
 def _require(mapping: Any, key: str, context: str) -> Any:
@@ -129,13 +136,19 @@ class CompiledTool(Tool):
         if error is not None:
             return ToolResult(success=False, output=None, error=error)
 
+        # Effects are applied to a scratch copy and committed only when every
+        # one succeeds, so a failed call never leaves a partial mutation (for
+        # example a debit without the matching inventory).
+        scratch = state.snapshot()
         outputs: dict[str, Any] = {"status": "OK"}
         for effect in self.effects:
             kind, config = next(iter(effect.items()))
-            outcome = self._apply_effect(str(kind), dict(config or {}), state, kwargs)
-            if isinstance(outcome, str):  # effect-level failure
+            outcome = self._apply_effect(str(kind), dict(config or {}), scratch, kwargs)
+            if isinstance(outcome, str):  # effect-level failure: discard the scratch copy
                 return ToolResult(success=False, output=None, error=outcome)
             outputs.update(outcome)
+        for name in vars(scratch):
+            setattr(state, name, getattr(scratch, name))
         return ToolResult(success=True, output=outputs)
 
     # ------------------------------------------------------------------
@@ -157,13 +170,18 @@ class CompiledTool(Tool):
                 if not re.search(str(spec["pattern"]), value):
                     return f"Argument '{argument}' does not match the required pattern {spec['pattern']}."
             if "enum" in spec:
-                allowed = [str(item) for item in spec["enum"]]
-                if str(value) not in allowed:
+                # Strict: same type and value (``1`` does not match ``"1"``,
+                # ``True`` does not match ``1``).
+                if not any(type(value) is type(item) and value == item for item in spec["enum"]):
+                    allowed = [str(item) for item in spec["enum"]]
                     return f"Argument '{argument}' must be one of: {', '.join(allowed)}."
-            if "minimum" in spec and isinstance(value, (int, float)) and not isinstance(value, bool):
+            is_number = isinstance(value, (int, float)) and not isinstance(value, bool)
+            if is_number and not math.isfinite(value):
+                return f"Argument '{argument}' must be a finite number."
+            if "minimum" in spec and is_number:
                 if value < float(spec["minimum"]):
                     return f"Argument '{argument}' is below the minimum of {spec['minimum']}."
-            if "maximum" in spec and isinstance(value, (int, float)) and not isinstance(value, bool):
+            if "maximum" in spec and is_number:
                 if value > float(spec["maximum"]):
                     return f"Argument '{argument}' exceeds the maximum of {spec['maximum']}."
         return None
@@ -187,8 +205,15 @@ class CompiledTool(Tool):
             if not balance:
                 return "Effect 'spend' requires a 'balance' key naming the account to debit."
             if amount is None:
-                return f"Effect 'spend' requires numeric argument '{amount_arg}'."
-            state.balances[balance] = float(state.balances.get(balance, 0.0)) - amount
+                return f"Effect 'spend' requires a finite numeric argument '{amount_arg}'."
+            if amount < 0:
+                return f"Effect 'spend' refuses a negative amount ({amount:,.2f}); a debit cannot credit the account."
+            if balance not in state.balances:
+                return f"Effect 'spend' references balance '{balance}', which does not exist in the world."
+            current = float(state.balances[balance])
+            if current - amount < 0 and not config.get("allow_overdraft", False):
+                return f"Insufficient funds in '{balance}': {current:,.2f} available, {amount:,.2f} requested."
+            state.balances[balance] = current - amount
             return {"debited": amount, "balance": balance, "remaining": state.balances[balance]}
 
         if kind == "add_inventory":
@@ -198,8 +223,8 @@ class CompiledTool(Tool):
             quantity = _as_number(arguments.get(quantity_arg))
             if not isinstance(item, str) or not item:
                 return f"Effect 'add_inventory' requires string argument '{item_arg}'."
-            if quantity is None:
-                return f"Effect 'add_inventory' requires numeric argument '{quantity_arg}'."
+            if quantity is None or quantity != int(quantity):
+                return f"Effect 'add_inventory' requires a finite whole-number argument '{quantity_arg}'."
             state.inventory[item] = int(state.inventory.get(item, 0)) + int(quantity)
             return {"added": {item: int(quantity)}}
 
@@ -241,6 +266,16 @@ def _check_type(value: Any, declared: str) -> str | None:
     elif declared == "boolean":
         if not isinstance(value, bool):
             return "must be a boolean."
+    elif declared == "array":
+        if not isinstance(value, (list, tuple)):
+            return "must be an array."
+    elif declared == "object":
+        if not isinstance(value, dict):
+            return "must be an object."
+    else:  # types are validated at compile time; refuse anything else at runtime too
+        return f"has an unsupported declared type '{declared}'."
+    if declared in ("number", "integer") and not math.isfinite(value):
+        return "must be a finite number."
     return None
 
 
@@ -249,13 +284,15 @@ def _as_number(value: Any) -> float | None:
     if isinstance(value, bool) or value is None:
         return None
     if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
+        number = float(value)
+    elif isinstance(value, str):
         try:
-            return float(value)
+            number = float(value)
         except ValueError:
             return None
-    return None
+    else:
+        return None
+    return number if math.isfinite(number) else None
 
 
 # ---------------------------------------------------------------------------
@@ -304,6 +341,36 @@ class CompiledDomain(ScenarioDomain):
             _require(tool_spec, "description", context)
 
             args_spec = tool_spec.get("args") or {}
+            if not isinstance(args_spec, dict):
+                raise DomainSpecError(f"{context}.args: must be a mapping of argument name to declaration.")
+            for argument, argument_spec in args_spec.items():
+                argument_context = f"{context}.args.{argument}"
+                if not isinstance(argument_spec, dict):
+                    raise DomainSpecError(f"{argument_context}: must be a mapping, e.g. {{type: string}}.")
+                unknown_keys = sorted(str(key) for key in set(argument_spec) - set(ARGUMENT_KEYS))
+                if unknown_keys:
+                    raise DomainSpecError(
+                        f"{argument_context}: unknown key(s) {', '.join(unknown_keys)}. "
+                        f"Known keys: {', '.join(ARGUMENT_KEYS)}."
+                    )
+                declared_type = argument_spec.get("type", "string")
+                if declared_type not in ARGUMENT_TYPES:
+                    raise DomainSpecError(
+                        f"{argument_context}: unknown type {declared_type!r}. "
+                        f"Known types: {', '.join(ARGUMENT_TYPES)}."
+                    )
+                for bound in ("minimum", "maximum"):
+                    if bound in argument_spec:
+                        limit = argument_spec[bound]
+                        if isinstance(limit, bool) or not isinstance(limit, (int, float)) or not math.isfinite(limit):
+                            raise DomainSpecError(f"{argument_context}: {bound} must be a finite number.")
+                if "enum" in argument_spec and not isinstance(argument_spec["enum"], list):
+                    raise DomainSpecError(f"{argument_context}: enum must be a list.")
+                if "pattern" in argument_spec:
+                    try:
+                        re.compile(str(argument_spec["pattern"]))
+                    except re.error as exc:
+                        raise DomainSpecError(f"{argument_context}: invalid pattern: {exc}") from exc
             declared_args = set(args_spec)
             for effect_index, effect in enumerate(tool_spec.get("effects") or []):
                 effect_context = f"{context}.effects[{effect_index}]"
@@ -318,6 +385,16 @@ class CompiledDomain(ScenarioDomain):
                         f"{effect_context}: unknown effect kind '{kind}'. "
                         f"Known effects: {', '.join(EFFECT_KINDS)}."
                     )
+                if config is not None and not isinstance(config, dict):
+                    raise DomainSpecError(f"{effect_context}: effect configuration must be a mapping.")
+                if kind == "spend":
+                    balance = str((config or {}).get("balance", ""))
+                    known_balances = {str(key) for key in (self._world_config.get("balances") or {})}
+                    if balance not in known_balances:
+                        raise DomainSpecError(
+                            f"{effect_context}: effect 'spend' debits balance {balance!r}, which is not "
+                            f"declared in world.balances (known: {', '.join(sorted(known_balances)) or 'none'})."
+                        )
                 for referenced in _effect_argument_references(str(kind), config or {}):
                     if referenced not in declared_args:
                         raise DomainSpecError(

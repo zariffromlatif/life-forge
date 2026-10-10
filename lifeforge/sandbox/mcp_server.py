@@ -93,7 +93,9 @@ class LifeForgeMCPServer:
     ) -> None:
         self.config = config or MCPServerConfig()
         self.tool_registry = tool_registry or ToolRegistry.default_purchasing_registry()
-        self.state = initial_state or WorldState.default_purchasing_world()
+        # Own a copy: tool calls mutate self.state, and the caller's object
+        # must not change underneath it.
+        self.state = (initial_state or WorldState.default_purchasing_world()).snapshot()
         self._initial_state = self.state.snapshot()
         self._mutators = mutators or []
         self._trace: list[dict[str, Any]] = []
@@ -198,8 +200,17 @@ class LifeForgeMCPServer:
 
     def handle_jsonrpc(self, request: dict[str, Any]) -> dict[str, Any]:
         """Handle a raw JSON-RPC 2.0 request and return the response."""
+        if not isinstance(request, dict):
+            # A batch array or a bare scalar must not crash the server loop.
+            return {
+                "jsonrpc": "2.0",
+                "id": None,
+                "error": {"code": -32600, "message": "Invalid Request: expected a JSON object."},
+            }
         method = request.get("method", "")
-        params = request.get("params", {})
+        params = request.get("params") or {}
+        if not isinstance(params, dict):
+            params = {}
         req_id = request.get("id")
 
         try:
@@ -290,6 +301,9 @@ class LifeForgeMCPServer:
         self.state = self._initial_state.snapshot()
         self._trace = []
         self._step_count = 0
+        # Re-seed lazily so a reset server replays the same mutation sequence
+        # as a fresh one.
+        self._rng = None
 
     def get_trace(self) -> list[dict[str, Any]]:
         """Return the complete recorded trace."""

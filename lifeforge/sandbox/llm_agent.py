@@ -115,7 +115,7 @@ class LLMAgentConfig:
     temperature: float = 0.0
     max_tokens: int = 1024
     timeout: float = 30.0
-    max_retries: int = 2
+    max_retries: int = 5
     api_base: str | None = None
     api_key: str | None = None
     extra_params: dict[str, Any] = field(default_factory=dict)
@@ -191,62 +191,51 @@ class LLMAgent(AgentInterface):
             kwargs["tools"] = self._tool_schemas
             kwargs["tool_choice"] = "auto"
 
-        # Call the LLM with robust backoff for 429 (quota) and 503 (high demand)
+        # Call the LLM with backoff for transient failures (rate limits,
+        # overloaded or briefly unavailable servers).  Permanent errors (bad
+        # key, exhausted billing quota, malformed request) fail immediately.
         response = None
-        max_retries = 5
+        max_retries = max(1, int(self.config.max_retries))
         for attempt in range(max_retries):
             try:
                 response = self._litellm.completion(**kwargs)
                 self.cost_tracker.record(response)
                 break
             except Exception as exc:
-                err_str = str(exc)
-                is_rate_limit = (
-                    "429" in err_str
-                    or "rate_limit" in err_str.lower()
-                    or "resource_exhausted" in err_str.lower()
-                    or "quota" in err_str.lower()
-                )
-                is_high_demand = (
-                    "503" in err_str
-                    or "unavailable" in err_str.lower()
-                    or "high demand" in err_str.lower()
-                )
-                is_transient = is_rate_limit or is_high_demand or any(c in err_str for c in ["500", "502", "504"])
-
-                if is_transient and attempt < max_retries - 1:
-                    if is_rate_limit:
-                        match = re.search(r"retry in (\d+(?:\.\d+)?)s", err_str, re.IGNORECASE)
-                        sleep_time = float(match.group(1)) + 2.0 if match else (15.0 * (attempt + 1))
-                        sleep_time = min(max(sleep_time, 5.0), 60.0)
-                        print(f"\n  [*] [Rate Limit (429): {self.config.model}] Quota reached. Sleeping {sleep_time:.1f}s to replenish quota (attempt {attempt + 1}/{max_retries})...")
-                    elif is_high_demand:
-                        sleep_time = 10.0 * (attempt + 1)
-                        print(f"\n  [*] [Server Busy (503): {self.config.model}] Google reports high demand. Pausing {sleep_time:.1f}s (attempt {attempt + 1}/{max_retries})...")
-                    else:
-                        sleep_time = 5.0 * (attempt + 1)
-                        print(f"\n  [*] [Transient Error: {self.config.model}] Retrying in {sleep_time:.1f}s (attempt {attempt + 1}/{max_retries})...")
-
+                kind = _classify_llm_error(exc)
+                if kind != "permanent" and attempt < max_retries - 1:
+                    sleep_time = _retry_delay(kind, exc, attempt)
+                    print(
+                        f"\n  [*] [{kind.replace('_', ' ').title()}: {self.config.model}] "
+                        f"Retrying in {sleep_time:.1f}s (attempt {attempt + 1}/{max_retries})..."
+                    )
                     time.sleep(sleep_time)
                     continue
 
                 print(f"\n  [!] [LLM Error: {self.config.model}]: {exc}")
                 logger.error("LLM API call failed: %s", exc)
+                # Not "finish": an agent that could not answer has not shown
+                # it is safe.  The runner records this episode as invalid.
                 return AgentAction(
-                    action_type="finish",
+                    action_type="error",
                     thought=f"LLM API error: {exc}",
-                    message=f"Agent terminated due to API error: {exc}",
+                    message=f"LLM API error ({kind}): {exc}",
                 )
 
         # Parse response
         choice = response.choices[0]
         message = choice.message
 
-        # Record assistant message in conversation
-        self._messages.append(message.model_dump())
-
-        # Check for tool calls
+        # Record assistant message in conversation.  Only the first tool call
+        # is executed per step, so only it is kept in the history: an
+        # assistant turn with tool_call ids that never get a tool reply makes
+        # the next request invalid (OpenAI rejects it with HTTP 400).
+        recorded = message.model_dump()
         tool_calls = getattr(message, "tool_calls", None)
+        if tool_calls and isinstance(recorded.get("tool_calls"), list):
+            recorded["tool_calls"] = recorded["tool_calls"][:1]
+        self._messages.append(recorded)
+
         if tool_calls and len(tool_calls) > 0:
             tc = tool_calls[0]  # We process one tool call at a time
             fn = tc.function
@@ -288,6 +277,40 @@ class LLMAgent(AgentInterface):
         })
 
 
+_TRANSIENT_STATUS = {408, 409, 429, 500, 502, 503, 504, 529}
+_PERMANENT_MARKERS = ("insufficient_quota", "invalid_api_key", "authentication", "permission", "billing")
+
+
+def _classify_llm_error(exc: Exception) -> str:
+    """Return 'rate_limit', 'server_busy', 'transient', or 'permanent'."""
+    text = str(exc).lower()
+    if any(marker in text for marker in _PERMANENT_MARKERS):
+        return "permanent"
+    status = getattr(exc, "status_code", None)
+    name = type(exc).__name__.lower()
+    if status == 429 or "ratelimit" in name or "rate_limit" in text or "resource_exhausted" in text:
+        return "rate_limit"
+    if status in {503, 529} or "serviceunavailable" in name or "overloaded" in text or "high demand" in text:
+        return "server_busy"
+    if status in _TRANSIENT_STATUS or "timeout" in name or "apiconnection" in name or "internalserver" in name:
+        return "transient"
+    if status is None and re.search(r"\b(429|500|502|503|504)\b", text):
+        return "transient"
+    return "permanent"
+
+
+def _retry_delay(kind: str, exc: Exception, attempt: int) -> float:
+    """Back-off delay, honouring a server-provided "retry in Ns" hint."""
+    if kind == "rate_limit":
+        match = re.search(r"retry in (\d+(?:\.\d+)?)s", str(exc), re.IGNORECASE)
+        if match:
+            return min(float(match.group(1)) + 1.0, 300.0)
+        return min(15.0 * (attempt + 1), 120.0)
+    if kind == "server_busy":
+        return 10.0 * (attempt + 1)
+    return 5.0 * (attempt + 1)
+
+
 # ---------------------------------------------------------------------------
 # LLM-aware SandboxRunner
 # ---------------------------------------------------------------------------
@@ -314,98 +337,11 @@ class LLMSandboxRunner:
         initial_state: Any,
         max_steps: int | None = None,
     ) -> Any:
-        """Run an LLM agent through the sandbox with proper tool-use flow."""
-        import copy
-        from .oracle import SimulationTrace
-        from .mock_tools import ToolResult
-        from .world_state import WorldState
+        """Run an LLM agent through the sandbox with proper tool-use flow.
 
-        steps_limit = max_steps or self.runner.goal_spec.max_steps
-        state: WorldState = initial_state.snapshot()
-        agent.reset()
-
-        # Provide tool schemas to agent
-        agent.set_tool_schemas(self.runner.tool_registry.get_schemas())
-
-        events: list[dict[str, Any]] = []
-        last_result: ToolResult | None = None
-
-        for step_idx in range(steps_limit):
-            state.step_count = step_idx + 1
-
-            observation = {
-                "inbox": copy.deepcopy(state.inbox),
-                "step": step_idx,
-                "last_tool_result": {
-                    "success": last_result.success,
-                    "output": last_result.output,
-                    "error": last_result.error,
-                }
-                if last_result
-                else None,
-            }
-
-            # If we have a pending tool result, inject it into the LLM's message history
-            if last_result is not None:
-                agent.inject_tool_result_to_messages({
-                    "success": last_result.success,
-                    "output": last_result.output,
-                    "error": last_result.error,
-                })
-
-            action = agent.act(observation, copy.deepcopy(events))
-
-            event_record: dict[str, Any] = {
-                "step": step_idx,
-                "action": {
-                    "action_type": action.action_type,
-                    "tool_name": action.tool_name,
-                    "arguments": copy.deepcopy(action.arguments),
-                    "thought": action.thought,
-                    "message": action.message,
-                },
-            }
-
-            if action.action_type == "finish":
-                events.append(event_record)
-                break
-
-            elif action.action_type == "tool_call" and action.tool_name:
-                last_result = self.runner.tool_registry.dispatch(
-                    action.tool_name,
-                    state,
-                    action.arguments,
-                )
-                event_record["result"] = {
-                    "success": last_result.success,
-                    "output": copy.deepcopy(last_result.output),
-                    "error": last_result.error,
-                    "cost": last_result.cost,
-                }
-                events.append(event_record)
-            else:
-                events.append(event_record)
-
-        violations = self.runner.goal_spec.evaluate(initial_state, state, events)
-        critical = any(v.severity == "CRITICAL" for v in violations)
-        success = len(violations) == 0
-
-        failure_category: str | None = None
-        if not success:
-            for v in violations:
-                if v.severity == "CRITICAL":
-                    failure_category = v.violation_type
-                    break
-            if not failure_category and violations:
-                failure_category = violations[0].violation_type
-
-        return SimulationTrace(
-            initial_state=initial_state,
-            final_state=state,
-            events=events,
-            violations=violations,
-            success=success,
-            total_steps=len(events),
-            critical_failure=critical,
-            failure_category=failure_category,
-        )
+        Delegates to :class:`SandboxRunner`, which already injects tool
+        results into the agent's message history and hands it the tool
+        schemas.  Keeping a single episode loop means oracle and isolation
+        fixes apply to LLM runs too.
+        """
+        return self.runner.run(agent, initial_state, max_steps=max_steps)

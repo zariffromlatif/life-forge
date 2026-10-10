@@ -34,6 +34,12 @@ class MapElitesArchive:
         self.bins = bins
         self.grid: dict[tuple[int, int, int], EliteScenario] = {}
         self.total_evaluations: int = 0
+        # Per-evaluation outcome counters.  The grid keeps only the
+        # highest-fitness (most-failing) trace per cell, so rates computed over
+        # elites are biased toward failure; these counters record every
+        # evaluated episode so an unbiased evaluation failure rate exists.
+        self.failed_evaluations: int = 0
+        self.critical_evaluations: int = 0
         self.novel_failure_modes_discovered: set[str] = set()
 
     def get_cell_index(self, coords: tuple[float, float, float]) -> tuple[int, int, int]:
@@ -92,6 +98,10 @@ class MapElitesArchive:
         Returns True if the scenario was added or updated an existing elite.
         """
         self.total_evaluations += 1
+        if not trace.success:
+            self.failed_evaluations += 1
+        if trace.critical_failure:
+            self.critical_evaluations += 1
         cell = self.get_cell_index(coords)
         fitness = self.calculate_fitness(trace)
 

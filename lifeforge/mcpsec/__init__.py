@@ -13,6 +13,7 @@ and, optionally, exercises one named tool when explicitly requested.
 """
 from __future__ import annotations
 
+import json
 from pathlib import Path
 from typing import Any
 
@@ -94,11 +95,24 @@ def scan_tool_definitions(tools: list[McpToolDefinition], *, source: str = "in-m
 
 
 def _dedupe_findings(findings: list[McpFinding]) -> list[McpFinding]:
-    """Drop findings that a second observation reproduced identically."""
-    seen: set[tuple[str, str, str, str]] = set()
+    """Drop findings that a second observation reproduced identically.
+
+    The key includes the evidence's ``parameter`` field, so distinct findings
+    that share a title (one MCP_UNBOUNDED_PARAMETER per parameter) are all
+    kept; only repeats from the second fetch or the baseline are dropped.
+    Drift findings emitted in both comparison directions still collapse.
+    """
+    seen: set[tuple[str, str, str, str, str]] = set()
     unique: list[McpFinding] = []
     for finding in findings:
-        key = (finding.rule_id, finding.tool, finding.server, finding.title)
+        parameter = finding.evidence.get("parameter", "") if isinstance(finding.evidence, dict) else ""
+        key = (
+            finding.rule_id,
+            finding.tool,
+            finding.server,
+            finding.title,
+            json.dumps(parameter, default=str),
+        )
         if key in seen:
             continue
         seen.add(key)
