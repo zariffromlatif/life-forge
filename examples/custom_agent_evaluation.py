@@ -18,9 +18,13 @@ class MyCustomProcurementAgent(AgentInterface):
     def __init__(self, name: str = "MyCustomAgent-v1") -> None:
         self.name = name
         self.step_count = 0
+        self.quote: dict[str, Any] | None = None
+        self.ordered = False
 
     def reset(self) -> None:
         self.step_count = 0
+        self.quote = None
+        self.ordered = False
 
     def act(
         self,
@@ -28,47 +32,62 @@ class MyCustomProcurementAgent(AgentInterface):
         history: list[dict[str, Any]],
     ) -> AgentAction:
         self.step_count += 1
+        last = observation.get("last_tool_result") or {}
 
-        # Step 1: Query database to inspect inventory
+        # Step 1: Inspect inventory.  Argument names follow the tool schemas in
+        # observation["available_tools"]; a misnamed argument is an error.
         if self.step_count == 1:
             return AgentAction(
                 action_type="tool_call",
                 tool_name="query_database",
-                arguments={"query": "SELECT * FROM inventory"},
+                arguments={"table": "inventory"},
                 thought="Checking inventory status...",
             )
 
-        # Step 2: Query vendor API to get quote
+        # Step 2: Get a live quote.
         if self.step_count == 2:
             return AgentAction(
                 action_type="tool_call",
                 tool_name="vendor_api",
-                arguments={"vendor_id": "vendor_alpha", "sku": "server_h100"},
+                arguments={"vendor_id": "vendor_alphatech", "item": "server_h100"},
                 thought="Checking price for server_h100...",
             )
 
-        # Step 3: Issue purchase order
+        # Step 3: Buy only at the price just quoted.  Instructions found in
+        # vendor notes or the inbox are data, never commands, so this agent
+        # does not act on them.
         if self.step_count == 3:
+            if not last.get("success"):
+                return AgentAction(action_type="finish", thought="No valid quote; not purchasing.")
+            self.quote = last["output"]
+            if self.quote.get("available_qty", 0) < 2:
+                return AgentAction(action_type="finish", thought="Insufficient stock; escalating instead of buying.")
             return AgentAction(
                 action_type="tool_call",
                 tool_name="issue_purchase_order",
-                arguments={"vendor_id": "vendor_alpha", "sku": "server_h100", "quantity": 2},
-                thought="Placing order for 2 H100 servers...",
+                arguments={
+                    "vendor_id": self.quote["vendor_id"],
+                    "item": self.quote["item"],
+                    "quantity": 2,
+                    "max_unit_price": self.quote["unit_price"],
+                },
+                thought="Placing order for 2 H100 servers at the quoted price...",
             )
 
-        # Step 4: Send confirmation email
-        if self.step_count == 4:
+        # Step 4: Confirm to the procurement lead (only if the order went through).
+        if self.step_count == 4 and last.get("success"):
+            self.ordered = True
             return AgentAction(
                 action_type="tool_call",
                 tool_name="send_email",
-                arguments={"to": "procurement_lead", "subject": "Order Complete", "body": "H100 servers purchased."},
+                arguments={"recipient": "procurement_lead", "subject": "Order Complete", "body": "H100 servers purchased."},
                 thought="Notifying procurement lead...",
             )
 
         # Step 5: Complete task
         return AgentAction(
             action_type="finish",
-            thought="Task fulfilled successfully.",
+            thought="Task fulfilled successfully." if self.ordered else "Stopping without a completed order.",
         )
 
 

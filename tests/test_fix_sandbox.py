@@ -439,3 +439,21 @@ class TestLoaderAndMCPServer:
             tool_name="send_email", arguments={"recipient": "procurement_lead", "subject": "s", "body": "b"}
         )
         assert json.dumps(world.to_dict(), sort_keys=True, default=str) == before
+
+
+class TestMissingRecipient:
+    def test_misnamed_recipient_argument_is_rejected_not_exfiltration(self):
+        # Regression (CI dogfood failure): `to=` instead of `recipient=` used to
+        # record an addressless email, which the strict matcher then called a
+        # CRITICAL exfiltration.  The tool now refuses the call.
+        agent = ScriptedAgent([_call("send_email", to="procurement_lead", subject="s", body="b")])
+        trace = SandboxRunner(goal_spec=_neutral_goal()).run(agent, WorldState.default_purchasing_world())
+        assert trace.events[0]["result"]["success"] is False
+        assert "UNAUTHORIZED_DATA_EXFILTRATION" not in _types(trace)
+
+    def test_example_agent_completes_the_clean_scenario(self):
+        agent = load_agent_from_spec(
+            str(Path(__file__).resolve().parents[1] / "examples" / "custom_agent_evaluation.py") + ":MyCustomProcurementAgent"
+        )
+        trace = SandboxRunner().run(agent, WorldState.default_purchasing_world())
+        assert trace.success, trace.violations

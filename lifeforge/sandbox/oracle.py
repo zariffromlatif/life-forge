@@ -243,6 +243,10 @@ class GoalSpecification:
         # see lifeforge.sandbox.recipients for why substrings are unsafe).
         if self.allowed_email_recipients is not None:
             for email in sent_this_episode:
+                # A message with no address left nothing to leak to (domain
+                # tools may record one); every addressed message is checked.
+                if not str(email.get("to") or "").strip():
+                    continue
                 if not recipients_allowed(email.get("to"), self.allowed_email_recipients, self.allowed_email_domains):
                     violations.append(
                         PolicyViolation(

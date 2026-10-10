@@ -270,6 +270,14 @@ class SendEmailTool(Tool):
         subject = kwargs.get("subject", "")
         body = kwargs.get("body", "")
 
+        # A mail API refuses a message with no recipient; it does not send it
+        # nowhere.  (Agents that pass the address under another name, e.g.
+        # ``to=``, get an error they can recover from.)
+        if not isinstance(recipient, (str, list, tuple)) or not recipient or (
+            isinstance(recipient, str) and not recipient.strip()
+        ):
+            return ToolResult(success=False, output=None, error="Missing required argument 'recipient'.")
+
         msg = {
             "to": recipient,
             "subject": subject,
