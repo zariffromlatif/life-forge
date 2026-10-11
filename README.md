@@ -22,8 +22,8 @@ Most agent red-teaming sends a list of attack prompts to a model and asks anothe
 ```bash
 pip install -e ".[all]"
 
-# 1. Generate a twin of the tools your agent uses (from an MCP manifest), then edit it
-lifeforge compile-domain --from-mcp mcp_tools.json --out my_domain.yaml
+# 1. Generate a twin of the tools your agent uses (from an OpenAPI spec or MCP manifest), then edit it
+lifeforge compile-domain --from-openapi openapi.yaml --out my_domain.yaml   # or: --from-mcp mcp_tools.json
 lifeforge compile-domain --spec my_domain.yaml --check
 
 # 2. Record the baseline on main: search + save the replayable corpus
@@ -353,7 +353,7 @@ lifeforge audit --input results/local_phi4_report.json --customer "Acme Corp" --
 lifeforge audit --target agent.py:my_agent --customer "Acme Corp" --out audit_report/
 ```
 
-Produces: `executive_summary.md` + `.pdf`, `technical_report.md` + `.pdf`, `raw_data.json`, `reproduction_commands.sh`, `remediation_decorators.py`, and `MANIFEST.md`.
+Produces: `executive_summary.md` + `.pdf`, `technical_report.md` + `.pdf`, `raw_data.json`, `reproduction_commands.sh`, `remediation_decorators.py`, and `MANIFEST.md`. A live audit (`--target`/`--endpoint`) also leaves an **engagement kit**: `regression_baseline.json` (the replayable corpus), `ci/lifeforge-gate.yml` (a GitHub workflow that replays it on every PR), and `security_review_answers.md` (draft answers to common enterprise AI-security review questions, built only from the evidence, with explicit TODOs for what testing cannot show).
 
 ### 4. Runtime Policy Gateway (Offline Findings -> Online Enforcement)
 
@@ -423,10 +423,11 @@ policies:
   - balance_drain: {balance_key: expense_budget, max_drain: 500}
 ```
 
-Or start from an MCP server's tool list instead of writing the spec by hand. Every tool keeps its argument schema, state-changing tools are gated behind a generated `request_human_approval` tool, and the output is a spec you then edit:
+Or start from an API description instead of writing the spec by hand: an OpenAPI 3.x document (one tool per operation; `GET` is read-only, other methods are state-changing; local `$ref`s are resolved) or an MCP server's tool list. Every tool keeps its argument schema, state-changing tools are gated behind a generated `request_human_approval` tool, and the output is a spec you then edit:
 
 ```bash
-lifeforge compile-domain --from-mcp mcp_tools.json --out my_domain.yaml --task "Refund order ORD-1 if eligible"
+lifeforge compile-domain --from-openapi examples/openapi_refund_desk.yaml --out my_domain.yaml --task "Refund order ORD-1 if eligible"
+lifeforge compile-domain --from-mcp mcp_tools.json --out my_domain.yaml
 ```
 
 ```bash

@@ -3,6 +3,29 @@
 All notable changes to LIFE FORGE are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+
+- **Twin from OpenAPI** (`lifeforge compile-domain --from-openapi api.yaml --out spec.yaml`):
+  one tool per operation, parameters and JSON bodies carried over with local `$ref`
+  resolution, non-GET operations gated behind `request_human_approval`. Example:
+  `examples/openapi_refund_desk.yaml`.
+- **Audit engagement kit**: a live `lifeforge audit` also writes `regression_baseline.json`
+  (surface + replayable corpus), `ci/lifeforge-gate.yml` (PR replay gate, values quoted,
+  paths made repo-relative), and `security_review_answers.md`.
+
+### Changed
+
+- MCP scanner remediation for unconstrained destructive tools no longer recommends a
+  caller-supplied `confirm` flag (self-attestation under prompt injection); it recommends
+  host-side approval, server-side scope limits, or out-of-band approval tokens.
+
+### Fixed
+
+- `lifeforge audit` / `surface` report a missing or broken agent file as an error message
+  instead of a traceback.
+
 ## [0.4.0] - 2026-10-10
 
 The correctness release. A full audit of the codebase (sandbox, oracle,

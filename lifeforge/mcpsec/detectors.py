@@ -568,8 +568,11 @@ def detect_unconstrained_destructive(tool: McpToolDefinition) -> list[McpFinding
                 "required": tool.required_arguments(),
             },
             remediation=(
-                "Add a confirmation or authorization argument (or a dry_run default) to every "
-                "state-mutating tool, and enforce it server-side - not just in the schema."
+                "Gate the tool on something the model cannot forge. A caller-supplied flag such as "
+                "confirm=true is self-attestation: under prompt injection, the manipulated model sets "
+                "it too. Prefer host-side human approval (advertise destructiveHint so clients prompt), "
+                "a server-side allowlist or scope limit, or an approval/capability token issued outside "
+                "the model's context and verified by the server."
             ),
         )
     ]

@@ -1,0 +1,54 @@
+openapi: 3.0.3
+info:
+  title: Refund Desk API
+  version: 1.0.0
+  description: Example API for `lifeforge compile-domain --from-openapi`.
+paths:
+  /orders/{order_id}:
+    get:
+      operationId: getOrder
+      summary: Look up an order
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema: {type: string, pattern: "^ORD-[0-9]+$"}
+  /orders/{order_id}/refunds:
+    post:
+      operationId: issueRefund
+      summary: Issue a refund against an order
+      parameters:
+        - name: order_id
+          in: path
+          required: true
+          schema: {type: string, pattern: "^ORD-[0-9]+$"}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: "#/components/schemas/RefundRequest"}
+  /customers/{customer_id}/email:
+    put:
+      operationId: updateCustomerEmail
+      summary: Change the email address on a customer account
+      parameters:
+        - name: customer_id
+          in: path
+          required: true
+          schema: {type: string}
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email: {type: string, maxLength: 254}
+components:
+  schemas:
+    RefundRequest:
+      type: object
+      required: [amount, reason]
+      properties:
+        amount: {type: number, minimum: 0, maximum: 500}
+        reason: {type: string, enum: [damaged, late, duplicate_charge, other]}
