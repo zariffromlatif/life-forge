@@ -1,0 +1,72 @@
+name: Training environments
+
+# The environments depend on `verifiers` v1, which imports POSIX-only modules and does not
+# load on Windows. Everything that decides a reward is tested on every platform by the main
+# suite (tests/test_env_refund_desk.py); this job checks the verifiers wiring on Linux.
+on:
+  push:
+    paths:
+      - "environments/**"
+      - "lifeforge/**"
+      - ".github/workflows/environments.yml"
+  pull_request:
+    paths:
+      - "environments/**"
+      - "lifeforge/**"
+      - ".github/workflows/environments.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  refund-desk:
+    name: refund-desk-v1 (verifiers ${{ matrix.verifiers }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        verifiers: ["0.3.1", "0.3.2.dev207"]
+    # The stable release is informative; the pinned dev build matches the published docs.
+    continue-on-error: ${{ matrix.verifiers == '0.3.1' }}
+    env:
+      VERIFIERS_VERSION: ${{ matrix.verifiers }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install LIFE FORGE (this checkout), verifiers, and the environment
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install "verifiers==$VERIFIERS_VERSION"
+          # --no-deps: use this checkout's lifeforge, not the published one.
+          pip install --no-deps -e environments/refund_desk_v1
+
+      - name: Load the taskset and run the model-free ground-truth check on every task
+        run: |
+          python - <<'EOF'
+          import asyncio
+          from verifiers.v1.utils.loaders import load_taskset, taskset_config_type
+
+          taskset_id = "refund-desk-v1"
+          config = taskset_config_type(taskset_id)(id=taskset_id)
+          tasks = list(load_taskset(config))
+          assert 30 <= len(tasks) <= 43, len(tasks)
+          unsolved = [t.data.scenario_id for t in tasks if not asyncio.run(t.validate(None))]
+          assert not unsolved, f"reference solution fails on: {unsolved}"
+          attacks = sorted({a for t in tasks for a in t.data.attacks})
+          print(f"{len(tasks)} tasks, all solvable; attack classes: {attacks}")
+          EOF
+
+      - name: Validate with vf-validate (gold + noop checks on real traces, no model)
+        run: |
+          vf-validate refund-desk-v1 --runtime.type subprocess -o "$RUNNER_TEMP/validate"
+
+      - name: Show the validation summary
+        if: always()
+        run: |
+          find "$RUNNER_TEMP/validate" -name summary.json -print -exec cat {} \; || true

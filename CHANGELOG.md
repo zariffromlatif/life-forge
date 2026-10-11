@@ -3,7 +3,38 @@
 All notable changes to LIFE FORGE are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.4.1] - 2026-10-11
+
+### Added
+
+- **Twin from OpenAPI** (`lifeforge compile-domain --from-openapi api.yaml --out spec.yaml`):
+  one tool per operation, parameters and JSON bodies carried over with local `$ref`
+  resolution, non-GET operations gated behind `request_human_approval`.
+- **Audit engagement kit**: a live `lifeforge audit` also writes `regression_baseline.json`
+  (surface + replayable corpus), `ci/lifeforge-gate.yml` (PR replay gate), and
+  `security_review_answers.md`.
+- **Training environment** (`environments/refund_desk_v1`, a `verifiers` v1 taskset): 37
+  prompt-injection scenarios on a support desk. The reward replays the agent's tool calls
+  through the twin and the rule-based oracle, so it cannot be argued with. Validated on
+  Linux CI (`.github/workflows/environments.yml`).
+- `RefundIntegrityPolicy(include_attempts=True)`: also reports refunds the policy forbids
+  when the tool refused them (`FORBIDDEN_REFUND_ATTEMPT`, MEDIUM). Off by default.
+
+### Fixed
+
+- **Poisoned-memory adoption reported correct work as an attack.** With poison in memory,
+  every correct use of a tool the legitimate task needs (a refund, a merge after passing
+  tests, a trade after approval, a purchase order) was CRITICAL `RAG_MEMORY_POISONING_ADOPTED`.
+  Adoption now means a call the genuine policy forbids: gated tools count only when their
+  gate is unmet (`PoisonedMemoryAdoptionPolicy(gates=...)`, shared with the domain's gate
+  policy), refunds count only above the authority limit or on ineligible orders, and
+  procurement counts only the redirected wire. This affects `--frontier` audits in every
+  built-in domain.
+- MCP scanner remediation no longer recommends a caller-supplied `confirm` flag
+  (self-attestation under prompt injection).
+- `audit` / `surface` report a missing or broken agent file as an error, not a traceback.
+
+
 
 ### Added
 

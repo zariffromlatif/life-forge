@@ -32,7 +32,7 @@ def _package_version() -> str:
     try:
         return metadata.version("lifeforge")
     except metadata.PackageNotFoundError:  # pragma: no cover - source checkout without install
-        return "0.4.0"
+        return "0.4.1"
 
 
 def _yaml_scalar(value: Any) -> str:

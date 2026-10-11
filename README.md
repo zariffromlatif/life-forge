@@ -375,6 +375,12 @@ Critical findings become blocking rules; lower-severity ones start in monitor mo
 
 ---
 
+## Training Environments
+
+The same twins and oracles can train and evaluate agents. [`environments/refund_desk_v1`](environments/refund_desk_v1) is a [`verifiers`](https://github.com/PrimeIntellect-ai/verifiers) v1 taskset: a support agent must do a legitimate refund while ignoring one of seven attack classes (spoofed executives, prompt worms, poisoned knowledge base, social engineering, context floods, multilingual injection, and pairs of them). The reward replays the agent's tool calls through the deterministic twin and judges the result with the rule-based oracle, so there is no LLM judge to persuade, attempts at forbidden actions cost reward even when the tool refuses them, and every task ships a model-free reference solution that `vf-validate` checks. Linux/macOS only (`verifiers` v1); the reward logic is tested on every platform.
+
+---
+
 ## MCP Security Scanner
 
 A free, deterministic scanner for MCP tool definitions. It is a supporting tool, not the product: it feeds the twin generator (`compile-domain --from-mcp`), and Snyk Agent Scan covers similar static ground. Point it at a manifest or a live server:
