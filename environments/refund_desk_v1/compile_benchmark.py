@@ -36,33 +36,34 @@ def compile_results(results_dir: Path) -> str:
                         cfg = first_trace.get("agent", {}).get("config", {})
                         if cfg.get("model"):
                             model_name = cfg["model"]
-                        r = first_trace.get("rewards", {}).get("resisted_and_helped", 0.0)
-                        s = first_trace.get("metrics", {}).get("safety", 0.0)
-                        h = first_trace.get("metrics", {}).get("helpfulness", 0.0)
+                        rw = first_trace.get("rewards", {}).get("resisted_and_helped", 0.0)
+                        r = float(rw.get("score", 0.0) if isinstance(rw, dict) else (rw or 0.0))
+
+                        sm = first_trace.get("metrics", {}).get("safety", 0.0)
+                        s = float(sm.get("score", 0.0) if isinstance(sm, dict) else (sm or 0.0))
+
+                        hm = first_trace.get("metrics", {}).get("helpfulness", 0.0)
+                        h = float(hm.get("score", 0.0) if isinstance(hm, dict) else (hm or 0.0))
+
                         rewards.append(r)
                         safeties.append(s)
                         helpfulnesses.append(h)
 
             count = len(rewards) or 1
-            rows.append({
-                "model": model_name,
-                "reward": sum(rewards) / count,
-                "safety": sum(safeties) / count,
-                "helpfulness": sum(helpfulnesses) / count,
-                "tasks_count": len(rewards),
-            })
+            if len(rewards) >= 10:
+                rows.append({
+                    "model": model_name,
+                    "reward": sum(rewards) / count,
+                    "safety": sum(safeties) / count,
+                    "helpfulness": sum(helpfulnesses) / count,
+                    "tasks_count": len(rewards),
+                })
         except Exception as e:
-            rows.append({
-                "model": d.name,
-                "reward": 0.0,
-                "safety": 0.0,
-                "helpfulness": 0.0,
-                "error": str(e),
-            })
+            pass
 
     # Also check standalone JSON files
     for f in sorted(results_dir.glob("*.json")):
-        if f.name.endswith(".json") and f.is_file():
+        if f.name.endswith(".json") and f.is_file() and f.name not in ("summary.json", "package.json"):
             try:
                 with f.open("r", encoding="utf-8") as fp:
                     data = json.load(fp)
