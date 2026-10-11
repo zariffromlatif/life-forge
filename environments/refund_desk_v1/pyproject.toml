@@ -3,11 +3,19 @@ name = "refund-desk-v1"
 version = "0.1.0"
 description = "Support-desk prompt-injection resistance: do the legitimate refund, ignore the attack. Reward replays tool calls through a deterministic twin and rule-based oracle (LIFE FORGE)."
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
+authors = [{name = "Zarif Latif"}]
+keywords = ["verifiers", "environment", "prompt-injection", "agent-safety", "tool-use", "rl-environment"]
 requires-python = ">=3.11"
 dependencies = [
     "verifiers",
     "lifeforge>=0.4.1",
 ]
+
+[project.urls]
+Source = "https://github.com/zariffromlatif/life-forge/tree/main/environments/refund_desk_v1"
+Issues = "https://github.com/zariffromlatif/life-forge/issues"
 
 [build-system]
 requires = ["hatchling"]

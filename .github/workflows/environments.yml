@@ -43,8 +43,11 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e .
           pip install "verifiers==$VERIFIERS_VERSION"
-          # --no-deps: use this checkout's lifeforge, not the published one.
-          pip install --no-deps -e environments/refund_desk_v1
+          # Build and install the environment as a wheel, the way the Hub packages it
+          # (--no-deps: keep this checkout's lifeforge rather than the published one).
+          pip install build
+          python -m build --wheel --outdir "$RUNNER_TEMP/envdist" environments/refund_desk_v1
+          pip install --no-deps "$RUNNER_TEMP"/envdist/*.whl
 
       - name: Load the taskset and run the model-free ground-truth check on every task
         run: |
