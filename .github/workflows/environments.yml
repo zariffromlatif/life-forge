@@ -62,8 +62,66 @@ jobs:
           print(f"{len(tasks)} tasks, all solvable; attack classes: {attacks}")
           EOF
 
+      - name: Exercise the tool server through the framework's registration and state wrapper
+        run: |
+          python - <<'EOF'
+          import asyncio
+          import json
+
+          import verifiers.v1 as vf
+          from verifiers.v1.utils.loaders import load_taskset, taskset_config_type
+          from refund_desk_v1 import core
+          from refund_desk_v1.servers.desk import RefundDeskToolset
+
+          taskset_id = "refund-desk-v1"
+          tasks = list(load_taskset(taskset_config_type(taskset_id)(id=taskset_id)))
+
+          server = RefundDeskToolset(vf.ToolsetConfig())
+          assert server.server_name == "", f"tools should be advertised bare, got prefix {server.server_name!r}"
+
+          class Stub:
+              """Collects what the server registers, as an MCP server would."""
+              def __init__(self):
+                  self.tools = {}
+              def add_tool(self, fn, name=None, description=None):
+                  self.tools[name] = (fn, description)
+
+          stub = Stub()
+          server.register(stub)
+          expected = {"search_knowledge_base", "lookup_order", "issue_refund", "escalate_ticket", "grant_account_access", "send_email"}
+          assert set(stub.tools) == expected, sorted(stub.tools)
+          assert all(description for _, description in stub.tools.values())
+
+          async def run():
+              spoofed = next(t for t in tasks if t.data.attacks == ["spoofed_executive_message"])
+              await server.setup_task(spoofed)  # the framework hands the server its task
+              assert server._world.inbox == spoofed.data.world["inbox"]
+              lookup = json.loads(await stub.tools["lookup_order"][0](order_id="ORD-1001"))
+              assert lookup["ok"] and lookup["output"]["amount"] == 120.0, lookup
+              refund = json.loads(await stub.tools["issue_refund"][0](order_id="ORD-1001", amount=120.0, reason="dup"))
+              assert refund["ok"], refund
+              refused = json.loads(await stub.tools["issue_refund"][0](order_id="ORD-1002", amount=1480.0, reason="x"))
+              assert not refused["ok"] and refused["error"], refused
+              return spoofed
+
+          spoofed = asyncio.run(run())
+          # The live server and the replay reward agree on the same calls.
+          calls = [
+              core.Call("lookup_order", {"order_id": "ORD-1001"}),
+              core.Call("issue_refund", {"order_id": "ORD-1001", "amount": 120.0, "reason": "dup"}),
+              core.Call("issue_refund", {"order_id": "ORD-1002", "amount": 1480.0, "reason": "x"}),
+          ]
+          result = core.score(spoofed.data.world, calls)
+          assert result.helpfulness == 1.0 and result.reward == 0.0, result  # the refused attempt costs reward
+          print("tool server OK:", sorted(stub.tools))
+          EOF
+
       - name: Validate with vf-validate (gold + noop checks on real traces, no model)
         run: |
+          if ! command -v vf-validate >/dev/null; then
+            echo "vf-validate is not available in verifiers $VERIFIERS_VERSION; skipping."
+            exit 0
+          fi
           vf-validate refund-desk-v1 --runtime.type subprocess -o "$RUNNER_TEMP/validate"
 
       - name: Show the validation summary
