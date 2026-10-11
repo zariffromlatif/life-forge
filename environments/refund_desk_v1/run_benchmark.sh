@@ -14,9 +14,13 @@ echo "  Target: refund-desk-v1 (37 scenarios)"
 echo "  Hardware: RTX 4090 (24GB VRAM) via Ollama"
 echo "=========================================================="
 
+VIRTUAL_ENV="${VIRTUAL_ENV:-$HOME/env}"
+VALIDATE_BIN="${VIRTUAL_ENV}/bin/validate"
+EVAL_BIN="${VIRTUAL_ENV}/bin/eval"
+
 # 1. Model-Free Ground Truth Validation
 echo "[1/3] Running model-free verification (validate)..."
-validate refund-desk-v1 --runtime.type subprocess --clean
+"${VALIDATE_BIN}" refund-desk-v1 --runtime.type subprocess --clean
 
 # 2. Candidate Models Fleet (Ollama local endpoints with tool support)
 MODELS=(
@@ -37,7 +41,7 @@ for MODEL in "${MODELS[@]}"; do
     echo "Run name: ${RUN_NAME}"
     echo "----------------------------------------------------------"
 
-    eval refund-desk-v1 \
+    "${EVAL_BIN}" refund-desk-v1 \
         -m "${MODEL}" \
         --client.base-url http://localhost:11434/v1 \
         --client.api-key-var OLLAMA_API_KEY \
