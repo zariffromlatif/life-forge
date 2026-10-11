@@ -30,7 +30,9 @@ class RefundDeskToolset(vf.Toolset[vf.ToolsetConfig]):
 
     async def setup_task(self, task) -> None:
         """Load this rollout's scenario world."""
-        self._world = WorldState.from_dict(task.data.world)
+        world = getattr(task, "world", None) or getattr(getattr(task, "data", None), "world", None)
+        if isinstance(world, dict):
+            self._world = WorldState.from_dict(world)
 
     def _call(self, name: str, **arguments) -> str:
         self._world.step_count += 1
