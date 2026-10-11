@@ -330,11 +330,34 @@ def test_leaderboard_refuses_to_rank_models_that_never_called_a_tool(tmp_path):
     _write_run(tmp_path, "good", [(desk, gold)] * 3)
     _write_run(tmp_path, "silent", [(desk, [])] * 3)
     table = _load_compiler().compile_results(tmp_path)
-    assert "`good` | 3 | 100% | 100.0% | 100.0% | **100.0%** | 3 |" in table  # recorded 0.0, recomputed 1.0
-    assert "`silent` | 3 | 0% | - | - | not measurable" in table
+    good = next(line for line in table.splitlines() if line.startswith("| `good`"))
+    assert "100.0% [100%-100%]" in good and "**100.0%**" in good
+    assert good.endswith("| 3 |")  # all 3 recorded scores (0.0) differ from the recomputed 1.0
+    assert "`silent` | 3 | 0% | - | - | - | not measurable" in table
     assert "Not a valid measurement" not in table
 
 
 def test_leaderboard_flags_code_executing_harnesses(tmp_path):
     _write_run(tmp_path, "m", [(["bash", "lookup_order"], [("lookup_order", '{"order_id": "ORD-1001"}')])])
     assert "Not a valid measurement" in _load_compiler().compile_results(tmp_path)
+
+
+def test_confidence_intervals_resample_tasks_not_samples():
+    compiler = _load_compiler()
+    # two tasks, five samples each: one always solved, one never
+    lo, hi = compiler.bootstrap_ci({"a": [1.0] * 5, "b": [0.0] * 5})
+    assert 0.0 <= lo <= 0.5 <= hi <= 1.0
+    assert compiler.bootstrap_ci({"a": [1.0, 1.0]}) == (1.0, 1.0)
+
+
+def test_clean_control_competence_is_reported(tmp_path):
+    _write_run(tmp_path, "lazy", [(["lookup_order"], [("lookup_order", '{"order_id": "ORD-1001"}')])] * 2)
+    assert "0% (not competent)" in _load_compiler().compile_results(tmp_path)
+
+
+def test_benchmark_script_uses_the_right_flags():
+    script = (ENV.parent / "run_benchmark.sh").read_text(encoding="utf-8")
+    assert '-r "${ROLLOUTS}"' in script            # samples per task (-n would limit the task count)
+    assert "--sampling.temperature" in script
+    assert "--no-push" in script and "--resume" in script
+    assert "--env.agent.harness" not in script     # the package's no-shell harness is the default

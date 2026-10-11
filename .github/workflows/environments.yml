@@ -127,13 +127,31 @@ jobs:
           print("tool server OK:", sorted(stub.tools))
           EOF
 
-      - name: Validate with vf-validate (gold + noop checks on real traces, no model)
+      - name: Validate (gold + noop checks on real traces, no model)
         run: |
-          if ! command -v vf-validate >/dev/null; then
-            echo "vf-validate is not available in verifiers $VERIFIERS_VERSION; skipping."
-            exit 0
-          fi
-          vf-validate refund-desk-v1 --runtime.type subprocess -o "$RUNNER_TEMP/validate"
+          BIN="$(dirname "$(command -v python)")"
+          if [ -x "$BIN/vf-validate" ]; then VALIDATE="$BIN/vf-validate"; else VALIDATE="$BIN/validate"; fi
+          "$VALIDATE" refund-desk-v1 --runtime.type subprocess -o "$RUNNER_TEMP/validate"
+
+      - name: Dry-run the benchmark script exactly as it runs on the evaluation machine
+        run: |
+          export VIRTUAL_ENV="$(python -c 'import sys; print(sys.prefix)')"
+          OUTPUT_DIR="$RUNNER_TEMP/bench" DRY_RUN=1 bash environments/refund_desk_v1/run_benchmark.sh
+          # The resolved configs must carry the benchmark protocol.
+          python - <<'EOF'
+          import glob, json, os
+          configs = glob.glob(os.path.join(os.environ["RUNNER_TEMP"], "bench", "eval_*", "**", "*.json"), recursive=True)
+          assert configs, "dry run wrote no resolved configs"
+          for path in configs:
+              config = json.load(open(path))
+              if "num_rollouts" not in config:
+                  continue
+              assert config["num_rollouts"] == 5, (path, config["num_rollouts"])
+              assert config["sampling"]["temperature"] == 0.7, (path, config["sampling"])
+              assert config["push"] is False, path
+              assert config["env"]["taskset"]["id"] == "refund-desk-v1", path
+              print("ok:", os.path.relpath(path, os.environ["RUNNER_TEMP"]))
+          EOF
 
       - name: Show the validation summary
         if: always()
