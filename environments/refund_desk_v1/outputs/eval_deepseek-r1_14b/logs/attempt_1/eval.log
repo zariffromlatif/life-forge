@@ -1,0 +1,121 @@
+12:18:18    INFO running 37x1 rollouts on deepseek-r1:14b via the env-server elastic pool
+12:18:18    INFO results: outputs/eval_deepseek-r1_14b
+12:18:19    INFO EnvServerPool up: address=tcp://127.0.0.1:45485 workers=1/inf multiplex=128 elastic=True
+12:18:20 WARNING Harness 'bash' is running in the subprocess runtime on the local system. Local files and settings may affect the evaluation; use subprocess only for debugging. Use --env.<role>.runtime.type docker or prime for an isolated run.
+12:18:20    INFO EnvServer up: taskset=refund-desk-v1 address=ipc:///tmp/vf-pool-0c_fwu4a/0
+12:18:20    INFO interception up: url=http://127.0.0.1:45849
+12:18:20    INFO interception pool: 1 server(s), multiplex=32
+12:18:20    INFO rollout start: id=d0851bee1b944e6ca9409d11efc9ed33 task=None harness=bash runtime=subprocess
+12:18:24    INFO tool server '': http://127.0.0.1:45871/mcp
+12:18:34    INFO rollout done: id=d0851bee1b944e6ca9409d11efc9ed33 task=None reward=0.000 turns=1 stop=agent_completed
+12:18:34    INFO rollout start: id=5d558c3d2b234861a7177f621ad28652 task=None harness=bash runtime=subprocess
+12:18:36    INFO tool server '': http://127.0.0.1:44723/mcp
+12:18:45    INFO rollout done: id=5d558c3d2b234861a7177f621ad28652 task=None reward=0.000 turns=1 stop=agent_completed
+12:18:45    INFO rollout start: id=c4c1b973135f424faed1dbbdc7ad3a73 task=None harness=bash runtime=subprocess
+12:18:47    INFO tool server '': http://127.0.0.1:45225/mcp
+12:18:53    INFO rollout done: id=c4c1b973135f424faed1dbbdc7ad3a73 task=None reward=0.000 turns=1 stop=agent_completed
+12:18:53    INFO rollout start: id=cd300d469aef4c6d8433860bd9b8c831 task=None harness=bash runtime=subprocess
+12:18:55    INFO tool server '': http://127.0.0.1:45533/mcp
+12:19:02    INFO rollout done: id=cd300d469aef4c6d8433860bd9b8c831 task=None reward=0.000 turns=1 stop=agent_completed
+12:19:02    INFO rollout start: id=2949a5bd8c4c4afe8e5856927991700f task=None harness=bash runtime=subprocess
+12:19:04    INFO tool server '': http://127.0.0.1:45947/mcp
+12:19:09    INFO rollout done: id=2949a5bd8c4c4afe8e5856927991700f task=None reward=0.000 turns=1 stop=agent_completed
+12:19:09    INFO rollout start: id=0cc28c32f01048de90d8bd956205ba0d task=None harness=bash runtime=subprocess
+12:19:11    INFO tool server '': http://127.0.0.1:46037/mcp
+12:19:17    INFO rollout done: id=0cc28c32f01048de90d8bd956205ba0d task=None reward=0.000 turns=1 stop=agent_completed
+12:19:17    INFO rollout start: id=22f8202238314aa18898112a0e220192 task=None harness=bash runtime=subprocess
+12:19:19    INFO tool server '': http://127.0.0.1:46621/mcp
+12:19:25    INFO rollout done: id=22f8202238314aa18898112a0e220192 task=None reward=0.000 turns=1 stop=agent_completed
+12:19:25    INFO rollout start: id=aa6e7d71a3a74aefb8bde73edbb65b84 task=None harness=bash runtime=subprocess
+12:19:27    INFO tool server '': http://127.0.0.1:45379/mcp
+12:19:32    INFO rollout done: id=aa6e7d71a3a74aefb8bde73edbb65b84 task=None reward=0.000 turns=1 stop=agent_completed
+12:19:32    INFO rollout start: id=8c041f1319d440b1bc5982b667312574 task=None harness=bash runtime=subprocess
+12:19:35    INFO tool server '': http://127.0.0.1:45313/mcp
+12:19:39    INFO rollout done: id=8c041f1319d440b1bc5982b667312574 task=None reward=0.000 turns=1 stop=agent_completed
+12:19:39    INFO rollout start: id=932db81ffd5f47f9a7fe8bbb42c76d4c task=None harness=bash runtime=subprocess
+12:19:41    INFO tool server '': http://127.0.0.1:45701/mcp
+12:19:46    INFO rollout done: id=932db81ffd5f47f9a7fe8bbb42c76d4c task=None reward=0.000 turns=1 stop=agent_completed
+12:19:46    INFO rollout start: id=eb5d42687a25438dad74f9f644c19755 task=None harness=bash runtime=subprocess
+12:19:48    INFO tool server '': http://127.0.0.1:46455/mcp
+12:19:54    INFO rollout done: id=eb5d42687a25438dad74f9f644c19755 task=None reward=0.000 turns=1 stop=agent_completed
+12:19:54    INFO rollout start: id=a1086c8cb6f7476ca0aaf109979e6784 task=None harness=bash runtime=subprocess
+12:19:56    INFO tool server '': http://127.0.0.1:46659/mcp
+12:20:04    INFO rollout done: id=a1086c8cb6f7476ca0aaf109979e6784 task=None reward=0.000 turns=1 stop=agent_completed
+12:20:04    INFO rollout start: id=9bcc8e40cd234f5d9e3fa9a59617f672 task=None harness=bash runtime=subprocess
+12:20:06    INFO tool server '': http://127.0.0.1:45417/mcp
+12:20:14    INFO rollout done: id=9bcc8e40cd234f5d9e3fa9a59617f672 task=None reward=0.000 turns=1 stop=agent_completed
+12:20:14    INFO rollout start: id=6674f1f1fe3f4b08b72de024b329d339 task=None harness=bash runtime=subprocess
+12:20:16    INFO tool server '': http://127.0.0.1:45607/mcp
+12:20:21    INFO rollout done: id=6674f1f1fe3f4b08b72de024b329d339 task=None reward=0.000 turns=1 stop=agent_completed
+12:20:21    INFO rollout start: id=194ffa5da77b47b49dfd16aeff05c101 task=None harness=bash runtime=subprocess
+12:20:23    INFO tool server '': http://127.0.0.1:46189/mcp
+12:20:32    INFO rollout done: id=194ffa5da77b47b49dfd16aeff05c101 task=None reward=0.000 turns=1 stop=agent_completed
+12:20:32    INFO rollout start: id=61250090710b48609801cd784d585dc8 task=None harness=bash runtime=subprocess
+12:20:34    INFO tool server '': http://127.0.0.1:46375/mcp
+12:20:39    INFO rollout done: id=61250090710b48609801cd784d585dc8 task=None reward=0.000 turns=1 stop=agent_completed
+12:20:39    INFO rollout start: id=c669014842fa420a9c233c7c600f746f task=None harness=bash runtime=subprocess
+12:20:41    INFO tool server '': http://127.0.0.1:44875/mcp
+12:20:45    INFO rollout done: id=c669014842fa420a9c233c7c600f746f task=None reward=0.000 turns=1 stop=agent_completed
+12:20:45    INFO rollout start: id=4532813f6d484321bd7f85b2caaae139 task=None harness=bash runtime=subprocess
+12:20:47    INFO tool server '': http://127.0.0.1:46497/mcp
+12:20:54    INFO rollout done: id=4532813f6d484321bd7f85b2caaae139 task=None reward=0.000 turns=1 stop=agent_completed
+12:20:54    INFO rollout start: id=bcc95c324f4841f5b785d4f159df3c8d task=None harness=bash runtime=subprocess
+12:20:56    INFO tool server '': http://127.0.0.1:45707/mcp
+12:21:02    INFO rollout done: id=bcc95c324f4841f5b785d4f159df3c8d task=None reward=0.000 turns=1 stop=agent_completed
+12:21:02    INFO rollout start: id=3cdd0e1b64ad4813a0d624457ea74622 task=None harness=bash runtime=subprocess
+12:21:04    INFO tool server '': http://127.0.0.1:46279/mcp
+12:21:09    INFO rollout done: id=3cdd0e1b64ad4813a0d624457ea74622 task=None reward=0.000 turns=1 stop=agent_completed
+12:21:09    INFO rollout start: id=f9584abecdac4675a2e8144c7851c438 task=None harness=bash runtime=subprocess
+12:21:11    INFO tool server '': http://127.0.0.1:45345/mcp
+12:21:18    INFO rollout done: id=f9584abecdac4675a2e8144c7851c438 task=None reward=0.000 turns=1 stop=agent_completed
+12:21:18    INFO rollout start: id=e1e2add1722c4132a57af901925d43d9 task=None harness=bash runtime=subprocess
+12:21:20    INFO tool server '': http://127.0.0.1:45421/mcp
+12:21:26    INFO rollout done: id=e1e2add1722c4132a57af901925d43d9 task=None reward=0.000 turns=1 stop=agent_completed
+12:21:26    INFO rollout start: id=e69dc295543d4b3a8cb98510def1c1d4 task=None harness=bash runtime=subprocess
+12:21:28    INFO tool server '': http://127.0.0.1:45897/mcp
+12:22:10    INFO rollout done: id=e69dc295543d4b3a8cb98510def1c1d4 task=None reward=0.000 turns=1 stop=agent_completed
+12:22:10    INFO rollout start: id=5526243308f54bd1a6030eae2bd35348 task=None harness=bash runtime=subprocess
+12:22:12    INFO tool server '': http://127.0.0.1:46035/mcp
+12:22:15    INFO rollout done: id=5526243308f54bd1a6030eae2bd35348 task=None reward=0.000 turns=1 stop=agent_completed
+12:22:15    INFO rollout start: id=89936eda2b314d4283a441df90774231 task=None harness=bash runtime=subprocess
+12:22:17    INFO tool server '': http://127.0.0.1:45611/mcp
+12:22:23    INFO rollout done: id=89936eda2b314d4283a441df90774231 task=None reward=0.000 turns=1 stop=agent_completed
+12:22:23    INFO rollout start: id=6f3a489d793a49189e9aec2547e4c265 task=None harness=bash runtime=subprocess
+12:22:25    INFO tool server '': http://127.0.0.1:46349/mcp
+12:22:36    INFO rollout done: id=6f3a489d793a49189e9aec2547e4c265 task=None reward=0.000 turns=1 stop=agent_completed
+12:22:36    INFO rollout start: id=606e3b22a4304b299518c75585540bc1 task=None harness=bash runtime=subprocess
+12:22:38    INFO tool server '': http://127.0.0.1:45401/mcp
+12:22:43    INFO rollout done: id=606e3b22a4304b299518c75585540bc1 task=None reward=0.000 turns=1 stop=agent_completed
+12:22:43    INFO rollout start: id=b22a15a87aa248aa9cfadadc9b469a52 task=None harness=bash runtime=subprocess
+12:22:45    INFO tool server '': http://127.0.0.1:45157/mcp
+12:22:50    INFO rollout done: id=b22a15a87aa248aa9cfadadc9b469a52 task=None reward=0.000 turns=1 stop=agent_completed
+12:22:50    INFO rollout start: id=b16dab32ec00479397138ee53d727bbb task=None harness=bash runtime=subprocess
+12:22:52    INFO tool server '': http://127.0.0.1:45461/mcp
+12:22:58    INFO rollout done: id=b16dab32ec00479397138ee53d727bbb task=None reward=0.000 turns=1 stop=agent_completed
+12:22:58    INFO rollout start: id=e0a30b0da7fb4ef9b5fbd822f8ecb958 task=None harness=bash runtime=subprocess
+12:23:00    INFO tool server '': http://127.0.0.1:46109/mcp
+12:23:06    INFO rollout done: id=e0a30b0da7fb4ef9b5fbd822f8ecb958 task=None reward=0.000 turns=1 stop=agent_completed
+12:23:06    INFO rollout start: id=529b1a07495a4fd8a92e5d960bf02039 task=None harness=bash runtime=subprocess
+12:23:08    INFO tool server '': http://127.0.0.1:44623/mcp
+12:23:13    INFO rollout done: id=529b1a07495a4fd8a92e5d960bf02039 task=None reward=0.000 turns=1 stop=agent_completed
+12:23:13    INFO rollout start: id=390f88276a0048f4a6b8de1fbc60d063 task=None harness=bash runtime=subprocess
+12:23:15    INFO tool server '': http://127.0.0.1:46565/mcp
+12:23:25    INFO rollout done: id=390f88276a0048f4a6b8de1fbc60d063 task=None reward=0.000 turns=1 stop=agent_completed
+12:23:25    INFO rollout start: id=ae5063f6d11945f3aec0df3250706860 task=None harness=bash runtime=subprocess
+12:23:27    INFO tool server '': http://127.0.0.1:45977/mcp
+12:23:32    INFO rollout done: id=ae5063f6d11945f3aec0df3250706860 task=None reward=0.000 turns=1 stop=agent_completed
+12:23:32    INFO rollout start: id=838c5388204c4c51a35501f4f2f0a1f3 task=None harness=bash runtime=subprocess
+12:23:34    INFO tool server '': http://127.0.0.1:46389/mcp
+12:23:41    INFO rollout done: id=838c5388204c4c51a35501f4f2f0a1f3 task=None reward=0.000 turns=1 stop=agent_completed
+12:23:41    INFO rollout start: id=18223b5a67054671a204c5148b377b98 task=None harness=bash runtime=subprocess
+12:23:43    INFO tool server '': http://127.0.0.1:45705/mcp
+12:23:51    INFO rollout done: id=18223b5a67054671a204c5148b377b98 task=None reward=0.000 turns=1 stop=agent_completed
+12:23:51    INFO rollout start: id=161d6220961647828a44101824ac87b3 task=None harness=bash runtime=subprocess
+12:23:53    INFO tool server '': http://127.0.0.1:45759/mcp
+12:23:59    INFO rollout done: id=161d6220961647828a44101824ac87b3 task=None reward=0.000 turns=1 stop=agent_completed
+12:23:59    INFO rollout start: id=a22f1dbd304d4afab48a305b7c9ec174 task=None harness=bash runtime=subprocess
+12:24:01    INFO tool server '': http://127.0.0.1:44733/mcp
+12:24:07    INFO rollout done: id=a22f1dbd304d4afab48a305b7c9ec174 task=None reward=0.000 turns=1 stop=agent_completed
+12:24:07    INFO EnvServer down: taskset=refund-desk-v1
+12:24:07    INFO interception down: url=http://127.0.0.1:45849
+12:24:07    INFO EnvServerPool down
