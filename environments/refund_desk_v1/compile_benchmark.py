@@ -14,38 +14,75 @@ from pathlib import Path
 
 
 def compile_results(results_dir: Path) -> str:
-    json_files = list(results_dir.glob("*.json"))
-    if not json_files:
-        return "No evaluation JSON files found in " + str(results_dir)
-
     rows = []
-    for f in sorted(json_files):
+
+    # Check for run directories containing traces.jsonl
+    run_dirs = [d for d in results_dir.iterdir() if d.is_dir() and (d / "traces.jsonl").exists()]
+    for d in sorted(run_dirs):
+        traces_file = d / "traces.jsonl"
+        rewards, safeties, helpfulnesses = [], [], []
+        model_name = d.name.replace("eval_", "").replace("___", "/").replace("__", ":")
+
         try:
-            with f.open("r", encoding="utf-8") as fp:
-                data = json.load(fp)
+            with traces_file.open("r", encoding="utf-8") as fp:
+                for line in fp:
+                    if not line.strip():
+                        continue
+                    entry = json.loads(line)
+                    # Check trace data
+                    t_list = entry.get("traces", [])
+                    if t_list:
+                        first_trace = t_list[0]
+                        cfg = first_trace.get("agent", {}).get("config", {})
+                        if cfg.get("model"):
+                            model_name = cfg["model"]
+                        r = first_trace.get("rewards", {}).get("resisted_and_helped", 0.0)
+                        s = first_trace.get("metrics", {}).get("safety", 0.0)
+                        h = first_trace.get("metrics", {}).get("helpfulness", 0.0)
+                        rewards.append(r)
+                        safeties.append(s)
+                        helpfulnesses.append(h)
 
-            model = data.get("model", f.stem.replace("__", "/"))
-            summary = data.get("summary", {})
-            metrics = summary.get("metrics", {})
-
-            reward = metrics.get("resisted_and_helped", {}).get("mean", summary.get("reward", 0.0))
-            safety = metrics.get("safety", {}).get("mean", 0.0)
-            helpfulness = metrics.get("helpfulness", {}).get("mean", 0.0)
-
+            count = len(rewards) or 1
             rows.append({
-                "model": model,
-                "reward": reward,
-                "safety": safety,
-                "helpfulness": helpfulness,
+                "model": model_name,
+                "reward": sum(rewards) / count,
+                "safety": sum(safeties) / count,
+                "helpfulness": sum(helpfulnesses) / count,
+                "tasks_count": len(rewards),
             })
         except Exception as e:
             rows.append({
-                "model": f.stem,
+                "model": d.name,
                 "reward": 0.0,
                 "safety": 0.0,
                 "helpfulness": 0.0,
                 "error": str(e),
             })
+
+    # Also check standalone JSON files
+    for f in sorted(results_dir.glob("*.json")):
+        if f.name.endswith(".json") and f.is_file():
+            try:
+                with f.open("r", encoding="utf-8") as fp:
+                    data = json.load(fp)
+                model = data.get("model", f.stem.replace("__", "/"))
+                summary = data.get("summary", {})
+                metrics = summary.get("metrics", {})
+                reward = metrics.get("resisted_and_helped", {}).get("mean", summary.get("reward", 0.0))
+                safety = metrics.get("safety", {}).get("mean", 0.0)
+                helpfulness = metrics.get("helpfulness", {}).get("mean", 0.0)
+                rows.append({
+                    "model": model,
+                    "reward": reward,
+                    "safety": safety,
+                    "helpfulness": helpfulness,
+                })
+            except Exception:
+                pass
+
+    if not rows:
+        return "No evaluation traces or JSON files found in " + str(results_dir)
 
     # Sort descending by reward
     rows.sort(key=lambda r: r.get("reward", 0.0), reverse=True)
