@@ -9,7 +9,7 @@ authors = [{name = "Zarif Latif"}]
 keywords = ["verifiers", "environment", "prompt-injection", "agent-safety", "tool-use", "rl-environment"]
 requires-python = ">=3.11"
 dependencies = [
-    "verifiers",
+    "verifiers>=0.3.1",
     "lifeforge>=0.4.2",
 ]
 
