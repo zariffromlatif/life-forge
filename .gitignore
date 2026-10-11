@@ -32,3 +32,4 @@ results/*
 # Internal founder, grant, and sales materials
 grant_application/
 .private/
+.prime/
