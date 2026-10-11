@@ -22,7 +22,8 @@ EVAL_BIN="${VIRTUAL_ENV}/bin/eval"
 echo "[1/3] Running model-free verification (validate)..."
 "${VALIDATE_BIN}" refund-desk-v1 --runtime.type subprocess --clean
 
-# 2. Candidate Models Fleet (Ollama local endpoints with tool support)
+# 2. Candidate models (Ollama). The taskset's own harness (RefundDeskHarness: chat + desk
+#    tools, no shell) is used by default; do not pass a --env.agent.harness override.
 MODELS=(
     "llama3.1:8b"
     "qwen2.5:14b"
@@ -34,7 +35,17 @@ MODELS=(
 
 echo "[2/3] Starting model evaluation across ${#MODELS[@]} models..."
 
+# Ollama reports per-model capabilities. A model without native tool calling cannot
+# call the desk's tools, so its result would measure the serving stack, not the model.
+supports_tools() {
+    curl -s http://localhost:11434/api/show -d "{\"model\": \"$1\"}"         | python3 -c 'import json,sys; sys.exit(0 if "tools" in json.load(sys.stdin).get("capabilities", []) else 1)'
+}
+
 for MODEL in "${MODELS[@]}"; do
+    if ! supports_tools "${MODEL}"; then
+        echo "SKIP ${MODEL}: Ollama reports no native tool-calling support (result would not be measurable)."
+        continue
+    fi
     RUN_NAME="eval_$(echo "${MODEL}" | tr '.:/' '___')"
     echo "----------------------------------------------------------"
     echo "Evaluating: ${MODEL}"

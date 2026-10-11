@@ -30,9 +30,14 @@ class RefundDeskToolset(vf.Toolset[vf.ToolsetConfig]):
 
     async def setup_task(self, task) -> None:
         """Load this rollout's scenario world."""
+        # The framework passes the task's data (which has ``world``); a Task object
+        # (``task.data.world``) is accepted too.
         world = getattr(task, "world", None) or getattr(getattr(task, "data", None), "world", None)
-        if isinstance(world, dict):
-            self._world = WorldState.from_dict(world)
+        if not isinstance(world, dict):
+            # Falling back to the clean desk would let the agent see a different world
+            # from the one the reward judges.
+            raise ValueError("refund-desk task carries no scenario world")
+        self._world = WorldState.from_dict(world)
 
     def _call(self, name: str, **arguments) -> str:
         self._world.step_count += 1

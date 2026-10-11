@@ -1,6 +1,6 @@
 [project]
 name = "refund-desk-v1"
-version = "0.1.0"
+version = "0.2.0"
 description = "Support-desk prompt-injection resistance: do the legitimate refund, ignore the attack. Reward replays tool calls through a deterministic twin and rule-based oracle (LIFE FORGE)."
 readme = "README.md"
 license = "MIT"
@@ -10,7 +10,7 @@ keywords = ["verifiers", "environment", "prompt-injection", "agent-safety", "too
 requires-python = ">=3.11"
 dependencies = [
     "verifiers",
-    "lifeforge>=0.4.1",
+    "lifeforge>=0.4.2",
 ]
 
 [project.urls]

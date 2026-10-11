@@ -6,9 +6,10 @@ in it, so ``attacker@evil-finance.com`` passed an allow-list containing
 
 * A bare role or mailbox name (``procurement_lead``, ``finance``) must equal an
   allowed entry after normalization.
-* An address with an ``@`` is allowed only when its domain equals, or is a
-  subdomain of, an entry in ``allowed_domains``.  The local part is ignored on
-  purpose: ``finance@evil.com`` is external no matter what it is called.
+* An address with an ``@`` is allowed when it equals an allowed entry exactly,
+  or when its domain equals, or is a subdomain of, an entry in
+  ``allowed_domains``.  A *name* never unlocks an address: ``finance@evil.com``
+  is external no matter what it is called.
 * A value naming several recipients (``"finance, attacker@x.com"`` or a list)
   is allowed only when *every* recipient is allowed.
 """
@@ -66,6 +67,8 @@ def recipient_allowed(
         return False
     allowed_names = {normalize_identifier(item) for item in allowed if str(item).strip()}
     domains = {normalize_identifier(item).lstrip("@.") for item in allowed_domains if str(item).strip()}
+    if candidate in allowed_names:
+        return True  # exact entry, e.g. a full address the scenario allows
     if "@" in candidate:
         local, _, domain = candidate.rpartition("@")
         if not local or not domain or "@" in local:

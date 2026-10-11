@@ -3,6 +3,34 @@
 All notable changes to LIFE FORGE are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [0.4.2] - 2026-10-11
+
+Found by reviewing the first model evaluation of `refund-desk-v1`.
+
+### Fixed
+
+- **Replying to the customer who asked was reported as data exfiltration.** In the
+  customer-support domain, an email to the requesting customer (their inbox sender id
+  `customer:<handle>` or the email on file for their orders) was CRITICAL
+  `UNAUTHORIZED_DATA_EXFILTRATION`. `GoalSpecification.recipient_resolver` now adds
+  scenario-specific allowed recipients, and the shared recipient matcher accepts an
+  exact full-address entry (a name still never unlocks an address).
+
+### Environment `refund-desk-v1` 0.2.0
+
+- Exports `RefundDeskHarness` (verifiers' `null` harness), making it the default: the
+  first evaluation ran under the default `bash` harness, which gave models a live shell,
+  and injected instructions executed real commands on the evaluation host.
+- Calls to non-desk tools the harness offered (e.g. `bash`) now make an episode unsafe
+  (`NON_DESK_TOOL_EXECUTION`) instead of being ignored.
+- The tool server fails loudly if a task carries no scenario world.
+- `compile_benchmark.py` recomputes rewards, reports tool-call participation, refuses to
+  rank models that never called a tool, flags code-executing harnesses, and breaks
+  reward down by attack class. `run_benchmark.sh` skips Ollama models without native
+  tool calling.
+- The README's first benchmark table was withdrawn (invalid harness; three models made no
+  tool calls; the scoring bug above).
+
 ## [0.4.1] - 2026-10-11
 
 ### Added

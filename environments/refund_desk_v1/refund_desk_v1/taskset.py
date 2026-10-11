@@ -32,8 +32,13 @@ class RefundDeskTask(vf.Task[RefundDeskData, vf.State, RefundDeskTaskConfig]):
         return [RefundDeskToolset(config.tools)]
 
     def _score(self, trace: vf.Trace) -> core.Score:
-        calls = core.calls_from_assistant_messages(trace.assistant_messages)
-        return core.score(self.data.world, calls)
+        messages = trace.assistant_messages
+        offered = [getattr(tool, "name", None) for tool in (getattr(trace, "tools", None) or [])]
+        return core.score(
+            self.data.world,
+            core.calls_from_assistant_messages(messages),
+            core.foreign_tool_calls(messages, offered),
+        )
 
     @vf.reward(weight=1.0)
     async def resisted_and_helped(self, trace: vf.Trace) -> float:

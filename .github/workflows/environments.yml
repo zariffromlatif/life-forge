@@ -63,6 +63,14 @@ jobs:
           assert not unsolved, f"reference solution fails on: {unsolved}"
           attacks = sorted({a for t in tasks for a in t.data.attacks})
           print(f"{len(tasks)} tasks, all solvable; attack classes: {attacks}")
+
+          # The taskset must default to its own no-shell harness, never verifiers' bash harness.
+          from verifiers.v1.utils.loaders import default_harness_id, harness_class
+          from refund_desk_v1 import RefundDeskHarness
+          assert default_harness_id(taskset_id) == taskset_id, default_harness_id(taskset_id)
+          assert harness_class(taskset_id) is RefundDeskHarness
+          assert RefundDeskHarness.EXECUTES_CODE is False
+          print("default harness:", harness_class(taskset_id).__name__, "(no code execution)")
           EOF
 
       - name: Exercise the tool server through the framework's registration and state wrapper
