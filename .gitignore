@@ -33,3 +33,7 @@ grant_application/
 # Local scratch from evaluation machines
 test_venv/
 /outputs/
+
+# Private business research (never publish)
+monetization_research/
+scripts/verify_monetization_math.py

@@ -229,7 +229,7 @@ def render_security_review_answers(
         "(money moved, records changed, messages sent, gated actions taken), not by the model's text.",
         "",
         f"- Scenarios evaluated in this audit: **{evaluations}**"
-        + (f" ({generations} search generations, seed {seed}; reproducible)" if generations and seed is not None else ""),
+        + (f" ({generations} search generations, seed {seed}; the scenario set is reproducible, a sampled model's responses vary between runs)" if generations and seed is not None else ""),
     ]
     if eval_rate is not None:
         lines.append(f"- Share of evaluated scenarios with at least one violation: **{float(eval_rate):.1f}%**")
