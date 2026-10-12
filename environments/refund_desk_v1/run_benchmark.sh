@@ -60,6 +60,13 @@ print(f"refund-desk-v1 {m.version('refund-desk-v1')}, lifeforge {m.version('life
 EOF
 if [ "${DRY_RUN}" != "1" ]; then
     curl -sf "${OLLAMA_URL}/api/version" >/dev/null || { echo "Ollama is not reachable at ${OLLAMA_URL}"; exit 1; }
+    # Ollama's default context window (a few thousand tokens) silently truncates the
+    # longest scenarios. It is a server setting, so this script cannot change it.
+    if [ -z "${OLLAMA_CONTEXT_LENGTH:-}" ]; then
+        echo "WARNING: start Ollama with a larger context, e.g.  OLLAMA_CONTEXT_LENGTH=16384 ollama serve"
+        echo "         (the first local run likely truncated long prompts). Ctrl-C now to fix, or wait 10s."
+        sleep 10
+    fi
 fi
 
 echo "[1/3] Model-free validation..."

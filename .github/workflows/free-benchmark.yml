@@ -1,0 +1,127 @@
+name: Free-tier benchmark (refund-desk-v1)
+
+# Runs the refund-desk benchmark on free-tier hosted models, a little each day
+# (free tiers cap tokens per day). Results accumulate on the `bench-results`
+# branch and each run resumes where the last stopped.
+#
+# Setup (once): add repository secrets GROQ_API_KEY and/or GEMINI_API_KEY
+# (Settings -> Secrets and variables -> Actions). Optional repository variable
+# GEMINI_MODEL picks the Gemini model id. Without any key the job does nothing.
+#
+# Never triggered by pull requests, so secrets are not exposed to forked code.
+on:
+  workflow_dispatch:
+    inputs:
+      only:
+        description: "Comma-separated model substrings to run (blank = all)"
+        required: false
+        default: ""
+      rollouts:
+        description: "Samples per task"
+        required: false
+        default: "1"
+  schedule:
+    - cron: "23 4 * * *"   # daily, 04:23 UTC
+
+permissions:
+  contents: write
+
+concurrency:
+  group: free-benchmark
+  cancel-in-progress: false
+
+jobs:
+  benchmark:
+    if: github.repository == 'zariffromlatif/life-forge'
+    runs-on: ubuntu-latest
+    timeout-minutes: 330
+    env:
+      RESULTS_BRANCH: bench-results
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check that at least one API key is configured
+        id: keys
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          if [ -z "${GROQ_API_KEY}${GEMINI_API_KEY}" ]; then
+            echo "No GROQ_API_KEY or GEMINI_API_KEY secret configured; nothing to run." | tee -a "$GITHUB_STEP_SUMMARY"
+            echo "run=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "run=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Restore previous results from the bench-results branch
+        if: steps.keys.outputs.run == 'true'
+        run: |
+          if git fetch origin "${RESULTS_BRANCH}" 2>/dev/null; then
+            git worktree add -B "${RESULTS_BRANCH}" results "origin/${RESULTS_BRANCH}"
+          else
+            git worktree add --orphan -b "${RESULTS_BRANCH}" results
+          fi
+
+      - uses: actions/setup-python@v5
+        if: steps.keys.outputs.run == 'true'
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install LIFE FORGE, verifiers 0.3.1 and the environment
+        if: steps.keys.outputs.run == 'true'
+        run: |
+          python -m pip install --upgrade pip build
+          pip install -e .
+          pip install "verifiers==0.3.1"
+          python -m build --wheel --outdir "$RUNNER_TEMP/envdist" environments/refund_desk_v1
+          pip install --no-deps "$RUNNER_TEMP"/envdist/*.whl
+
+      - name: Run today's share of the benchmark
+        if: steps.keys.outputs.run == 'true'
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          LF_ONLY: ${{ github.event.inputs.only }}
+          LF_ROLLOUTS: ${{ github.event.inputs.rollouts || '1' }}
+        run: |
+          if [ -z "${GEMINI_MODEL}" ]; then unset GEMINI_MODEL; fi
+          python environments/refund_desk_v1/bench/free_benchmark.py \
+            --output results/free_v1 --rollouts "${LF_ROLLOUTS}" --only "${LF_ONLY}"
+
+      - name: Refuse to publish anything containing an API key
+        if: always() && steps.keys.outputs.run == 'true'
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: |
+          for key in "${GROQ_API_KEY}" "${GEMINI_API_KEY}"; do
+            if [ -n "${key}" ] && grep -rqF -- "${key}" results; then
+              echo "An API key appears in the results; not publishing." && exit 1
+            fi
+          done
+
+      - name: Save results to the bench-results branch
+        if: always() && steps.keys.outputs.run == 'true'
+        run: |
+          cd results
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No new results."
+          else
+            git commit -q -m "bench: free-tier refund-desk results $(date -u +%Y-%m-%d)"
+            git push origin "HEAD:${RESULTS_BRANCH}"
+          fi
+
+      - name: Summary
+        if: always() && steps.keys.outputs.run == 'true'
+        run: |
+          {
+            echo "## Status"; echo '```json'; cat results/free_v1/STATUS.json 2>/dev/null || echo "{}"; echo '```'
+            cat results/free_v1/BENCHMARK_LEADERBOARD.md 2>/dev/null || true
+          } >> "$GITHUB_STEP_SUMMARY"

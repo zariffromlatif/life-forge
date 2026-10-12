@@ -153,6 +153,13 @@ jobs:
               print("ok:", os.path.relpath(path, os.environ["RUNNER_TEMP"]))
           EOF
 
+      - name: Dry-run the free-tier runner (no keys or network needed)
+        env:
+          GROQ_API_KEY: dummy
+          GEMINI_API_KEY: dummy
+        run: |
+          python environments/refund_desk_v1/bench/free_benchmark.py --dry-run --output "$RUNNER_TEMP/free"
+
       - name: Show the validation summary
         if: always()
         run: |
