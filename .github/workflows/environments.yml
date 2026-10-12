@@ -150,6 +150,7 @@ jobs:
               assert config["sampling"]["temperature"] == 0.7, (path, config["sampling"])
               assert config["push"] is False, path
               assert config["env"]["taskset"]["id"] == "refund-desk-v1", path
+              assert config["env"]["agent"]["runtime"]["type"] == "subprocess", (path, config["env"]["agent"]["runtime"])
               print("ok:", os.path.relpath(path, os.environ["RUNNER_TEMP"]))
           EOF
 
@@ -159,6 +160,16 @@ jobs:
           GEMINI_API_KEY: dummy
         run: |
           python environments/refund_desk_v1/bench/free_benchmark.py --dry-run --output "$RUNNER_TEMP/free"
+          python - <<'EOF'
+          import glob, json, os
+          paths = glob.glob(os.path.join(os.environ["RUNNER_TEMP"], "free", "eval_*", "**", "eval.json"), recursive=True)
+          assert paths, "free dry run wrote no configs"
+          for path in paths:
+              config = json.load(open(path))
+              assert config["env"]["agent"]["runtime"]["type"] == "subprocess", path
+              assert config["env"]["agent"]["timeout"]["rollout"] == 900, (path, config["env"]["agent"]["timeout"])
+          print("free runner configs use the local subprocess runtime:", len(paths))
+          EOF
 
       - name: Show the validation summary
         if: always()

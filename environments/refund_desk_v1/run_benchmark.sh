@@ -80,7 +80,7 @@ run_eval() {  # $1 model, $2 run name, $3 base url, $4 api key var
     local saved="${OUTPUT_DIR}/${run}/configs/resolved/eval.json"
     if [ "${DRY_RUN}" = "1" ]; then
         "${EVAL_BIN}" refund-desk-v1 -m "${model}" --client.base-url "${base_url}" --client.api-key-var "${key_var}" \
-            -r "${ROLLOUTS}" --sampling.temperature "${TEMPERATURE}" -c 1 --run.name "${run}" -o "${OUTPUT_DIR}" \
+            -r "${ROLLOUTS}" --sampling.temperature "${TEMPERATURE}" -c 1 --env.agent.runtime.type subprocess --run.name "${run}" -o "${OUTPUT_DIR}" \
             --no-push --dry-run
         return
     fi
@@ -89,7 +89,7 @@ run_eval() {  # $1 model, $2 run name, $3 base url, $4 api key var
         "${EVAL_BIN}" @ "${saved}" --resume
     else
         "${EVAL_BIN}" refund-desk-v1 -m "${model}" --client.base-url "${base_url}" --client.api-key-var "${key_var}" \
-            -r "${ROLLOUTS}" --sampling.temperature "${TEMPERATURE}" -c 1 --run.name "${run}" -o "${OUTPUT_DIR}" \
+            -r "${ROLLOUTS}" --sampling.temperature "${TEMPERATURE}" -c 1 --env.agent.runtime.type subprocess --run.name "${run}" -o "${OUTPUT_DIR}" \
             --no-push
     fi
 }

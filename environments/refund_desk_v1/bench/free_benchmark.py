@@ -56,11 +56,11 @@ def default_models() -> list[ModelSpec]:
     published free-tier figures (which vary by account and change without notice)."""
     groq = "https://api.groq.com/openai/v1"
     gemini = "https://generativelanguage.googleapis.com/v1beta/openai"
-    return [
-        ModelSpec("groq", "openai/gpt-oss-120b", groq, "GROQ_API_KEY", rpm=20, tpm=6000),
-        ModelSpec("groq", "llama-3.3-70b-versatile", groq, "GROQ_API_KEY", rpm=20, tpm=9000),
-        ModelSpec("gemini", os.environ.get("GEMINI_MODEL", "gemini-2.5-flash"), gemini, "GEMINI_API_KEY", rpm=8, tpm=200000),
-    ]
+    # Provider catalogs change; override with comma-separated GROQ_MODELS / GEMINI_MODEL.
+    groq_models = [m.strip() for m in os.environ.get("GROQ_MODELS", "openai/gpt-oss-120b,qwen/qwen3-32b,meta-llama/llama-4-scout-17b-16e-instruct").split(",") if m.strip()]
+    specs = [ModelSpec("groq", model, groq, "GROQ_API_KEY", rpm=20, tpm=6000) for model in groq_models]
+    specs.append(ModelSpec("gemini", os.environ.get("GEMINI_MODEL") or "gemini-3.8-flash", gemini, "GEMINI_API_KEY", rpm=8, tpm=200000))
+    return specs
 
 
 def eval_binary() -> str:
@@ -85,6 +85,11 @@ def eval_command(spec: ModelSpec, base_url: str, output: Path, rollouts: int, te
         "-r", str(rollouts),
         "--sampling.temperature", str(temperature),
         "-c", "1",
+        # Run the agent locally. Without this the taskset's harness defaults to Prime's remote
+        # runtime, which needs a Prime login and otherwise hangs (seen 2026-10-12).
+        "--env.agent.runtime.type", "subprocess",
+        # A stuck episode must cost one task, not the day's budget.
+        "--env.agent.timeout.rollout", "900",
         "--run.name", spec.run_name,
         "-o", str(output),
         "--no-push",
@@ -118,8 +123,7 @@ def preflight(spec: ModelSpec) -> str | None:
         if listed.status_code == 200:
             ids = {m.get("id", "").removeprefix("models/") for m in listed.json().get("data", [])}
             if ids and spec.model not in ids:
-                close = sorted(i for i in ids if spec.model.split("-")[0] in i)[:8]
-                return f"model {spec.model!r} not offered; similar: {close}"
+                return f"model {spec.model!r} not offered. Available: {', '.join(sorted(ids))}"
         probe = httpx.post(
             f"{spec.base_url}/chat/completions",
             headers=headers,

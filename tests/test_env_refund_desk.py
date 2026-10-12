@@ -361,3 +361,4 @@ def test_benchmark_script_uses_the_right_flags():
     assert "--sampling.temperature" in script
     assert "--no-push" in script and "--resume" in script
     assert "--env.agent.harness" not in script     # the package's no-shell harness is the default
+    assert script.count("--env.agent.runtime.type subprocess") == 2  # never Prime's remote runtime

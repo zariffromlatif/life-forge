@@ -88,10 +88,12 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           GEMINI_MODEL: ${{ vars.GEMINI_MODEL }}
+          GROQ_MODELS: ${{ vars.GROQ_MODELS }}
           LF_ONLY: ${{ github.event.inputs.only }}
           LF_ROLLOUTS: ${{ github.event.inputs.rollouts || '1' }}
         run: |
           if [ -z "${GEMINI_MODEL}" ]; then unset GEMINI_MODEL; fi
+          if [ -z "${GROQ_MODELS}" ]; then unset GROQ_MODELS; fi
           python environments/refund_desk_v1/bench/free_benchmark.py \
             --output "${RESULTS_DIR}/free_v1" --rollouts "${LF_ROLLOUTS}" --only "${LF_ONLY}"
 

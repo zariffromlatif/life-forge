@@ -175,6 +175,7 @@ def test_eval_command_uses_samples_flag_and_never_pushes(fake_eval, tmp_path):
     assert command[:2] == ["/venv/bin/eval", "refund-desk-v1"]
     assert command[command.index("-r") + 1] == "1" and "-n" not in command
     assert "--no-push" in command and "--dry-run" not in command
+    assert command[command.index("--env.agent.runtime.type") + 1] == "subprocess"  # never Prime's remote runtime
     assert command[command.index("--client.api-key-var") + 1] == "GROQ_API_KEY"
 
 
@@ -219,8 +220,15 @@ def test_preflight_needs_a_key_and_a_real_tool_call(monkeypatch):
         assert "without a native tool call" in bench.preflight(bench.ModelSpec("p", "m", text_only.url, "LF_TEST_KEY_UNSET", 1, 1))
         assert bench.preflight(bench.ModelSpec("p", "m", tooled.url, "LF_TEST_KEY_UNSET", 1, 1)) is None
         missing = FakeProvider([(200, {}, '{"data": [{"id": "other-model"}]}')])
-        assert "not offered" in bench.preflight(bench.ModelSpec("p", "m", missing.url, "LF_TEST_KEY_UNSET", 1, 1))
+        reason = bench.preflight(bench.ModelSpec("p", "m", missing.url, "LF_TEST_KEY_UNSET", 1, 1))
+        assert "not offered" in reason and "other-model" in reason  # lists what *is* available
         missing.close()
     finally:
         text_only.close()
         tooled.close()
+
+
+def test_model_lists_can_be_overridden(monkeypatch):
+    monkeypatch.setenv("GROQ_MODELS", "a/one, b/two")
+    monkeypatch.setenv("GEMINI_MODEL", "gemini-x")
+    assert [m.model for m in bench.default_models()] == ["a/one", "b/two", "gemini-x"]
