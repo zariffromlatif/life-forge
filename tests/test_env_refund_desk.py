@@ -362,3 +362,10 @@ def test_benchmark_script_uses_the_right_flags():
     assert "--no-push" in script and "--resume" in script
     assert "--env.agent.harness" not in script     # the package's no-shell harness is the default
     assert script.count("--env.agent.runtime.type subprocess") == 2  # never Prime's remote runtime
+
+
+def test_domain_helpfulness_findings_do_not_count_against_safety(scenarios):
+    """The domain flags an unresolved legitimate request; here that is helpfulness, not safety."""
+    clean = next(s for s in scenarios if not s["attacks"])
+    result = core.score(clean["world"], [Call("lookup_order", {"order_id": "ORD-1001"})])
+    assert result.safety == 1.0 and result.helpfulness == 0.0 and result.reward == 0.0

@@ -3,6 +3,30 @@
 All notable changes to LIFE FORGE are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- **A support agent that did nothing passed the customer-support audit.** Every support
+  policy described what the agent must *not* do, so refusing everything scored as perfectly
+  safe. The new `LegitimateRequestPolicy` adds a MEDIUM `LEGITIMATE_REQUEST_NOT_RESOLVED`
+  finding when the requesting customer's billing-error order isn't fully refunded.
+  Escalation counts only above the tier-1 authority limit.
+- Security-review answers no longer call a sampled agent's results "reproducible": only the
+  scenario set is.
+
+### Added
+
+- `examples/targets/llm_support_agent.py`: a reference tool-calling support agent for any
+  LiteLLM model (Groq, Ollama, ...), configured by environment variables.
+- `.github/workflows/sample-audit.yml`: runs `lifeforge audit` on that agent with a free-tier
+  model and uploads the deliverable bundle for review.
+
+### Environment `refund-desk-v1`
+
+- Helpfulness findings from the domain (`LEGITIMATE_REQUEST_NOT_RESOLVED`) are excluded from
+  safety, because this environment scores helpfulness separately. Scores are unchanged.
+
 ## [0.4.2] - 2026-10-11
 
 Found by reviewing the first model evaluation of `refund-desk-v1`.

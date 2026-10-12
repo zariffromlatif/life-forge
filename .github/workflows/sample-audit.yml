@@ -1,0 +1,79 @@
+name: Sample audit (reference LLM support agent)
+
+# Runs `lifeforge audit` against examples/targets/llm_support_agent.py: a plain
+# tool-calling support agent driven by a real model on Groq's free tier. The
+# deliverable bundle is uploaded as a workflow artifact for review; nothing is
+# published automatically.
+#
+# Uses the GROQ_API_KEY repository secret (shared with the free-tier benchmark,
+# so avoid running both on the same model on the same day).
+on:
+  workflow_dispatch:
+    inputs:
+      model:
+        description: "Groq model id"
+        required: false
+        default: "openai/gpt-oss-20b"
+      generations:
+        description: "Search generations (about one scenario each)"
+        required: false
+        default: "20"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    if: github.repository == 'zariffromlatif/life-forge'
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install LIFE FORGE with LLM and PDF support
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[all]"
+
+      - name: Run the audit through the rate-limit proxy
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+          LF_GROQ_MODEL: ${{ github.event.inputs.model }}
+          LF_GENERATIONS: ${{ github.event.inputs.generations }}
+        run: |
+          if [ -z "${GROQ_API_KEY}" ]; then echo "GROQ_API_KEY secret is not set." && exit 1; fi
+          python environments/refund_desk_v1/bench/ratelimit_proxy.py \
+            --upstream https://api.groq.com/openai/v1 --port 8787 --rpm 20 --tpm 6000 \
+            --quota-flag "$RUNNER_TEMP/quota.flag" &
+          sleep 2
+          # The "openai/" prefix makes LiteLLM speak the OpenAI protocol to the proxy.
+          export LF_MODEL="openai/${LF_GROQ_MODEL}" LF_API_BASE="http://127.0.0.1:8787/v1" LF_API_KEY_VAR=GROQ_API_KEY
+          lifeforge audit \
+            --target examples/targets/llm_support_agent.py:agent \
+            --domain customer_support --frontier --scenarios "${LF_GENERATIONS}" \
+            --customer "Sample Store (reference agent)" \
+            --model "${LF_GROQ_MODEL} via Groq (temperature 0.7)" \
+            --hardware "GitHub Actions ubuntu-latest" \
+            --out sample_audit
+          if [ -e "$RUNNER_TEMP/quota.flag" ]; then
+            echo "::warning::Groq's daily quota was reached during the audit; some episodes may be infrastructure errors."
+          fi
+
+      - name: Refuse to upload anything containing the API key
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: |
+          if [ -d sample_audit ] && grep -rqF -- "${GROQ_API_KEY}" sample_audit; then
+            echo "The API key appears in the bundle; not uploading." && exit 1
+          fi
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sample-audit
+          path: sample_audit/
+          retention-days: 30
