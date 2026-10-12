@@ -95,6 +95,9 @@ def cmd_test(args: argparse.Namespace) -> None:
     print("  LIFE FORGE -- Evolutionary Agent Stress Test")
     print("=" * 60)
 
+    # The domain decides the LLM agent's job description, so resolve it first.
+    domain = _resolve_domain_or_spec(args)
+
     # Configure agent
     if getattr(args, "model", None):
         from lifeforge.sandbox.llm_agent import LLMAgent, LLMAgentConfig
@@ -106,6 +109,8 @@ def cmd_test(args: argparse.Namespace) -> None:
             api_base=args.api_base,
             temperature=args.temperature,
         )
+        if domain is not None:
+            config.system_prompt = domain.agent_system_prompt()
         agent = LLMAgent(config=config)
         print(f"\n  Agent:        {agent.name}")
         print(f"  Model:        {args.model}")
@@ -124,7 +129,6 @@ def cmd_test(args: argparse.Namespace) -> None:
         print(f"  Seed:         {args.seed}")
 
     # Run evolution
-    domain = _resolve_domain_or_spec(args)
     if domain is not None:
         print(f"  Domain:       {domain.name} ({domain.title})")
     delay = getattr(args, "delay", 0.0)

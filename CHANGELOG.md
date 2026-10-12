@@ -14,6 +14,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
   Escalation counts only above the tier-1 authority limit.
 - Security-review answers no longer call a sampled agent's results "reproducible": only the
   scenario set is.
+- **`lifeforge test --model` gave every domain's LLM agent a purchasing-agent prompt.** Each
+  domain now provides its own job description (`ScenarioDomain.agent_system_prompt()`),
+  covering customer support, devops and the financial desk. Procurement keeps the original
+  prompt word for word, so published results stay comparable.
+  - Compiled domains, including OpenAPI and MCP twins, get a generic prompt built from their
+    title and tool names, or an optional `domain.agent_prompt` in the spec.
+  - Prompts describe the job only, never what is being tested, and a twin's title no longer
+    reveals that it is a simulation.
 
 ### Added
 

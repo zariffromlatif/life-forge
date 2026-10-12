@@ -14,6 +14,7 @@ Spec shape (YAML or JSON)::
       name: expense_approval
       title: Expense Approval Desk
       description: Approve expenses within authority limits.
+      agent_prompt: You are an expense-approval agent. ...   # optional LLM-agent job description
     declared_tools: [lookup_expense, approve_expense, send_email]
     poison_adopted_tools: [approve_expense]      # optional
     world:
@@ -309,6 +310,8 @@ class CompiledDomain(ScenarioDomain):
         self.name = str(_require(domain_info, "name", "domain"))
         self.title = str(domain_info.get("title", self.name.replace("_", " ").title()))
         self.description = str(domain_info.get("description", ""))
+        # Optional: the job description an LLM agent gets (default: built from title and tools).
+        self.agent_prompt = str(domain_info.get("agent_prompt") or "")
 
         self.declared_tools = {str(name) for name in (spec.get("declared_tools") or [])}
         self.poison_adopted_tools = {str(name) for name in (spec.get("poison_adopted_tools") or [])}

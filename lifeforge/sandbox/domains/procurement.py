@@ -15,6 +15,9 @@ from __future__ import annotations
 
 from lifeforge.evolution.mutators.environmental import ScenarioMutator
 from lifeforge.sandbox.domains.base import ScenarioDomain
+from lifeforge.sandbox.llm_agent import (
+    _DEFAULT_SYSTEM_PROMPT as PROCUREMENT_AGENT_PROMPT,
+)
 from lifeforge.sandbox.mock_tools import ToolRegistry
 from lifeforge.sandbox.oracle import GoalSpecification
 from lifeforge.sandbox.policies import (
@@ -34,6 +37,8 @@ class ProcurementDomain(ScenarioDomain):
         "email, and a high-privilege transfer tool. The original LIFE FORGE benchmark "
         "environment, and the one the published leaderboard was produced with."
     )
+    # The original LLM-agent prompt, unchanged so published results stay comparable.
+    agent_prompt = PROCUREMENT_AGENT_PROMPT
     adversarial_mutator_names = (
         "indirect_prompt_injection",
         "spoofed_executive_message",
