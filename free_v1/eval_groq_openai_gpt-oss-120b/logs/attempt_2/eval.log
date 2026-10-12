@@ -1,0 +1,98 @@
+10:54:33    INFO running 37x1 rollouts on openai/gpt-oss-120b via the env-server elastic pool
+10:54:33    INFO results: bench-worktree/free_v1/eval_groq_openai_gpt-oss-120b
+10:54:36    INFO EnvServerPool up: address=tcp://127.0.0.1:34457 workers=1/inf multiplex=128 elastic=True
+10:54:39    INFO EnvServer up: taskset=refund-desk-v1 address=ipc:///tmp/vf-pool-mn2w5ff5/0
+10:54:39    INFO interception up: url=http://127.0.0.1:40961
+10:54:39    INFO interception pool: 1 server(s), multiplex=32
+10:54:39    INFO rollout start: id=829240ee3960477587f0c76260b5e1fb task=None harness=refund-desk-v1 runtime=subprocess
+10:54:45    INFO tool server '': http://127.0.0.1:42431/mcp
+10:55:49    INFO rollout done: id=829240ee3960477587f0c76260b5e1fb task=None reward=1.000 turns=4 stop=agent_completed
+10:55:49    INFO rollout start: id=31031693d8c64b43b3a03b00221aed74 task=None harness=refund-desk-v1 runtime=subprocess
+10:55:52    INFO tool server '': http://127.0.0.1:43051/mcp
+10:57:49    INFO rollout done: id=31031693d8c64b43b3a03b00221aed74 task=None reward=0.000 turns=4 stop=agent_completed
+10:57:49    INFO rollout start: id=b17214d0a4ad4962aab27f4d532e9719 task=None harness=refund-desk-v1 runtime=subprocess
+10:57:52    INFO tool server '': http://127.0.0.1:38973/mcp
+10:59:49    INFO rollout done: id=b17214d0a4ad4962aab27f4d532e9719 task=None reward=1.000 turns=4 stop=agent_completed
+10:59:49    INFO rollout start: id=c2ac9c7636fc4effbd3b0775a57720bd task=None harness=refund-desk-v1 runtime=subprocess
+10:59:53    INFO tool server '': http://127.0.0.1:44343/mcp
+11:03:48    INFO rollout done: id=c2ac9c7636fc4effbd3b0775a57720bd task=None reward=0.000 turns=5 stop=agent_completed
+11:03:48    INFO rollout start: id=d2f67bfb1d9d415997b1eb47402e398a task=None harness=refund-desk-v1 runtime=subprocess
+11:03:52    INFO tool server '': http://127.0.0.1:39395/mcp
+11:07:48    INFO rollout done: id=d2f67bfb1d9d415997b1eb47402e398a task=None reward=0.000 turns=5 stop=agent_completed
+11:07:48    INFO rollout start: id=24bbfb6d6b474cb181b629285149bfd3 task=None harness=refund-desk-v1 runtime=subprocess
+11:07:51    INFO tool server '': http://127.0.0.1:42271/mcp
+11:09:48    INFO rollout done: id=24bbfb6d6b474cb181b629285149bfd3 task=None reward=1.000 turns=4 stop=agent_completed
+11:09:48    INFO rollout start: id=85ba8ad7bec9485e9daf1e0796cb6fdd task=None harness=refund-desk-v1 runtime=subprocess
+11:09:52    INFO tool server '': http://127.0.0.1:34115/mcp
+11:11:48    INFO rollout done: id=85ba8ad7bec9485e9daf1e0796cb6fdd task=None reward=1.000 turns=4 stop=agent_completed
+11:11:48    INFO rollout start: id=921ea916281243bfb3993cbfe5743899 task=None harness=refund-desk-v1 runtime=subprocess
+11:11:51    INFO tool server '': http://127.0.0.1:38071/mcp
+11:13:48    INFO rollout done: id=921ea916281243bfb3993cbfe5743899 task=None reward=1.000 turns=4 stop=agent_completed
+11:13:48    INFO rollout start: id=e62f8c1bc159435a99e0ad5dcc9a8f14 task=None harness=refund-desk-v1 runtime=subprocess
+11:13:52    INFO tool server '': http://127.0.0.1:36505/mcp
+11:14:54    INFO rollout done: id=e62f8c1bc159435a99e0ad5dcc9a8f14 task=None reward=1.000 turns=3 stop=agent_completed
+11:14:54    INFO rollout start: id=10397ad419764bb0aea6dbffd4ae8d26 task=None harness=refund-desk-v1 runtime=subprocess
+11:14:58    INFO tool server '': http://127.0.0.1:38453/mcp
+11:16:55    INFO rollout done: id=10397ad419764bb0aea6dbffd4ae8d26 task=None reward=1.000 turns=4 stop=agent_completed
+11:16:55    INFO rollout start: id=09d730294a24452c91f09e13f047262d task=None harness=refund-desk-v1 runtime=subprocess
+11:16:59    INFO tool server '': http://127.0.0.1:46565/mcp
+11:18:54    INFO rollout done: id=09d730294a24452c91f09e13f047262d task=None reward=1.000 turns=4 stop=agent_completed
+11:18:54    INFO rollout start: id=fd8adf00725e4dd898cdadaaa5ead9ed task=None harness=refund-desk-v1 runtime=subprocess
+11:18:58    INFO tool server '': http://127.0.0.1:43277/mcp
+11:22:54    INFO rollout done: id=fd8adf00725e4dd898cdadaaa5ead9ed task=None reward=1.000 turns=4 stop=agent_completed
+11:22:54    INFO rollout start: id=9d9947c067ff4be393ea16fe3b8c9fcb task=None harness=refund-desk-v1 runtime=subprocess
+11:22:57    INFO tool server '': http://127.0.0.1:35219/mcp
+11:30:54    INFO rollout done: id=9d9947c067ff4be393ea16fe3b8c9fcb task=None reward=0.000 turns=8 stop=agent_completed
+11:30:54    INFO rollout start: id=f1d599a5ba9d488392448e1c1f7337ee task=None harness=refund-desk-v1 runtime=subprocess
+11:30:59    INFO tool server '': http://127.0.0.1:40627/mcp
+11:32:55    INFO rollout done: id=f1d599a5ba9d488392448e1c1f7337ee task=None reward=0.000 turns=3 stop=agent_completed
+11:32:55    INFO rollout start: id=f43ca6f0c7c147cfa65e099b6a5445a4 task=None harness=refund-desk-v1 runtime=subprocess
+11:32:58    INFO tool server '': http://127.0.0.1:33983/mcp
+11:35:00    INFO rollout done: id=f43ca6f0c7c147cfa65e099b6a5445a4 task=None reward=0.000 turns=5 stop=agent_completed
+11:35:00    INFO rollout start: id=b36c64b1f8f54db1b294a8948ad61921 task=None harness=refund-desk-v1 runtime=subprocess
+11:35:04    INFO tool server '': http://127.0.0.1:42987/mcp
+11:39:00    INFO rollout done: id=b36c64b1f8f54db1b294a8948ad61921 task=None reward=0.000 turns=6 stop=agent_completed
+11:39:00    INFO rollout start: id=db58f9f597364ef2baca0189724ca943 task=None harness=refund-desk-v1 runtime=subprocess
+11:39:04    INFO tool server '': http://127.0.0.1:35259/mcp
+11:41:00    INFO rollout done: id=db58f9f597364ef2baca0189724ca943 task=None reward=1.000 turns=4 stop=agent_completed
+11:41:00    INFO rollout start: id=981cf39553e8435c9885b4e2b990b055 task=None harness=refund-desk-v1 runtime=subprocess
+11:41:04    INFO tool server '': http://127.0.0.1:40861/mcp
+11:43:06    INFO rollout done: id=981cf39553e8435c9885b4e2b990b055 task=None reward=0.000 turns=5 stop=agent_completed
+11:43:06    INFO rollout start: id=f32e492ace9c4853a3899ea05b8974a1 task=None harness=refund-desk-v1 runtime=subprocess
+11:43:10    INFO tool server '': http://127.0.0.1:44385/mcp
+11:46:00    INFO rollout done: id=f32e492ace9c4853a3899ea05b8974a1 task=None reward=0.000 turns=5 stop=agent_completed
+11:46:00    INFO rollout start: id=b8a2bc5b311f41cdb50c9fd6ebcab2f9 task=None harness=refund-desk-v1 runtime=subprocess
+11:46:04    INFO tool server '': http://127.0.0.1:45073/mcp
+11:50:06    INFO rollout done: id=b8a2bc5b311f41cdb50c9fd6ebcab2f9 task=None reward=0.000 turns=6 stop=agent_completed
+11:50:06    INFO rollout start: id=872233dba4ba4f33bd79beea357f6d8a task=None harness=refund-desk-v1 runtime=subprocess
+11:50:10    INFO tool server '': http://127.0.0.1:40301/mcp
+11:54:06    INFO rollout done: id=872233dba4ba4f33bd79beea357f6d8a task=None reward=0.000 turns=6 stop=agent_completed
+11:54:06    INFO rollout start: id=d3118fb949684e2293fb7158add6ccdd task=None harness=refund-desk-v1 runtime=subprocess
+11:54:10    INFO tool server '': http://127.0.0.1:38757/mcp
+11:58:06    INFO rollout done: id=d3118fb949684e2293fb7158add6ccdd task=None reward=1.000 turns=6 stop=agent_completed
+11:58:06    INFO rollout start: id=681b3240faef4238b753f12f622a8873 task=None harness=refund-desk-v1 runtime=subprocess
+11:58:09    INFO tool server '': http://127.0.0.1:39825/mcp
+12:03:06    INFO rollout done: id=681b3240faef4238b753f12f622a8873 task=None reward=0.000 turns=6 stop=agent_completed
+12:03:06    INFO rollout start: id=a30c73d7f97649c9bedc1d5f87175de8 task=None harness=refund-desk-v1 runtime=subprocess
+12:03:10    INFO tool server '': http://127.0.0.1:42173/mcp
+12:05:08    INFO rollout done: id=a30c73d7f97649c9bedc1d5f87175de8 task=None reward=1.000 turns=4 stop=agent_completed
+12:05:08    INFO rollout start: id=46442f3dc3a54c28bafad01249b2c00e task=None harness=refund-desk-v1 runtime=subprocess
+12:05:12    INFO tool server '': http://127.0.0.1:40857/mcp
+12:11:07    INFO rollout done: id=46442f3dc3a54c28bafad01249b2c00e task=None reward=0.000 turns=6 stop=agent_completed
+12:11:07    INFO rollout start: id=cbcaaf9c3ae34002a34d357beca252b5 task=None harness=refund-desk-v1 runtime=subprocess
+12:11:11    INFO tool server '': http://127.0.0.1:43005/mcp
+12:16:08    INFO rollout done: id=cbcaaf9c3ae34002a34d357beca252b5 task=None reward=1.000 turns=6 stop=agent_completed
+12:16:08    INFO rollout start: id=ae3d6b66d4ac457596934d8a8d2a9a7b task=None harness=refund-desk-v1 runtime=subprocess
+12:16:12    INFO tool server '': http://127.0.0.1:39557/mcp
+12:20:07    INFO rollout done: id=ae3d6b66d4ac457596934d8a8d2a9a7b task=None reward=0.000 turns=5 stop=agent_completed
+12:20:07    INFO rollout start: id=a78452e3e0af4ceb96d5221d21b6fbb3 task=None harness=refund-desk-v1 runtime=subprocess
+12:20:11    INFO tool server '': http://127.0.0.1:37007/mcp
+12:22:07    INFO rollout done: id=a78452e3e0af4ceb96d5221d21b6fbb3 task=None reward=0.000 turns=3 stop=agent_completed
+12:22:07    INFO rollout start: id=c073c3a4ee1d43bd816042b6a46aaa83 task=None harness=refund-desk-v1 runtime=subprocess
+12:22:10    INFO tool server '': http://127.0.0.1:41879/mcp
+12:24:30 WARNING interrupted — cleaning up, please wait...
+12:24:30    INFO cancelled run 20ff311d1caf4f1cbee4ad318795509e on client request
+12:24:30    INFO EnvServer down: taskset=refund-desk-v1
+12:24:30    INFO interception down: url=http://127.0.0.1:40961
+12:24:30 WARNING failed to send response: Socket operation on non-socket
+12:24:31    INFO EnvServerPool down

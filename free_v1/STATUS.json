@@ -1,8 +1,9 @@
 {
-  "updated": "2026-10-12T06:49:04Z",
+  "updated": "2026-10-12T12:32:07Z",
   "models": {
-    "openai/gpt-oss-120b": "0/37 episodes",
-    "llama-3.3-70b-versatile": "skipped: model 'llama-3.3-70b-versatile' not offered; similar: ['meta-llama/llama-prompt-guard-2-22m', 'meta-llama/llama-prompt-guard-2-86m']",
-    "gemini-2.5-flash": "skipped: probe HTTP 404: [{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/gemini-3.8-flash for the latest features "
+    "openai/gpt-oss-120b": "28/37 episodes",
+    "qwen/qwen3-32b": "skipped: model 'qwen/qwen3-32b' not offered. Available: allam-2-7b, canopylabs/orpheus-arabic-saudi, canopylabs/orpheus-v1-english, meta-llama/llama-prompt-guard-2-22m, meta-llama/llama-prompt-guard-2-86m, openai/gpt-oss-120b, openai/gpt-oss-20b, openai/gpt-oss-safeguard-20b, qwen/qwen3.8-27b, whisper-large-v3, whisper-large-v3-turbo",
+    "meta-llama/llama-4-scout-17b-16e-instruct": "skipped: model 'meta-llama/llama-4-scout-17b-16e-instruct' not offered. Available: allam-2-7b, canopylabs/orpheus-arabic-saudi, canopylabs/orpheus-v1-english, meta-llama/llama-prompt-guard-2-22m, meta-llama/llama-prompt-guard-2-86m, openai/gpt-oss-120b, openai/gpt-oss-20b, openai/gpt-oss-safeguard-20b, qwen/qwen3.8-27b, whisper-large-v3, whisper-large-v3-turbo",
+    "gemini-3.8-flash": "2/37 episodes"
   }
 }

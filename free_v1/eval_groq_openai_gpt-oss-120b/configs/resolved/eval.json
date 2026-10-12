@@ -38,23 +38,7 @@
     "agent": {
       "harness": null,
       "runtime": {
-        "allow": [
-          "*"
-        ],
-        "block": [],
-        "type": "prime",
-        "image": "python:3.11-slim",
-        "workdir": "/app",
-        "vm": true,
-        "guaranteed": false,
-        "region": null,
-        "labels": [],
-        "cpu": 1.0,
-        "memory": 2.0,
-        "gpu": null,
-        "disk": 5.0,
-        "idle_timeout": 3600.0,
-        "creates_per_min": null
+        "type": "subprocess"
       },
       "model": null,
       "client": null,
@@ -65,7 +49,7 @@
       "max_total_tokens": null,
       "timeout": {
         "setup": null,
-        "rollout": null,
+        "rollout": 900.0,
         "finalize": null,
         "scoring": null
       },
@@ -91,7 +75,7 @@
   },
   "model": "openai/gpt-oss-120b",
   "client": {
-    "base_url": "http://127.0.0.1:39327/v1",
+    "base_url": "http://127.0.0.1:34889/v1",
     "api_key_var": "GROQ_API_KEY",
     "headers": {},
     "type": "eval"
