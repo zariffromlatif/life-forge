@@ -57,7 +57,7 @@ def default_models() -> list[ModelSpec]:
     groq = "https://api.groq.com/openai/v1"
     gemini = "https://generativelanguage.googleapis.com/v1beta/openai"
     # Provider catalogs change; override with comma-separated GROQ_MODELS / GEMINI_MODEL.
-    groq_models = [m.strip() for m in os.environ.get("GROQ_MODELS", "openai/gpt-oss-120b,qwen/qwen3-32b,meta-llama/llama-4-scout-17b-16e-instruct").split(",") if m.strip()]
+    groq_models = [m.strip() for m in os.environ.get("GROQ_MODELS", "openai/gpt-oss-120b,qwen/qwen3.8-27b,openai/gpt-oss-20b").split(",") if m.strip()]
     specs = [ModelSpec("groq", model, groq, "GROQ_API_KEY", rpm=20, tpm=6000) for model in groq_models]
     specs.append(ModelSpec("gemini", os.environ.get("GEMINI_MODEL") or "gemini-3.8-flash", gemini, "GEMINI_API_KEY", rpm=8, tpm=200000))
     return specs
