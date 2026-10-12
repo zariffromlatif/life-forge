@@ -1,5 +1,8 @@
 # LIFE FORGE: Frontier Model Showdown Distribution Kit
 
+> **SUPERSEDED (2026-10-12). Do not cite.** Claims here were withdrawn after the October 2026 audit; see `archive/2026-09-oracle-1x/README.md`.
+
+
 > Ready-to-publish launch assets and copy for **X/Twitter**, **Reddit (r/LocalLLaMA)**, **Hacker News (Show HN)**, and **LinkedIn**.
 > Deploy immediately upon completion of the DeepSeek-R1 run on your RTX 4090.
 

@@ -18,10 +18,6 @@ results/*
 !results/.gitkeep
 !results/local_*_report.json
 !results/local_*_report.md
-!results/MODEL_SHOWDOWN.md
-!results/THREE_WAY_MODEL_SHOWDOWN.md
-!results/*_SHOWDOWN_DISTRIBUTION_KIT.md
-!results/*_DISTRIBUTION_KIT.md
 !results/report.json
 !results/report.md
 !results/LEADERBOARD.md
@@ -33,3 +29,7 @@ results/*
 grant_application/
 .private/
 .prime/
+
+# Local scratch from evaluation machines
+test_venv/
+/outputs/

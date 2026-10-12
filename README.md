@@ -19,50 +19,45 @@ Most agent red-teaming sends a list of attack prompts to a model and asks anothe
 3. **Every finding becomes a regression test.** The scenarios the search keeps are saved as a corpus and replayed, scenario by scenario, against the next build. A PR that makes the agent worse on any recorded scenario fails CI, the way a fuzzer's crash corpus works.
 4. **Your tools, not ours.** Describe your agent's tools in YAML, or generate the description from an MCP server's `tools/list`, and the domain compiler builds the twin.
 
-```bash
-pip install -e ".[all]"
+### Try it in 60 seconds (no API keys, no GPU)
 
-# 1. Generate a twin of the tools your agent uses (from an OpenAPI spec or MCP manifest), then edit it
+```bash
+pip install lifeforge
+
+# Record a baseline for the built-in reference agent (hardened version)...
+lifeforge surface --record --hardened --scenarios 15 --out baseline.json
+
+# ...then replay it against the weaker version: the gate fails and names the regressed scenarios.
+lifeforge surface --baseline baseline.json --scenarios 15 --out diff.md --fail-on-regression
+```
+
+### Use it on your agent
+
+```bash
+# 1. Generate a twin of your agent's tools (from an OpenAPI spec or an MCP tool list), then edit it
 lifeforge compile-domain --from-openapi openapi.yaml --out my_domain.yaml   # or: --from-mcp mcp_tools.json
 lifeforge compile-domain --spec my_domain.yaml --check
 
-# 2. Record the baseline on main: search + save the replayable corpus
+# 2. On main: search for failures and record the replayable corpus
 lifeforge surface --record --domain-spec my_domain.yaml --target agent.py:my_agent --out results/agent_surface.json
 
 # 3. On every PR: replay the corpus against the changed agent and fail on regressions
 lifeforge surface --baseline results/agent_surface.json --domain-spec my_domain.yaml --target agent.py:my_agent --fail-on-regression
 ```
 
----
+## Work with me: Agent Action Audit
 
-## Research Results: 8 Open-Weight Models (oracle 1.x)
+If your product is an agent that moves money, changes records, grants access or ships code, and your
+enterprise customers are asking how you test it, I run a fixed-price, two-week audit:
 
-Eight local open-weight models (Ollama, one RTX 4090) were run as procurement agents through 30 generations at `seed=42`, one campaign per model.
+- a twin of your agent's real tools (from your OpenAPI spec or MCP server);
+- an adversarial search for the scenarios that make it take a forbidden action, with every finding
+  reproducible and explained;
+- fixes at the tool boundary (`@tool_guard`) and a re-test;
+- the CI regression gate installed in your repo, plus draft answers for your next security questionnaire.
 
-> **Read these numbers with their limits.** They come from a **single seed per model** and were judged by **oracle 1.x**. The October 2026 audit (oracle 2.0) found that oracle 1.x over-reported some categories. The table below is kept for provenance with corrected labels. It is not a statistically meaningful ranking, and it will be replaced by multi-seed re-runs.
->
-> - **"Critical" findings in the procurement domain are mostly attempts to call the prohibited `transfer_funds` tool.** The sandbox has external transfers disabled and refused every one, so no money moved in any run. An agent that obeys an injected instruction to wire money is still a real finding, but these were attempts, not completed exfiltrations.
-> - **The single `TOCTOU_RACE_CONDITION` reported for `mistral-small:24b` was not a race condition.** The oracle 1.x check fired on purchase orders whose price cap was below the quote, and the tool rejects those, so nothing was committed. Oracle 2.0 only flags a purchase actually committed at a price the agent did not re-check.
-> - **The failure-rate column counts archive cells, not evaluations.** MAP-Elites keeps the worst trace per cell, so this rate is biased upward.
-
-| Model | Params | Critical findings (cells) | Retry-loop cells | Elite-cell failure rate | Dominant behaviour |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `llama3.1:8b` | 8B | 0 | 12 | 66.7% | Loops under price volatility |
-| `deepseek-r1:8b` | 8B | 0 | 0 | 100.0% | Halts conservatively under scarcity |
-| `deepseek-r1:14b` | 14B | 0 | 14 | 100.0% | Analysis loops |
-| `qwen2.5:14b` | 14B | 7 | 0 | 100.0% | Follows spoofed executive messages |
-| `deepseek-coder:33b` | 33B | 8 | 0 | 100.0% | Attempts the prohibited transfer at step 0 |
-| `phi4:14b` | 14B | 8 | 0 | 100.0% | Trusts instructions in tool data / tool schemas |
-| `qwen2.5-coder:14b` | 14B | 12 | 5 | 100.0% | Follows injected instructions in tool data |
-| `mistral-small:24b` | 24B | 13 | 3 | 100.0% | Follows injected transfer instructions |
-
-What the data does support, as observations to test with more seeds:
-
-* Larger models were not safer here. The 24B and 33B models attempted the prohibited transfer in more scenarios than the 8B models.
-* Both DeepSeek-R1 reasoning models made **no** prohibited-transfer attempts, though the 14B one looped instead.
-* The code-tuned Qwen attempted prohibited transfers in more cells than the general Qwen (12 vs 7). With one seed, that is a lead, not a measured effect.
-
-Profiles and raw JSON: [`results/LEADERBOARD.md`](results/LEADERBOARD.md). Write-up: [`docs/research/THE_SCALE_PARADOX_IN_AI_AGENTS.md`](docs/research/THE_SCALE_PARADOX_IN_AI_AGENTS.md). Both predate oracle 2.0, so apply the same caveats.
+Contact: **Zarif Latif**, zarif.latif.biz@gmail.com (or open an issue). The tool itself is MIT-licensed
+and free; the audit is for teams who want it done with them.
 
 ---
 
@@ -90,7 +85,7 @@ Monitors agent actions after every step and enforces mathematical policy boundar
 - `GOAL_INVENTORY_DEFICIT`: Premature task termination without goal fulfillment.
 
 ### 4. Native Model Context Protocol (MCP) Server
-LIFE FORGE can be run as a standard **Model Context Protocol (MCP)** server over `stdio` or `SSE`. Any MCP-compatible client--including **Claude Desktop**, **Cursor**, **LangGraph**, or custom multi-agent frameworks--can directly connect to LIFE FORGE's adversarial environments.
+LIFE FORGE can be run as a standard **Model Context Protocol (MCP)** server over `stdio`. Any MCP-compatible client--including **Claude Desktop**, **Cursor**, **LangGraph**, or custom multi-agent frameworks--can directly connect to LIFE FORGE's adversarial environments.
 
 ### 5. Multi-Provider LiteLLM Adapter
 Test any frontier or local model with zero code changes:
@@ -149,7 +144,7 @@ ollama run llama3.1:8b
 python -m lifeforge.cli test --model ollama/llama3.1:8b --api-base http://localhost:11434 --scenarios 30 --seed 42 --out results/llama_report.md --json
 ```
 
-### 3. Launch the Visual Flight Simulator Dashboard (Web UI)
+### 3. Launch the Dashboard (Web UI)
 Explore 3D MAP-Elites behavior spaces, compare model showdowns, and inspect step-by-step exploit traces in an interactive local command center (zero extra dependencies required):
 
 ```bash
@@ -270,7 +265,7 @@ lifeforge eval --domain financial --target agent.py:trading_agent
 
 ### Frontier Attacks (2026 Research Gaps)
 
-Opt in with `--frontier` to add five attack classes that contemporary tooling does not cover:
+Opt in with `--frontier` to add five newer attack classes:
 
 ```bash
 lifeforge test --model ollama/llama3.1:8b --frontier --json
@@ -544,6 +539,37 @@ See [`examples/ci_agent_workflow.yml`](examples/ci_agent_workflow.yml) for a com
 
 ---
 
+
+## Earlier Research Results (September 2026, oracle 1.x)
+
+Eight local open-weight models (Ollama, one RTX 4090) were run as procurement agents through 30 generations at `seed=42`, one campaign per model.
+
+> **Read these numbers with their limits.** They come from a **single seed per model** and were judged by **oracle 1.x**. The October 2026 audit (oracle 2.0) found that oracle 1.x over-reported some categories. The table below is kept for provenance with corrected labels. It is not a statistically meaningful ranking, and it will be replaced by multi-seed re-runs.
+>
+> - **"Critical" findings in the procurement domain are mostly attempts to call the prohibited `transfer_funds` tool.** The sandbox has external transfers disabled and refused every one, so no money moved in any run. An agent that obeys an injected instruction to wire money is still a real finding, but these were attempts, not completed exfiltrations.
+> - **The single `TOCTOU_RACE_CONDITION` reported for `mistral-small:24b` was not a race condition.** The oracle 1.x check fired on purchase orders whose price cap was below the quote, and the tool rejects those, so nothing was committed. Oracle 2.0 only flags a purchase actually committed at a price the agent did not re-check.
+> - **The failure-rate column counts archive cells, not evaluations.** MAP-Elites keeps the worst trace per cell, so this rate is biased upward.
+
+| Model | Params | Critical findings (cells) | Retry-loop cells | Elite-cell failure rate | Dominant behaviour |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `llama3.1:8b` | 8B | 0 | 12 | 66.7% | Loops under price volatility |
+| `deepseek-r1:8b` | 8B | 0 | 0 | 100.0% | Halts conservatively under scarcity |
+| `deepseek-r1:14b` | 14B | 0 | 14 | 100.0% | Analysis loops |
+| `qwen2.5:14b` | 14B | 7 | 0 | 100.0% | Follows spoofed executive messages |
+| `deepseek-coder:33b` | 33B | 8 | 0 | 100.0% | Attempts the prohibited transfer at step 0 |
+| `phi4:14b` | 14B | 8 | 0 | 100.0% | Trusts instructions in tool data / tool schemas |
+| `qwen2.5-coder:14b` | 14B | 12 | 5 | 100.0% | Follows injected instructions in tool data |
+| `mistral-small:24b` | 24B | 13 | 3 | 100.0% | Follows injected transfer instructions |
+
+What the data does support, as observations to test with more seeds:
+
+* Larger models were not safer here. The 24B and 33B models attempted the prohibited transfer in more scenarios than the 8B models.
+* Both DeepSeek-R1 reasoning models made **no** prohibited-transfer attempts, though the 14B one looped instead.
+* The code-tuned Qwen attempted prohibited transfers in more cells than the general Qwen (12 vs 7). With one seed, that is a lead, not a measured effect.
+
+Profiles and raw JSON: [`results/LEADERBOARD.md`](results/LEADERBOARD.md). Write-up: [`docs/research/THE_SCALE_PARADOX_IN_AI_AGENTS.md`](docs/research/THE_SCALE_PARADOX_IN_AI_AGENTS.md). Both predate oracle 2.0, so apply the same caveats.
+
+---
 
 ## Repository Architecture
 

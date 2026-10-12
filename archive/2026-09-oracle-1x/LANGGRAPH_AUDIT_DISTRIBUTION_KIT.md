@@ -1,5 +1,8 @@
 # LIFE FORGE: LangGraph Customer Support Audit & Remediation Distribution Kit
 
+> **WITHDRAWN (2026-10-12). Do not cite.** The agent audited here was a scripted state machine with hard-coded vulnerabilities, not LangGraph and not an LLM. See `audits/LANGGRAPH_CUSTOMER_SUPPORT_SECURITY_ADVISORY.md`.
+
+
 > Ready-to-publish assets and copy for **Hacker News (Show HN)**, **Reddit (r/LangChain, r/LocalLLaMA)**, **X/Twitter**, **LinkedIn**, and **GitHub PR/Issue**.  
 > Based on empirical audit LF-2026-0001: 30 co-evolutionary MAP-Elites generations (`seed=42`) comparing unhardened vs `@tool_guard` remediated LangGraph architectures.
 

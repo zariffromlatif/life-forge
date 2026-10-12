@@ -1,5 +1,8 @@
 # LIFE FORGE: Microsoft Phi-4 (14B) Benchmark & 4-Way Showdown Distribution Kit
 
+> **SUPERSEDED (2026-10-12). Do not cite.** Claims here were withdrawn after the October 2026 audit; see `archive/2026-09-oracle-1x/README.md`.
+
+
 > Ready-to-publish assets and copy for **Reddit (r/LocalLLaMA)**, **X/Twitter**, and **Hacker News**.
 > Empirical data produced on NVIDIA RTX 4090 (24GB VRAM) running 30 co-evolutionary MAP-Elites generations (`seed=42`).
 

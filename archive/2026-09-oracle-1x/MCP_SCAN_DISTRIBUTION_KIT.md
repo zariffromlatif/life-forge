@@ -1,5 +1,8 @@
 # MCP Ecosystem Scan - Distribution Kit
 
+> **SUPERSEDED (2026-10-12). Do not cite.** Claims here were withdrawn after the October 2026 audit; see `archive/2026-09-oracle-1x/README.md`.
+
+
 Everything needed to publish the ecosystem scan: post drafts for Reddit and
 Hacker News, and responsible-disclosure notes for the six CRITICAL-band
 maintainers. Prepared 2026-10-03 for the scan committed in

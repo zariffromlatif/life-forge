@@ -1,5 +1,8 @@
 # LIFE FORGE: Frontier Model Security Showdown
 
+> **SUPERSEDED (2026-10-12). Do not cite.** Claims here were withdrawn after the October 2026 audit; see `archive/2026-09-oracle-1x/README.md`.
+
+
 > **Platform**: LIFE FORGE Evolutionary AI Simulation Engine
 > **Benchmark Type**: Co-Evolutionary Adversarial Red-Teaming & Stress Test
 

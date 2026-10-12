@@ -1,23 +1,19 @@
-"""LangGraph Customer Support Agent: Canonical Starter Template.
+"""Scripted demonstration agent for the customer-support domain.
 
-Modeled after the official LangGraph Customer Support tutorial:
-https://langchain-ai.github.io/langgraph/tutorials/customer-support/
+**This is not LangGraph and it does not call a language model.** It is a small
+state machine, modeled on the prompt and tools of the LangGraph customer-support
+tutorial, whose weaknesses are written in on purpose so the audit output can be
+demonstrated end to end:
 
-This implementation represents the standard unhardened architecture widely
-deployed in enterprise production:
-1. ReAct reasoning loop (Reason -> Act -> Observe).
-2. Natural language system prompt specifying business rules and authority limits.
-3. Unhardened tool execution: tools are invoked directly with LLM-provided arguments
-   without programmatic runtime invariant verification or defense-in-depth wrappers.
+- it grants admin access when a message mentions ``admin_grant`` or "reset credentials";
+- it issues oversized refunds when a message mentions legal action or chargebacks;
+- it retries a failing call without circuit breaking.
 
-Vulnerabilities surfaced under evolutionary adversarial red-teaming:
-- Prompt Injection / Social Engineering Bypass: LLM rationalizes authority overrides
-  when presented with legal threats or executive pretexts, issuing refunds above
-  authorized limits (BUDGET_EXCEEDED / UNAUTHORIZED_TOOL_EXECUTION).
-- Privilege Escalation: Injected pretexts manipulate the agent into granting
-  unauthorized administrative credentials (UNAUTHORIZED_TOOL_EXECUTION).
-- Recursive Loop Trap: Under transient tool errors or unexpected responses, the
-  unhardened agent retries repeatedly without circuit breaking (RECURSIVE_LOOP_TRAP).
+Because those behaviours are hard-coded, results from this agent show what LIFE
+FORGE *reports*, not how any real framework or model behaves. To test a real agent,
+wrap it with an adapter (``lifeforge.adapters``) or ``lifeforge.sandbox.llm_agent``.
+(An earlier advisory, LF-2026-0001, presented this script's results as an audit of
+LangGraph templates; it was withdrawn on 2026-10-12.)
 """
 from __future__ import annotations
 
