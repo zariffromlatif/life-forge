@@ -1,0 +1,7 @@
+05:19:06    INFO running 37x1 rollouts on openai/gpt-oss-120b via the env-server elastic pool
+05:19:06    INFO results: bench-worktree/free_v1/eval_groq_openai_gpt-oss-120b
+05:19:09    INFO EnvServerPool up: address=tcp://127.0.0.1:33763 workers=1/inf multiplex=128 elastic=True
+05:19:12    INFO EnvServer up: taskset=refund-desk-v1 address=ipc:///tmp/vf-pool-37d0t61p/0
+05:19:12    INFO EnvServer down: taskset=refund-desk-v1
+06:49:03 WARNING interrupted — cleaning up, please wait...
+06:49:03    INFO EnvServerPool down

@@ -1,0 +1,115 @@
+{
+  "env": {
+    "id": "",
+    "taskset": {
+      "id": "refund-desk-v1",
+      "task": {
+        "judges": [],
+        "stops": {},
+        "metrics": {},
+        "rewards": {},
+        "tools": {
+          "colocated": false,
+          "runtime": {
+            "type": "subprocess"
+          },
+          "url": null
+        }
+      },
+      "system_prompt": null,
+      "seeds_per_attack": 3,
+      "include_pairs": true,
+      "base_seed": 0
+    },
+    "timeout": {
+      "episode": null,
+      "finalize": null
+    },
+    "retries": {
+      "max_retries": 0,
+      "include": [],
+      "exclude": []
+    },
+    "max_concurrent_agents": 1,
+    "interception": {
+      "type": "elastic",
+      "multiplex": 32
+    },
+    "agent": {
+      "harness": null,
+      "runtime": {
+        "allow": [
+          "*"
+        ],
+        "block": [],
+        "type": "prime",
+        "image": "python:3.11-slim",
+        "workdir": "/app",
+        "vm": true,
+        "guaranteed": false,
+        "region": null,
+        "labels": [],
+        "cpu": 1.0,
+        "memory": 2.0,
+        "gpu": null,
+        "disk": 5.0,
+        "idle_timeout": 3600.0,
+        "creates_per_min": null
+      },
+      "model": null,
+      "client": null,
+      "sampling": null,
+      "max_turns": null,
+      "max_input_tokens": null,
+      "max_output_tokens": null,
+      "max_total_tokens": null,
+      "timeout": {
+        "setup": null,
+        "rollout": null,
+        "finalize": null,
+        "scoring": null
+      },
+      "retries": {
+        "max_retries": 0,
+        "include": [],
+        "exclude": []
+      }
+    }
+  },
+  "serve": {
+    "pool": {
+      "type": "elastic",
+      "max_workers": null,
+      "multiplex": 128
+    },
+    "address": null,
+    "max_concurrent": null
+  },
+  "run": {
+    "name": "eval_groq_openai_gpt-oss-120b",
+    "dir": "eval_groq_openai_gpt-oss-120b"
+  },
+  "model": "openai/gpt-oss-120b",
+  "client": {
+    "base_url": "http://127.0.0.1:39327/v1",
+    "api_key_var": "GROQ_API_KEY",
+    "headers": {},
+    "type": "eval"
+  },
+  "sampling": {
+    "temperature": 0.7,
+    "top_p": null,
+    "reasoning_effort": null,
+    "max_tokens": null
+  },
+  "num_tasks": null,
+  "num_rollouts": 1,
+  "shuffle": false,
+  "max_concurrent": 1,
+  "verbose": false,
+  "rich": {
+    "show_logs": false
+  },
+  "push": false,
+  "output_dir": "bench-worktree/free_v1"
+}

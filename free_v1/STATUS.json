@@ -1,0 +1,8 @@
+{
+  "updated": "2026-10-12T06:49:04Z",
+  "models": {
+    "openai/gpt-oss-120b": "0/37 episodes",
+    "llama-3.3-70b-versatile": "skipped: model 'llama-3.3-70b-versatile' not offered; similar: ['meta-llama/llama-prompt-guard-2-22m', 'meta-llama/llama-prompt-guard-2-86m']",
+    "gemini-2.5-flash": "skipped: probe HTTP 404: [{\n  \"error\": {\n    \"code\": 404,\n    \"message\": \"This model models/gemini-2.5-flash is no longer available to new users. Please update your code to use models/gemini-3.8-flash for the latest features "
+  }
+}
