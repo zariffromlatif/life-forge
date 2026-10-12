@@ -37,6 +37,9 @@ jobs:
     timeout-minutes: 330
     env:
       RESULTS_BRANCH: bench-results
+      # Worktree for the results branch. Must not collide with a folder in the repo
+      # (the repo already has a tracked results/).
+      RESULTS_DIR: bench-worktree
     steps:
       - uses: actions/checkout@v4
         with:
@@ -59,9 +62,9 @@ jobs:
         if: steps.keys.outputs.run == 'true'
         run: |
           if git fetch origin "${RESULTS_BRANCH}" 2>/dev/null; then
-            git worktree add -B "${RESULTS_BRANCH}" results "origin/${RESULTS_BRANCH}"
+            git worktree add -B "${RESULTS_BRANCH}" "${RESULTS_DIR}" "origin/${RESULTS_BRANCH}"
           else
-            git worktree add --orphan -b "${RESULTS_BRANCH}" results
+            git worktree add --orphan -b "${RESULTS_BRANCH}" "${RESULTS_DIR}"
           fi
 
       - uses: actions/setup-python@v5
@@ -90,7 +93,7 @@ jobs:
         run: |
           if [ -z "${GEMINI_MODEL}" ]; then unset GEMINI_MODEL; fi
           python environments/refund_desk_v1/bench/free_benchmark.py \
-            --output results/free_v1 --rollouts "${LF_ROLLOUTS}" --only "${LF_ONLY}"
+            --output "${RESULTS_DIR}/free_v1" --rollouts "${LF_ROLLOUTS}" --only "${LF_ONLY}"
 
       - name: Refuse to publish anything containing an API key
         if: always() && steps.keys.outputs.run == 'true'
@@ -99,7 +102,7 @@ jobs:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: |
           for key in "${GROQ_API_KEY}" "${GEMINI_API_KEY}"; do
-            if [ -n "${key}" ] && grep -rqF -- "${key}" results; then
+            if [ -n "${key}" ] && [ -d "${RESULTS_DIR}" ] && grep -rqF -- "${key}" "${RESULTS_DIR}"; then
               echo "An API key appears in the results; not publishing." && exit 1
             fi
           done
@@ -107,7 +110,12 @@ jobs:
       - name: Save results to the bench-results branch
         if: always() && steps.keys.outputs.run == 'true'
         run: |
-          cd results
+          # Only ever commit inside the results-branch worktree, never the main checkout.
+          if [ ! -e "${RESULTS_DIR}/.git" ]; then
+            echo "No results worktree (an earlier step failed); nothing to save."
+            exit 0
+          fi
+          cd "${RESULTS_DIR}"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
@@ -122,6 +130,6 @@ jobs:
         if: always() && steps.keys.outputs.run == 'true'
         run: |
           {
-            echo "## Status"; echo '```json'; cat results/free_v1/STATUS.json 2>/dev/null || echo "{}"; echo '```'
-            cat results/free_v1/BENCHMARK_LEADERBOARD.md 2>/dev/null || true
+            echo "## Status"; echo '```json'; cat "${RESULTS_DIR}/free_v1/STATUS.json" 2>/dev/null || echo "{}"; echo '```'
+            cat "${RESULTS_DIR}/free_v1/BENCHMARK_LEADERBOARD.md" 2>/dev/null || true
           } >> "$GITHUB_STEP_SUMMARY"
