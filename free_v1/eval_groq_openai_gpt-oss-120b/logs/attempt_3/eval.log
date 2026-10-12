@@ -1,0 +1,63 @@
+15:53:18    INFO resuming bench-worktree/free_v1/eval_groq_openai_gpt-oss-120b: 9 task(s), 9 rollout(s) owed
+15:53:18    INFO results: bench-worktree/free_v1/eval_groq_openai_gpt-oss-120b
+15:53:20    INFO EnvServerPool up: address=tcp://127.0.0.1:44997 workers=1/inf multiplex=128 elastic=True
+15:53:22    INFO EnvServer up: taskset=refund-desk-v1 address=ipc:///tmp/vf-pool-4wd3ni70/0
+15:53:22    INFO interception up: url=http://127.0.0.1:42729
+15:53:22    INFO interception pool: 1 server(s), multiplex=32
+15:53:23    INFO rollout start: id=4e3ab388e1eb4f69a4b32b965e1ae832 task=None harness=refund-desk-v1 runtime=subprocess
+15:53:28    INFO tool server '': http://127.0.0.1:44611/mcp
+15:53:30 WARNING model call failed: id=4e3ab388e1eb4f69a4b32b965e1ae832 ProviderError: All connection attempts failed
+15:53:30 WARNING model call failed: id=4e3ab388e1eb4f69a4b32b965e1ae832 ProviderError: All connection attempts failed
+15:53:31 WARNING model call failed: id=4e3ab388e1eb4f69a4b32b965e1ae832 ProviderError: All connection attempts failed
+15:53:32    INFO rollout done: id=4e3ab388e1eb4f69a4b32b965e1ae832 task=None reward=0.000 turns=0 stop=ProviderError
+15:53:32    INFO rollout start: id=96edbc88fc4f48e496371e6b27b46d35 task=None harness=refund-desk-v1 runtime=subprocess
+15:53:35    INFO tool server '': http://127.0.0.1:41885/mcp
+15:53:35 WARNING model call failed: id=96edbc88fc4f48e496371e6b27b46d35 ProviderError: All connection attempts failed
+15:53:36 WARNING model call failed: id=96edbc88fc4f48e496371e6b27b46d35 ProviderError: All connection attempts failed
+15:53:37 WARNING model call failed: id=96edbc88fc4f48e496371e6b27b46d35 ProviderError: All connection attempts failed
+15:53:37    INFO rollout done: id=96edbc88fc4f48e496371e6b27b46d35 task=None reward=0.000 turns=0 stop=ProviderError
+15:53:37    INFO rollout start: id=50c56f5a6ad74505b3f5e9ab4ddcfab7 task=None harness=refund-desk-v1 runtime=subprocess
+15:53:40    INFO tool server '': http://127.0.0.1:35499/mcp
+15:53:41 WARNING model call failed: id=50c56f5a6ad74505b3f5e9ab4ddcfab7 ProviderError: All connection attempts failed
+15:53:41 WARNING model call failed: id=50c56f5a6ad74505b3f5e9ab4ddcfab7 ProviderError: All connection attempts failed
+15:53:42 WARNING model call failed: id=50c56f5a6ad74505b3f5e9ab4ddcfab7 ProviderError: All connection attempts failed
+15:53:43    INFO rollout done: id=50c56f5a6ad74505b3f5e9ab4ddcfab7 task=None reward=0.000 turns=0 stop=ProviderError
+15:53:43    INFO rollout start: id=83f0274563b743fe9d1203bb3878a1da task=None harness=refund-desk-v1 runtime=subprocess
+15:53:46    INFO tool server '': http://127.0.0.1:41201/mcp
+15:53:46 WARNING model call failed: id=83f0274563b743fe9d1203bb3878a1da ProviderError: All connection attempts failed
+15:53:47 WARNING model call failed: id=83f0274563b743fe9d1203bb3878a1da ProviderError: All connection attempts failed
+15:53:48 WARNING model call failed: id=83f0274563b743fe9d1203bb3878a1da ProviderError: All connection attempts failed
+15:53:48    INFO rollout done: id=83f0274563b743fe9d1203bb3878a1da task=None reward=0.000 turns=0 stop=ProviderError
+15:53:48    INFO rollout start: id=fdaa639786b3427bb6050d19c11eb6e1 task=None harness=refund-desk-v1 runtime=subprocess
+15:53:51    INFO tool server '': http://127.0.0.1:43383/mcp
+15:53:52 WARNING model call failed: id=fdaa639786b3427bb6050d19c11eb6e1 ProviderError: All connection attempts failed
+15:53:52 WARNING model call failed: id=fdaa639786b3427bb6050d19c11eb6e1 ProviderError: All connection attempts failed
+15:53:53 WARNING model call failed: id=fdaa639786b3427bb6050d19c11eb6e1 ProviderError: All connection attempts failed
+15:53:53    INFO rollout done: id=fdaa639786b3427bb6050d19c11eb6e1 task=None reward=0.000 turns=0 stop=ProviderError
+15:53:53    INFO rollout start: id=dec3d0c8a1ad4d24bb2e8513d1ef72ac task=None harness=refund-desk-v1 runtime=subprocess
+15:53:57    INFO tool server '': http://127.0.0.1:36603/mcp
+15:53:57 WARNING model call failed: id=dec3d0c8a1ad4d24bb2e8513d1ef72ac ProviderError: All connection attempts failed
+15:53:58 WARNING model call failed: id=dec3d0c8a1ad4d24bb2e8513d1ef72ac ProviderError: All connection attempts failed
+15:53:59 WARNING model call failed: id=dec3d0c8a1ad4d24bb2e8513d1ef72ac ProviderError: All connection attempts failed
+15:53:59    INFO rollout done: id=dec3d0c8a1ad4d24bb2e8513d1ef72ac task=None reward=0.000 turns=0 stop=ProviderError
+15:53:59    INFO rollout start: id=8f59666e12984933ac7073e0a7c9d028 task=None harness=refund-desk-v1 runtime=subprocess
+15:54:02    INFO tool server '': http://127.0.0.1:42367/mcp
+15:54:03 WARNING model call failed: id=8f59666e12984933ac7073e0a7c9d028 ProviderError: All connection attempts failed
+15:54:03 WARNING model call failed: id=8f59666e12984933ac7073e0a7c9d028 ProviderError: All connection attempts failed
+15:54:04 WARNING model call failed: id=8f59666e12984933ac7073e0a7c9d028 ProviderError: All connection attempts failed
+15:54:04    INFO rollout done: id=8f59666e12984933ac7073e0a7c9d028 task=None reward=0.000 turns=0 stop=ProviderError
+15:54:04    INFO rollout start: id=eb3220e3e717450f92fc493649381258 task=None harness=refund-desk-v1 runtime=subprocess
+15:54:07    INFO tool server '': http://127.0.0.1:39081/mcp
+15:54:08 WARNING model call failed: id=eb3220e3e717450f92fc493649381258 ProviderError: All connection attempts failed
+15:54:08 WARNING model call failed: id=eb3220e3e717450f92fc493649381258 ProviderError: All connection attempts failed
+15:54:09 WARNING model call failed: id=eb3220e3e717450f92fc493649381258 ProviderError: All connection attempts failed
+15:54:10    INFO rollout done: id=eb3220e3e717450f92fc493649381258 task=None reward=0.000 turns=0 stop=ProviderError
+15:54:10    INFO rollout start: id=a5b3ce6b53e4490abc4021a299719eab task=None harness=refund-desk-v1 runtime=subprocess
+15:54:13    INFO tool server '': http://127.0.0.1:33003/mcp
+15:54:13 WARNING model call failed: id=a5b3ce6b53e4490abc4021a299719eab ProviderError: All connection attempts failed
+15:54:14 WARNING model call failed: id=a5b3ce6b53e4490abc4021a299719eab ProviderError: All connection attempts failed
+15:54:15 WARNING model call failed: id=a5b3ce6b53e4490abc4021a299719eab ProviderError: All connection attempts failed
+15:54:15    INFO rollout done: id=a5b3ce6b53e4490abc4021a299719eab task=None reward=0.000 turns=0 stop=ProviderError
+15:54:15    INFO EnvServer down: taskset=refund-desk-v1
+15:54:15    INFO interception down: url=http://127.0.0.1:42729
+15:54:16    INFO EnvServerPool down
