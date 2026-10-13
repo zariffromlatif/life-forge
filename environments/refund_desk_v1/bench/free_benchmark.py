@@ -76,6 +76,12 @@ def eval_command(spec: ModelSpec, base_url: str, output: Path, rollouts: int, te
     binary = eval_binary()
     saved = output / spec.run_name / "configs" / "resolved" / "eval.json"
     if resume and saved.exists() and not dry_run:
+        # A resume reloads the saved config verbatim, including the proxy address of the
+        # run that wrote it. The proxy gets a new port every run, so point it at this one
+        # (otherwise every resumed rollout fails with "All connection attempts failed").
+        config = json.loads(saved.read_text(encoding="utf-8"))
+        config.setdefault("client", {})["base_url"] = base_url
+        saved.write_text(json.dumps(config, indent=2) + "\n", encoding="utf-8")
         return [binary, "@", str(saved), "--resume"]
     command = [
         binary, "refund-desk-v1",
@@ -156,9 +162,11 @@ def run_model(spec: ModelSpec, output: Path, rollouts: int, temperature: float, 
     done = episodes_done(output, spec)
     if done >= target:
         return f"complete ({done}/{target})"
-    flag = flags / f"{spec.provider}.quota"
+    # Free-tier daily limits are per model (Groq, Gemini), so one model running out
+    # must not stop the others.
+    flag = flags / f"{spec.run_name}.quota"
     if flag.exists():
-        return "skipped: provider quota already reached today"
+        return "skipped: this model's daily quota was already reached"
     port = free_port()
     proxy = subprocess.Popen(
         [sys.executable, str(HERE / "ratelimit_proxy.py"), "--upstream", spec.base_url, "--port", str(port),

@@ -50,6 +50,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 
 ### Environment `refund-desk-v1`
 
+- **Free-tier benchmark: resumed runs could never reach the model.** A resume reloads the
+  saved config, including the previous run's proxy port, so every resumed rollout failed with
+  "All connection attempts failed". The saved config now points at the current proxy.
+- **Free-tier benchmark: one model's daily quota stopped every model from that provider.**
+  The quota flag is now per model, because Groq and Gemini free-tier limits are per model.
 - Helpfulness findings from the domain (`LEGITIMATE_REQUEST_NOT_RESOLVED`) are excluded from
   safety, because this environment scores helpfulness separately. Scores are unchanged.
 

@@ -183,10 +183,13 @@ def test_eval_command_resumes_from_the_saved_config(fake_eval, tmp_path):
     spec = bench.default_models()[0]
     saved = tmp_path / spec.run_name / "configs" / "resolved"
     saved.mkdir(parents=True)
-    (saved / "eval.json").write_text("{}")
-    assert bench.eval_command(spec, "x", tmp_path, 1, 0.7, resume=True, dry_run=False) == [
+    (saved / "eval.json").write_text(json.dumps({"client": {"base_url": "http://127.0.0.1:34889/v1", "api_key_var": "K"}}))
+    assert bench.eval_command(spec, "http://127.0.0.1:5555/v1", tmp_path, 1, 0.7, resume=True, dry_run=False) == [
         "/venv/bin/eval", "@", str(saved / "eval.json"), "--resume"
     ]
+    # The proxy runs on a new port each day: the resumed config must point at today's.
+    client = json.loads((saved / "eval.json").read_text())["client"]
+    assert client == {"base_url": "http://127.0.0.1:5555/v1", "api_key_var": "K"}
 
 
 def test_run_names_are_filesystem_safe():
@@ -232,3 +235,18 @@ def test_model_lists_can_be_overridden(monkeypatch):
     monkeypatch.setenv("GROQ_MODELS", "a/one, b/two")
     monkeypatch.setenv("GEMINI_MODEL", "gemini-x")
     assert [m.model for m in bench.default_models()] == ["a/one", "b/two", "gemini-x"]
+
+
+def test_one_model_running_out_of_quota_does_not_stop_the_others(tmp_path, monkeypatch):
+    first, second = bench.default_models()[:2]
+    assert first.provider == second.provider
+    flags = tmp_path / "_quota_flags"
+    flags.mkdir()
+    (flags / f"{first.run_name}.quota").write_text("")
+    assert "quota" in bench.run_model(first, tmp_path, 1, 0.7, 1, flags)
+
+    started = []
+    monkeypatch.setattr(bench.subprocess, "Popen", lambda *a, **k: started.append(a) or (_ for _ in ()).throw(RuntimeError("stop")))
+    with pytest.raises(RuntimeError):
+        bench.run_model(second, tmp_path, 1, 0.7, 1, flags)
+    assert started  # the second model was not skipped
