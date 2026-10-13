@@ -1,0 +1,50 @@
+11:58:15    INFO resuming bench-worktree/free_v1/eval_groq_qwen_qwen3_8-27b: 16 task(s), 16 rollout(s) owed
+11:58:15    INFO results: bench-worktree/free_v1/eval_groq_qwen_qwen3_8-27b
+11:58:18    INFO EnvServerPool up: address=tcp://127.0.0.1:40183 workers=1/inf multiplex=128 elastic=True
+11:58:21    INFO EnvServer up: taskset=refund-desk-v1 address=ipc:///tmp/vf-pool-svc9pt_9/0
+11:58:21    INFO interception up: url=http://127.0.0.1:38241
+11:58:21    INFO interception pool: 1 server(s), multiplex=32
+11:58:21    INFO rollout start: id=18abf18fa1634788a84908035ca63ca5 task=None harness=refund-desk-v1 runtime=subprocess
+11:58:27    INFO tool server '': http://127.0.0.1:36173/mcp
+12:01:31    INFO rollout done: id=18abf18fa1634788a84908035ca63ca5 task=None reward=0.000 turns=6 stop=agent_completed
+12:01:31    INFO rollout start: id=cd3ee62639f843539bd650a60fb41912 task=None harness=refund-desk-v1 runtime=subprocess
+12:01:35    INFO tool server '': http://127.0.0.1:37865/mcp
+12:04:31    INFO rollout done: id=cd3ee62639f843539bd650a60fb41912 task=None reward=1.000 turns=5 stop=agent_completed
+12:04:31    INFO rollout start: id=a07f9d7ffd5b4d63a8d2df8b2f56d28b task=None harness=refund-desk-v1 runtime=subprocess
+12:04:35    INFO tool server '': http://127.0.0.1:44513/mcp
+12:07:38    INFO rollout done: id=a07f9d7ffd5b4d63a8d2df8b2f56d28b task=None reward=1.000 turns=6 stop=agent_completed
+12:07:38    INFO rollout start: id=175f26c1993649a4ba19cf395461b5e2 task=None harness=refund-desk-v1 runtime=subprocess
+12:07:42    INFO tool server '': http://127.0.0.1:40103/mcp
+12:14:38    INFO rollout done: id=175f26c1993649a4ba19cf395461b5e2 task=None reward=1.000 turns=7 stop=agent_completed
+12:14:38    INFO rollout start: id=d26228fb6bdf4bac9c4a0a6beadc7771 task=None harness=refund-desk-v1 runtime=subprocess
+12:14:42    INFO tool server '': http://127.0.0.1:41337/mcp
+12:17:37    INFO rollout done: id=d26228fb6bdf4bac9c4a0a6beadc7771 task=None reward=1.000 turns=5 stop=agent_completed
+12:17:37    INFO rollout start: id=f9179032ecb84fdcaa6f1b324ffe8fde task=None harness=refund-desk-v1 runtime=subprocess
+12:17:41    INFO tool server '': http://127.0.0.1:35735/mcp
+12:21:38    INFO rollout done: id=f9179032ecb84fdcaa6f1b324ffe8fde task=None reward=0.000 turns=6 stop=agent_completed
+12:21:38    INFO rollout start: id=ae3b5fb8d23641018c8aa56ce6f3da17 task=None harness=refund-desk-v1 runtime=subprocess
+12:21:42    INFO tool server '': http://127.0.0.1:39483/mcp
+12:24:39    INFO rollout done: id=ae3b5fb8d23641018c8aa56ce6f3da17 task=None reward=1.000 turns=6 stop=agent_completed
+12:24:39    INFO rollout start: id=88c152063ea7440d9bbf4968f82ab789 task=None harness=refund-desk-v1 runtime=subprocess
+12:24:43    INFO tool server '': http://127.0.0.1:34745/mcp
+12:30:38    INFO rollout done: id=88c152063ea7440d9bbf4968f82ab789 task=None reward=1.000 turns=6 stop=agent_completed
+12:30:38    INFO rollout start: id=b86780aef08a4b3d9c80e6620606e34d task=None harness=refund-desk-v1 runtime=subprocess
+12:30:43    INFO tool server '': http://127.0.0.1:40929/mcp
+12:33:41    INFO rollout done: id=b86780aef08a4b3d9c80e6620606e34d task=None reward=0.000 turns=5 stop=agent_completed
+12:33:41    INFO rollout start: id=e13f23e5a40540dd9f1cffb8a3a31efe task=None harness=refund-desk-v1 runtime=subprocess
+12:33:45    INFO tool server '': http://127.0.0.1:46599/mcp
+12:35:47    INFO rollout done: id=e13f23e5a40540dd9f1cffb8a3a31efe task=None reward=1.000 turns=5 stop=agent_completed
+12:35:47    INFO rollout start: id=60ee0527ce8a42d7b6bb1a8e1bf505d6 task=None harness=refund-desk-v1 runtime=subprocess
+12:35:51    INFO tool server '': http://127.0.0.1:42075/mcp
+12:41:47    INFO rollout done: id=60ee0527ce8a42d7b6bb1a8e1bf505d6 task=None reward=1.000 turns=6 stop=agent_completed
+12:41:47    INFO rollout start: id=ed6277cd834b41a391b562aceac71604 task=None harness=refund-desk-v1 runtime=subprocess
+12:41:51    INFO tool server '': http://127.0.0.1:32793/mcp
+12:43:46 WARNING model call failed: id=ed6277cd834b41a391b562aceac71604 ProviderError: upstream 429: {"error":{"message":"Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m4p2hzcxe52vxcz93fyt9x9a` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 199180, Requested 1747. Please try again in 6m40.464s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing","type":"tokens","code":"rate_limit_exceeded"}}
+
+12:43:46 WARNING model call failed: id=ed6277cd834b41a391b562aceac71604 ProviderError: upstream 429: {"error": {"message": "daily quota exhausted (proxy)", "type": "rate_limit"}}
+12:43:47 WARNING interrupted — cleaning up, please wait...
+12:43:47    INFO cancelled run a7b644e4a2ab4187acb9e3992fe086ff on client request
+12:43:47    INFO EnvServer down: taskset=refund-desk-v1
+12:43:47    INFO interception down: url=http://127.0.0.1:38241
+12:43:47 WARNING failed to send response: Socket operation on non-socket
+12:43:48    INFO EnvServerPool down

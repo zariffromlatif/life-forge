@@ -75,7 +75,7 @@
   },
   "model": "qwen/qwen3.8-27b",
   "client": {
-    "base_url": "http://127.0.0.1:48745/v1",
+    "base_url": "http://127.0.0.1:36925/v1",
     "api_key_var": "GROQ_API_KEY",
     "headers": {},
     "type": "eval"

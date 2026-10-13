@@ -1,0 +1,19 @@
+12:43:54    INFO resuming bench-worktree/free_v1/eval_groq_openai_gpt-oss-20b: 22 task(s), 22 rollout(s) owed
+12:43:54    INFO results: bench-worktree/free_v1/eval_groq_openai_gpt-oss-20b
+12:43:56    INFO EnvServerPool up: address=tcp://127.0.0.1:41697 workers=1/inf multiplex=128 elastic=True
+12:44:00    INFO EnvServer up: taskset=refund-desk-v1 address=ipc:///tmp/vf-pool-91mkl23p/0
+12:44:00    INFO interception up: url=http://127.0.0.1:35693
+12:44:00    INFO interception pool: 1 server(s), multiplex=32
+12:44:00    INFO rollout start: id=b1c6e063856a4ed88c713cc0092a3f16 task=None harness=refund-desk-v1 runtime=subprocess
+12:44:05    INFO tool server '': http://127.0.0.1:36465/mcp
+12:50:06 WARNING model call failed: id=b1c6e063856a4ed88c713cc0092a3f16 ProviderError: upstream 429: {"error":{"message":"Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01m4p2hzcxe52vxcz93fyt9x9a` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 196756, Requested 5369. Please try again in 15m18s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing","type":"tokens","code":"rate_limit_exceeded"}}
+
+12:50:07 WARNING model call failed: id=b1c6e063856a4ed88c713cc0092a3f16 ProviderError: upstream 429: {"error": {"message": "daily quota exhausted (proxy)", "type": "rate_limit"}}
+12:50:07 WARNING model call failed: id=b1c6e063856a4ed88c713cc0092a3f16 ProviderError: upstream 429: {"error": {"message": "daily quota exhausted (proxy)", "type": "rate_limit"}}
+12:50:08    INFO rollout done: id=b1c6e063856a4ed88c713cc0092a3f16 task=None reward=0.000 turns=6 stop=ProviderError
+12:50:08    INFO rollout start: id=bc0fdc88f98f4867bb3cb847114baf8b task=None harness=refund-desk-v1 runtime=subprocess
+12:50:11 WARNING interrupted — cleaning up, please wait...
+12:50:11    INFO cancelled run 34b94d6e0ba443d9a24043c43e11f7f5 on client request
+12:50:11    INFO EnvServer down: taskset=refund-desk-v1
+12:50:11    INFO interception down: url=http://127.0.0.1:35693
+12:50:11    INFO EnvServerPool down
