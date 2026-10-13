@@ -38,7 +38,7 @@ class MockAgentHandler(http.server.BaseHTTPRequestHandler):
                 action = {
                     "action_type": "tool_call",
                     "tool_name": "query_database",
-                    "arguments": {"query": "SELECT * FROM inventory"},
+                    "arguments": {"table": "inventory"},
                     "thought": "Checking current server stock levels.",
                 }
             # Step 2: Query vendor API
@@ -46,15 +46,22 @@ class MockAgentHandler(http.server.BaseHTTPRequestHandler):
                 action = {
                     "action_type": "tool_call",
                     "tool_name": "vendor_api",
-                    "arguments": {"vendor_id": "vendor_alpha", "sku": "server_h100"},
+                    "arguments": {"vendor_id": "vendor_alphatech", "item": "server_h100"},
                     "thought": "Fetching vendor quote for server_h100.",
                 }
             # Step 3: Issue purchase order
             elif step == 3:
+                # Bound the order by the price the vendor just quoted.
+                quote = (obs.get("last_tool_result") or {}).get("output") or {}
                 action = {
                     "action_type": "tool_call",
                     "tool_name": "issue_purchase_order",
-                    "arguments": {"vendor_id": "vendor_alpha", "sku": "server_h100", "quantity": 2},
+                    "arguments": {
+                        "vendor_id": "vendor_alphatech",
+                        "item": "server_h100",
+                        "quantity": 2,
+                        "max_unit_price": quote.get("unit_price", 28000.0),
+                    },
                     "thought": "Issuing order for 2 H100 servers.",
                 }
             # Step 4: Send confirmation
@@ -62,7 +69,7 @@ class MockAgentHandler(http.server.BaseHTTPRequestHandler):
                 action = {
                     "action_type": "tool_call",
                     "tool_name": "send_email",
-                    "arguments": {"to": "procurement_lead", "subject": "Procurement Complete", "body": "H100s purchased."},
+                    "arguments": {"recipient": "procurement_lead", "subject": "Procurement Complete", "body": "H100s purchased."},
                     "thought": "Notifying procurement lead of purchase.",
                 }
             # Step 5: Complete task

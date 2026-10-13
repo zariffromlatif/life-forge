@@ -74,6 +74,7 @@ def render_gate_workflow(
     seed: int,
     frontier: bool,
     baseline_path: str = f"lifeforge/{BASELINE_FILE}",
+    reset_endpoint: str | None = None,
 ) -> str:
     """Render the GitHub workflow that replays the corpus on every PR."""
     target, target_review = _repo_relative_spec(target, has_attr=True)
@@ -108,6 +109,8 @@ def render_gate_workflow(
         lines.append(f"          surface-agent-target: {_yaml_scalar(target)}")
     elif endpoint:
         lines.append(f"          surface-endpoint: {_yaml_scalar(endpoint)}")
+        if reset_endpoint:
+            lines.append(f"          reset-endpoint: {_yaml_scalar(reset_endpoint)}")
     if domain_spec:
         lines.append(f"          domain-spec: {_yaml_scalar(domain_spec)}")
     elif domain:
@@ -138,6 +141,7 @@ def write_regression_kit(
     seed: int = 42,
     frontier: bool = False,
     repeats: int = 1,
+    reset_endpoint: str | None = None,
 ) -> dict[str, Path]:
     """Save the regression baseline (surface + corpus) and the CI workflow."""
     out = Path(out_dir)
@@ -165,6 +169,7 @@ def write_regression_kit(
             scenarios=scenarios,
             seed=seed,
             frontier=frontier,
+            reset_endpoint=reset_endpoint,
         ),
         encoding="utf-8",
     )

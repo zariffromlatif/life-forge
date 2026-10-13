@@ -102,3 +102,60 @@ def test_audit_cli_reports_missing_agent_cleanly(tmp_path: Path):
     assert result.returncode == 1
     assert "Could not load agent" in result.stdout
     assert "Traceback" not in result.stderr
+
+
+def _start_example_webhook_agent():
+    """The README's example HTTP agent on a free port; returns (base_url, reset_counter, server)."""
+    import importlib.util
+    import socketserver
+    import threading
+
+    path = Path(__file__).resolve().parents[1] / "examples" / "webhook_agent_server.py"
+    spec = importlib.util.spec_from_file_location("example_webhook_agent", path)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    resets = {"n": 0}
+
+    class Handler(module.MockAgentHandler):
+        def do_POST(self):
+            if self.path == "/reset":
+                resets["n"] += 1
+            super().do_POST()
+
+    server = socketserver.ThreadingTCPServer(("127.0.0.1", 0), Handler)
+    threading.Thread(target=server.serve_forever, daemon=True).start()
+    return f"http://127.0.0.1:{server.server_address[1]}", resets, server
+
+
+def test_audit_resets_a_stateful_http_agent_before_every_scenario(tmp_path: Path):
+    base, resets, server = _start_example_webhook_agent()
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "lifeforge.cli", "audit", "--endpoint", f"{base}/act", "--reset-endpoint",
+             f"{base}/reset", "--domain", "procurement", "--scenarios", "4", "--out", "kit", "--no-pdf"],
+            cwd=tmp_path, capture_output=True, text=True, encoding="utf-8", timeout=300,
+        )
+    finally:
+        server.shutdown()
+    assert result.returncode == 0, result.stdout + result.stderr
+    kit = tmp_path / "kit"
+    report = json.loads((kit / "raw_data.json").read_text(encoding="utf-8"))["report"]
+    assert resets["n"] >= report["total_evaluations"] > 0  # every episode starts from a clean agent
+    # The example agent follows the tool schemas: its baseline scenario is a pass, not a tool-error cascade.
+    assert "CASCADING_TOOL_FAILURE" not in report.get("violation_breakdown", {})
+    # The kit re-creates the same setup: the gate and the reproduction script both carry the reset URL.
+    assert f"reset-endpoint: \"{base}/reset\"" in (kit / "ci" / "lifeforge-gate.yml").read_text(encoding="utf-8")
+    script = (kit / "reproduction_commands.sh").read_text(encoding="utf-8")
+    assert "lifeforge audit" in script and f"--reset-endpoint {base}/reset" in script
+    assert "byte-identical" not in script
+
+
+def test_reproduction_reruns_the_audit_not_the_model_label():
+    from lifeforge.reporting.audit import _reproduction_commands
+
+    script = _reproduction_commands(
+        {}, target="agent.py:agent", model="gpt-oss-20b via Groq", scenarios=20, seed=42,
+        domain="customer_support", frontier=True,
+    )
+    assert "lifeforge audit" in script and "--target agent.py:agent" in script and "--frontier" in script
+    assert "lifeforge test" not in script  # --model on an audit is only a label

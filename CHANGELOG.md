@@ -40,6 +40,16 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
   `transfer_funds`, purchase-order loops) apply only when the trace used those tools.
 - No tool guard is generated for unfinished work; the remediation says to fix the prompt or
   workflow instead.
+- **`audit` and `surface` never reset an HTTP agent between scenarios.** A stateful agent
+  carried one scenario's conversation into the next. Both commands now accept
+  `--reset-endpoint`, and the generated CI gate and the GitHub Action pass it on.
+- **The reproduction script promised "byte-identical" results and re-ran the wrong command.**
+  It turned the audit's `--model` display label into a `lifeforge test --model` call, and had
+  no command at all for HTTP agents. It now re-runs the same `lifeforge audit` (agent, reset
+  URL, domain or spec, frontier, scenarios, seed). It says that a sampled LLM agent's results
+  vary between runs.
+- `examples/webhook_agent_server.py` used outdated argument names, so every call failed
+  schema validation. It now follows the tool schemas and orders at the quoted price.
 
 ### Added
 

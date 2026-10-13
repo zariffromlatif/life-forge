@@ -94,6 +94,9 @@ def _rate_lines(report: dict[str, Any]) -> list[str]:
     ]
 
 
+BACKSLASH = "\\"
+
+
 def _reproduction_commands(
     report: dict[str, Any],
     *,
@@ -102,20 +105,43 @@ def _reproduction_commands(
     scenarios: int,
     seed: int,
     domain: str | None,
+    endpoint: str | None = None,
+    reset_endpoint: str | None = None,
+    domain_spec: str | None = None,
+    frontier: bool = False,
 ) -> str:
     """Build the shell script that reproduces the audit."""
     lines = [
         "#!/usr/bin/env bash",
         "# Reproduction commands for this LIFE FORGE audit.",
         "#",
-        "# The verdicts in this bundle come from a deterministic invariant policy",
-        "# oracle: the same seed and the same agent produce byte-identical",
-        "# violations. Re-running these commands regenerates every artifact here.",
+        "# Verdicts come from a deterministic, rule-based oracle and the scenario set is",
+        "# regenerated exactly from the seed. A scripted agent therefore reproduces the same",
+        "# violations; a sampled (LLM) agent's responses vary between runs, so compare",
+        "# failure rates rather than single episodes.",
         "set -euo pipefail",
         "",
         "pip install 'lifeforge[all]'",
         "",
     ]
+
+    if target or endpoint:
+        # Re-run the audit itself: same agent, scenarios, seed and domain.
+        flags = [f"--target {shlex.quote(target)}"] if target else [f"--endpoint {shlex.quote(str(endpoint))}"]
+        if not target and reset_endpoint:
+            flags.append(f"--reset-endpoint {shlex.quote(reset_endpoint)}")
+        if domain_spec:
+            flags.append(f"--domain-spec {shlex.quote(domain_spec)}")
+        elif domain:
+            flags.append(f"--domain {shlex.quote(domain)}")
+        if frontier:
+            flags.append("--frontier")
+        flags += [f"--scenarios {scenarios}", f"--seed {seed}", "--out audit_rerun"]
+        lines.append("# Re-run this audit; it regenerates every artifact in a new folder.")
+        lines.append("lifeforge audit " + BACKSLASH)
+        lines.extend(f"  {flag} " + BACKSLASH for flag in flags[:-1])
+        lines.extend([f"  {flags[-1]}", ""])
+        return "\n".join(lines) + "\n"
 
     domain_flag = [f"  --domain {shlex.quote(domain)} \\"] if domain else []
     # Both benchmark commands exit 1 when critical vulnerabilities are found
@@ -524,6 +550,10 @@ def build_audit_bundle(
     override_map: dict[str, dict[str, Any]] | None = None,
     include_pdf: bool = True,
     generated_utc: str | None = None,
+    endpoint: str | None = None,
+    reset_endpoint: str | None = None,
+    domain_spec: str | None = None,
+    frontier: bool = False,
 ) -> dict[str, Path]:
     """Write the complete audit bundle and return the paths produced.
 
@@ -597,6 +627,10 @@ def build_audit_bundle(
             scenarios=scenarios,
             seed=seed,
             domain=domain,
+            endpoint=endpoint,
+            reset_endpoint=reset_endpoint,
+            domain_spec=domain_spec,
+            frontier=frontier,
         ),
         encoding="utf-8",
     )

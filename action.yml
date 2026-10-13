@@ -219,6 +219,7 @@ runs:
         LF_REPORT: ${{ inputs.report-path }}
         LF_TARGET: ${{ inputs.surface-agent-target || inputs.target }}
         LF_ENDPOINT: ${{ inputs.surface-endpoint || inputs.endpoint }}
+        LF_RESET_ENDPOINT: ${{ inputs.reset-endpoint }}
         LF_HARDENED: ${{ inputs.surface-hardened }}
         LF_AGENT_NAME: ${{ inputs.surface-agent-name }}
         LF_SAVE_CURRENT: ${{ inputs.surface-save-current }}
@@ -240,6 +241,7 @@ runs:
           CMD+=(--target "$LF_TARGET")
         elif [ -n "$LF_ENDPOINT" ]; then
           CMD+=(--endpoint "$LF_ENDPOINT")
+          if [ -n "$LF_RESET_ENDPOINT" ]; then CMD+=(--reset-endpoint "$LF_RESET_ENDPOINT"); fi
         elif [ "$LF_HARDENED" = "true" ]; then
           CMD+=(--hardened)
         elif [ -n "$LF_AGENT_NAME" ]; then

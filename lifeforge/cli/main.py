@@ -726,7 +726,9 @@ def cmd_audit(args: argparse.Namespace) -> None:
                 print(f"  [FAIL] Could not load agent '{args.target}': {exc}")
                 sys.exit(1)
         elif getattr(args, "endpoint", None):
-            agent = HTTPAgentAdapter(endpoint=args.endpoint, name="RemoteHTTPAgent")
+            agent = HTTPAgentAdapter(
+                endpoint=args.endpoint, reset_endpoint=getattr(args, "reset_endpoint", None), name="RemoteHTTPAgent"
+            )
         else:
             print("  [FAIL] Provide either --input report.json or --target agent.py:my_agent")
             sys.exit(1)
@@ -771,6 +773,10 @@ def cmd_audit(args: argparse.Namespace) -> None:
         scenarios=report.get("generations") or getattr(args, "scenarios", 30),
         seed=report.get("seed") if report.get("seed") is not None else getattr(args, "seed", 42),
         include_pdf=not getattr(args, "no_pdf", False),
+        endpoint=getattr(args, "endpoint", None),
+        reset_endpoint=getattr(args, "reset_endpoint", None),
+        domain_spec=getattr(args, "domain_spec", None),
+        frontier=getattr(args, "frontier", False),
     )
 
     from lifeforge.reporting.engagement import write_regression_kit, write_security_review_answers
@@ -787,6 +793,7 @@ def cmd_audit(args: argparse.Namespace) -> None:
                 runner,
                 target=getattr(args, "target", None),
                 endpoint=getattr(args, "endpoint", None),
+                reset_endpoint=getattr(args, "reset_endpoint", None),
                 domain_spec=getattr(args, "domain_spec", None),
                 domain=None if getattr(args, "domain_spec", None) else getattr(args, "domain", None),
                 scenarios=args.scenarios,
@@ -923,7 +930,11 @@ def cmd_surface(args: argparse.Namespace) -> None:
     elif getattr(args, "endpoint", None):
         from lifeforge.sandbox.http_agent import HTTPAgentAdapter
 
-        agent = HTTPAgentAdapter(endpoint=args.endpoint, name=args.agent_name or "RemoteHTTPAgent")
+        agent = HTTPAgentAdapter(
+            endpoint=args.endpoint,
+            reset_endpoint=getattr(args, "reset_endpoint", None),
+            name=args.agent_name or "RemoteHTTPAgent",
+        )
     else:
         from lifeforge.sandbox.agent import RuleBasedPurchasingAgent
 
@@ -1366,6 +1377,7 @@ def main() -> None:
     audit_parser.add_argument("--input", type=str, default=None, help="Existing benchmark JSON report (skips the live run)")
     audit_parser.add_argument("--target", type=str, default=None, help="Agent spec to audit (e.g. agent.py:my_agent)")
     audit_parser.add_argument("--endpoint", type=str, default=None, help="HTTP webhook agent to audit")
+    audit_parser.add_argument("--reset-endpoint", type=str, default=None, help="HTTP URL that resets the agent's state between scenarios (needed for stateful agents)")
     audit_parser.add_argument("--customer", type=str, default=None, help="Customer name for the deliverable")
     audit_parser.add_argument("--model", type=str, default=None, help="Model label for the reproducibility appendix")
     audit_parser.add_argument("--hardware", type=str, default=None, help="Hardware description for the appendix")
@@ -1436,6 +1448,7 @@ def main() -> None:
     surface_parser.add_argument("--label", type=str, default=None, help="Optional label recorded in the snapshot (e.g. a commit SHA)")
     surface_parser.add_argument("--target", type=str, default=None, help="Agent spec to evaluate (e.g. agent.py:my_agent)")
     surface_parser.add_argument("--endpoint", type=str, default=None, help="HTTP webhook agent to evaluate")
+    surface_parser.add_argument("--reset-endpoint", type=str, default=None, help="HTTP URL that resets the agent's state between scenarios (needed for stateful agents)")
     surface_parser.add_argument("--agent-name", type=str, default=None, help="Label for the built-in reference agent")
     surface_parser.add_argument("--hardened", action="store_true", help="Use the hardened (non-vulnerable) reference agent")
     surface_parser.add_argument("--domain", type=str, default=None, help="Scenario domain to campaign against")
