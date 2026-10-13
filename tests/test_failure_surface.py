@@ -197,7 +197,7 @@ class TestCapture:
         assert snapshot["elites_count"] == len(snapshot["cells"])
         assert snapshot["critical_failures_count"] == sum(1 for c in snapshot["cells"].values() if c["critical"])
         for record in snapshot["cells"].values():
-            assert set(record) == {"cell", "coords", "fitness", "failed", "critical", "category", "severity", "steps", "mutations", "generation"}
+            assert set(record) == {"cell", "coords", "fitness", "failed", "invalid", "critical", "category", "severity", "steps", "mutations", "generation"}
             assert len(record["coords"]) == 3
 
     def test_round_trip_through_disk(self, tmp_path: Path):

@@ -42,6 +42,8 @@ class EvolutionaryRunSummary:
     failed_evaluations: int | None = None
     critical_evaluations: int | None = None
     seed: int | None = None
+    #: Episodes that were neither pass nor fail (the agent failed to respond).
+    invalid_evaluations: int | None = None
 
 
 #: Lineage marker recorded on the unmutated baseline elite.  It is not a
@@ -252,4 +254,5 @@ class EvolutionEngine:
             failed_evaluations=getattr(self.archive, "failed_evaluations", None),
             critical_evaluations=getattr(self.archive, "critical_evaluations", None),
             seed=self.seed,
+            invalid_evaluations=getattr(self.archive, "invalid_evaluations", None),
         )

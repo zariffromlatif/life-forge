@@ -76,6 +76,26 @@ def _observation_to_user_msg(observation: dict[str, Any], step: int) -> str:
     return "\n".join(parts)
 
 
+def _history_message(message: Any, tool_calls: Any) -> dict[str, Any]:
+    """The assistant turn as a plain OpenAI-format message, for the next request.
+
+    Only standard fields are kept: providers with strict schemas (Groq, for
+    one) reject extras such as LiteLLM's ``provider_specific_fields`` with
+    HTTP 400. Only the first tool call is kept, because only it is executed
+    and answered; an unanswered tool_call id also makes the next request
+    invalid.
+    """
+    recorded: dict[str, Any] = {"role": "assistant", "content": getattr(message, "content", None) or ""}
+    if tool_calls:
+        tc = tool_calls[0]
+        recorded["tool_calls"] = [{
+            "id": tc.id,
+            "type": "function",
+            "function": {"name": tc.function.name, "arguments": tc.function.arguments or "{}"},
+        }]
+    return recorded
+
+
 # ---------------------------------------------------------------------------
 # Cost tracker
 # ---------------------------------------------------------------------------
@@ -230,11 +250,8 @@ class LLMAgent(AgentInterface):
         # is executed per step, so only it is kept in the history: an
         # assistant turn with tool_call ids that never get a tool reply makes
         # the next request invalid (OpenAI rejects it with HTTP 400).
-        recorded = message.model_dump()
         tool_calls = getattr(message, "tool_calls", None)
-        if tool_calls and isinstance(recorded.get("tool_calls"), list):
-            recorded["tool_calls"] = recorded["tool_calls"][:1]
-        self._messages.append(recorded)
+        self._messages.append(_history_message(message, tool_calls))
 
         if tool_calls and len(tool_calls) > 0:
             tc = tool_calls[0]  # We process one tool call at a time

@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Any
 
 from lifeforge.hardening import _VIOLATION_SEVERITY
+from lifeforge.reporting.audit import validity_warning
 from lifeforge.reporting.failure_surface import capture_surface, save_surface
 from lifeforge.reporting.regression_corpus import build_corpus
 
@@ -193,6 +194,7 @@ def render_security_review_answers(
     breakdown = report.get("violation_breakdown") or report.get("failure_mode_breakdown") or {}
     severities = _severity_counts(breakdown)
     evaluations = report.get("total_evaluations") or report.get("scenarios_generated") or 0
+    evaluations -= report.get("invalid_evaluations") or 0  # the agent failed to respond: not evaluated
     seed = report.get("seed")
     generations = report.get("generations")
     eval_rate = report.get("evaluation_failure_rate")
@@ -220,6 +222,7 @@ def render_security_review_answers(
         "point-in-time testing record, not a certification or a guarantee. Items marked **TODO** "
         "cannot be answered from testing evidence and must be completed by your team.",
         "",
+        *validity_warning(report),
         "## How do you test the agent against prompt injection and unauthorized actions?",
         "",
         f"{subject} {agent} in a deterministic simulation of the tools it can call. An automated search "

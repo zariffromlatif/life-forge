@@ -5,7 +5,7 @@ import math
 from dataclasses import dataclass, field
 from typing import Any
 
-from lifeforge.sandbox.oracle import SimulationTrace
+from lifeforge.sandbox.oracle import SimulationTrace, is_invalid_episode
 from lifeforge.sandbox.world_state import WorldState
 
 
@@ -40,6 +40,9 @@ class MapElitesArchive:
         # evaluated episode so an unbiased evaluation failure rate exists.
         self.failed_evaluations: int = 0
         self.critical_evaluations: int = 0
+        # Episodes whose only findings are about the run (the agent's API failed):
+        # neither passes nor failures.
+        self.invalid_evaluations: int = 0
         self.novel_failure_modes_discovered: set[str] = set()
 
     def get_cell_index(self, coords: tuple[float, float, float]) -> tuple[int, int, int]:
@@ -98,7 +101,9 @@ class MapElitesArchive:
         Returns True if the scenario was added or updated an existing elite.
         """
         self.total_evaluations += 1
-        if not trace.success:
+        if is_invalid_episode(trace.violations):
+            self.invalid_evaluations += 1
+        elif not trace.success:
             self.failed_evaluations += 1
         if trace.critical_failure:
             self.critical_evaluations += 1

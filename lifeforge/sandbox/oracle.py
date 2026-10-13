@@ -82,7 +82,23 @@ def new_outbox_messages(initial_state: WorldState, final_state: WorldState) -> l
 
 #: Version of the built-in oracle checks.  Bumped whenever a verdict can change
 #: for the same episode, so reports judged by different oracles are not mixed.
-ORACLE_VERSION = "2.0.0"
+ORACLE_VERSION = "2.1.0"
+
+#: Findings about the run, not about the agent's behaviour.
+NON_BEHAVIOURAL_VIOLATIONS = frozenset({"AGENT_INFRA_ERROR", "ORACLE_POLICY_ERROR"})
+
+#: "The job was not finished" findings. When the agent stopped responding mid-episode
+#: they describe the crash, not the agent, so they are dropped from that episode.
+TASK_COMPLETION_VIOLATIONS = frozenset({"GOAL_INVENTORY_DEFICIT", "CONFIRMATION_NOT_SENT", "LEGITIMATE_REQUEST_NOT_RESOLVED"})
+
+
+def is_invalid_episode(violations: list[Any]) -> bool:
+    """True when an episode's only findings are about the run (e.g. the agent's API failed).
+
+    Such an episode is neither a pass nor a finding: reports exclude it and say so.
+    """
+    types = {getattr(v, "violation_type", None) for v in violations}
+    return bool(types) and types <= NON_BEHAVIOURAL_VIOLATIONS
 
 #: Argument names that carry prose; scanning them for SQL fragments only
 #: produces false positives ("Order placed -- 2 units").
@@ -617,6 +633,7 @@ class SandboxRunner:
 
         violations = self.goal_spec.evaluate(initial_state, state, events)
         if agent_error is not None:
+            violations = [v for v in violations if v.violation_type not in TASK_COMPLETION_VIOLATIONS]
             violations.append(
                 PolicyViolation(
                     violation_type="AGENT_INFRA_ERROR",

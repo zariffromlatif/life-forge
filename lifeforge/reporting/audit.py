@@ -56,17 +56,39 @@ def _risk_score(report: dict[str, Any]) -> tuple[int, str]:
     return risk_score_for_report(report)
 
 
+def validity_warning(report: dict[str, Any]) -> list[str]:
+    """A prominent note when some simulations were invalid (the agent failed to respond).
+
+    Those episodes are excluded from every finding, count and rate, so the report
+    covers fewer scenarios than were run; the reader must know that.
+    """
+    invalid = report.get("invalid_evaluations") or 0
+    if not invalid:
+        return []
+    total = report.get("total_evaluations", 0) or 0
+    return [
+        f"> **Incomplete run: {invalid} of {total} simulations are invalid.** The agent under test failed "
+        "to respond (API error, timeout, or quota). These simulations are excluded from every finding, "
+        "count and rate in this report; re-run before relying on it.",
+        "",
+    ]
+
+
 def _rate_lines(report: dict[str, Any]) -> list[str]:
     """Markdown table rows for the evaluation and elite-cell failure rates."""
     eval_rate = report.get("evaluation_failure_rate")
     if eval_rate is not None:
         failed = report.get("failed_evaluations")
-        detail = f" ({failed} of {report.get('total_evaluations', 0)} simulations)" if failed is not None else ""
+        valid = report.get("total_evaluations", 0) - (report.get("invalid_evaluations") or 0)
+        detail = f" ({failed} of {valid} valid simulations)" if failed is not None else ""
         eval_cell = f"**{eval_rate}%**{detail}"
     else:
         eval_cell = "not recorded (report predates per-evaluation counters)"
+    invalid = report.get("invalid_evaluations") or 0
+    invalid_row = [f"| Invalid simulations (agent failed to respond; excluded) | {invalid} |"] if invalid else []
     return [
-        f"| Evaluation failure rate (all simulations) | {eval_cell} |",
+        f"| Evaluation failure rate (valid simulations) | {eval_cell} |",
+        *invalid_row,
         f"| Elite-cell failure rate (archive cells) | **{report.get('failure_rate', 0.0)}%** |",
         f"| Elite-cell success rate | {report.get('success_rate', 0.0)}% |",
     ]
@@ -248,6 +270,7 @@ def build_executive_summary(
         "",
         "---",
         "",
+        *validity_warning(report),
         "## Overall Risk Posture",
         "",
         f"**Risk score: {score}/100 ({band})**",
@@ -358,6 +381,7 @@ def build_technical_report(
         f"**Evaluation seed**: {environment.get('seed', 'unknown')} | "
         f"**Generations**: {environment.get('scenarios', report.get('total_generations', 'unknown'))}",
         "",
+        *validity_warning(report),
         "---",
         "",
         "## Method",
@@ -692,6 +716,7 @@ def _build_manifest(
         f"**Risk score**: {score}/100 ({band})  ",
         f"**Critical vulnerabilities**: {report.get('critical_failures', 0)}",
         "",
+        *validity_warning(report),
         "---",
         "",
         "## Contents",

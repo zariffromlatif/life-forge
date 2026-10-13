@@ -25,6 +25,7 @@ from typing import Any
 
 from lifeforge.evolution.engine import EvolutionaryRunSummary
 from lifeforge.hardening import _VIOLATION_SEVERITY
+from lifeforge.sandbox.oracle import NON_BEHAVIOURAL_VIOLATIONS, is_invalid_episode
 
 #: Coordinate precision stored in snapshots; keeps JSON diffs stable.
 _COORD_PRECISION = 9
@@ -62,24 +63,32 @@ def capture_surface(
     cells: dict[str, dict[str, Any]] = {}
     mode_breakdown: dict[str, int] = {}
 
+    invalid_cells = 0
     for elite in summary.elites:
         trace = elite.trace
-        category = trace.failure_category
+        # The agent failed to respond: neither a pass nor a failure, never compared.
+        invalid = is_invalid_episode(trace.violations)
+        invalid_cells += invalid
+        category = None if invalid else trace.failure_category
+        if category in NON_BEHAVIOURAL_VIOLATIONS:
+            behavioural = [v.violation_type for v in trace.violations if v.violation_type not in NON_BEHAVIOURAL_VIOLATIONS]
+            category = behavioural[0] if behavioural else None
         coords = [round(float(value), _COORD_PRECISION) for value in elite.coords]
         record = {
             "cell": "{},{},{}".format(*elite.cell_index),
             "coords": coords,
             "fitness": round(float(elite.fitness), 6),
-            "failed": not trace.success,
+            "failed": not trace.success and not invalid,
+            "invalid": invalid,
             "critical": bool(trace.critical_failure),
             "category": category,
-            "severity": _severity_of(category) if not trace.success else None,
+            "severity": _severity_of(category) if category else None,
             "steps": trace.total_steps,
             "mutations": sorted(set(elite.mutations_applied)),
             "generation": elite.generation,
         }
         cells[record["cell"]] = record
-        if not trace.success and category:
+        if record["failed"] and category:
             mode_breakdown[category] = mode_breakdown.get(category, 0) + 1
 
     return {
@@ -95,6 +104,7 @@ def capture_surface(
         "elites_count": summary.elites_count,
         "critical_failures_count": summary.critical_failures_count,
         "failure_mode_breakdown": dict(sorted(mode_breakdown.items())),
+        "invalid_cells": invalid_cells,
         "cells": dict(sorted(cells.items())),
     }
 
@@ -200,8 +210,11 @@ def diff_surfaces(baseline: dict[str, Any], current: dict[str, Any]) -> SurfaceD
 
     changed_failures: list[dict[str, Any]] = []
 
+    # A cell with no valid run in either snapshot (the agent failed to respond) says
+    # nothing about the agent: skip it rather than call it fixed or regressed.
+    skipped = {cell for cells in (base_cells, curr_cells) for cell, record in cells.items() if record.get("invalid")}
     for cell, record in curr_cells.items():
-        if not record.get("failed"):
+        if not record.get("failed") or cell in skipped:
             continue
         base_record = base_cells.get(cell)
         if base_record is None or not base_record.get("failed"):
@@ -220,7 +233,7 @@ def diff_surfaces(baseline: dict[str, Any], current: dict[str, Any]) -> SurfaceD
             changed_failures.append(changed)
 
     for cell, record in base_cells.items():
-        if not record.get("failed"):
+        if not record.get("failed") or cell in skipped:
             continue
         curr_record = curr_cells.get(cell)
         if curr_record is None or not curr_record.get("failed"):
@@ -247,6 +260,11 @@ def diff_surfaces(baseline: dict[str, Any], current: dict[str, Any]) -> SurfaceD
     critical_delta = int(current.get("critical_failures_count") or 0) - int(baseline.get("critical_failures_count") or 0)
 
     warnings: list[str] = []
+    if skipped:
+        warnings.append(
+            f"{len(skipped)} cell(s) had no valid run (the agent failed to respond) and were not compared; "
+            "re-run to cover them."
+        )
     for key in ("domain", "seed"):
         if key in baseline and key in current and baseline.get(key) != current.get(key):
             warnings.append(

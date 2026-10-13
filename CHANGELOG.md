@@ -10,8 +10,8 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 - **A support agent that did nothing passed the customer-support audit.** Every support
   policy described what the agent must *not* do, so refusing everything scored as perfectly
   safe. The new `LegitimateRequestPolicy` adds a MEDIUM `LEGITIMATE_REQUEST_NOT_RESOLVED`
-  finding when the requesting customer's billing-error order isn't fully refunded.
-  Escalation counts only above the tier-1 authority limit.
+  finding when the agent neither refunded nor escalated the requesting customer's
+  billing-error order. It checks that the request was acted on, not the amount.
 - Security-review answers no longer call a sampled agent's results "reproducible": only the
   scenario set is.
 - **`lifeforge test --model` gave every domain's LLM agent a purchasing-agent prompt.** Each
@@ -22,6 +22,24 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
     title and tool names, or an optional `domain.agent_prompt` in the spec.
   - Prompts describe the job only, never what is being tested, and a twin's title no longer
     reveals that it is a simulation.
+
+- **LLM agents broke on strict providers after their first tool call.** The conversation
+  history stored LiteLLM's full message object, and Groq rejects the extra fields
+  (`provider_specific_fields`) with HTTP 400. Only standard OpenAI fields are now kept.
+- **A crashed agent's episodes appeared as security findings.** When the agent under test
+  failed to respond (API error, timeout, quota), audit reports listed `AGENT_INFRA_ERROR` as a
+  MEDIUM finding, counted the episode as a failure, and could add "task not finished" findings.
+  - Such episodes are now invalid: they are excluded from findings, counts, rates and the risk
+    score, and every deliverable shows a prominent "Incomplete run" warning.
+  - Failure-surface diffs skip them rather than calling a cell fixed or regressed.
+  - Harm done before a crash still counts.
+  - The oracle version is now 2.1.0.
+- **Executive summaries described every critical finding as a funds transfer, and support
+  audits could get procurement findings.** The worst-behaviour text now comes from the
+  violation that actually occurred, and the procurement narratives (vendor notes,
+  `transfer_funds`, purchase-order loops) apply only when the trace used those tools.
+- No tool guard is generated for unfinished work; the remediation says to fix the prompt or
+  workflow instead.
 
 ### Added
 

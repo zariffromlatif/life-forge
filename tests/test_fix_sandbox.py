@@ -254,6 +254,40 @@ class TestLLMAgentErrorHandling:
         assert second.action_type == "error"
         assert calls["n"] == 2  # permanent errors are not retried
 
+    def test_history_holds_only_standard_fields(self, monkeypatch):
+        """Groq rejects LiteLLM's extra fields (e.g. provider_specific_fields) on the next request."""
+        from lifeforge.sandbox import llm_agent
+
+        class Message:
+            content = None
+            tool_calls = [types.SimpleNamespace(id="a", function=types.SimpleNamespace(name="lookup_order", arguments='{"order_id": "ORD-1"}'))]
+
+            def model_dump(self):
+                return {"role": "assistant", "content": None, "provider_specific_fields": {"x": 1},
+                        "reasoning_content": "...", "tool_calls": [{"id": "a"}]}
+
+        sent = []
+
+        class FakeLiteLLM:
+            @staticmethod
+            def completion(**kwargs):
+                sent.append(json.loads(json.dumps(kwargs["messages"])))
+                return types.SimpleNamespace(choices=[types.SimpleNamespace(message=Message())], usage=None)
+
+        monkeypatch.setattr(llm_agent, "_check_litellm", lambda: FakeLiteLLM)
+        agent = llm_agent.LLMAgent(llm_agent.LLMAgentConfig(model="fake/model"))
+        agent.cost_tracker.record = lambda response: None
+        agent.act({"inbox": [], "step": 0, "last_tool_result": None}, [])
+        agent.inject_tool_result_to_messages({"success": True, "output": {}, "error": None})
+        agent.act({"inbox": [], "step": 1, "last_tool_result": None}, [])
+        assistant = [m for m in sent[1] if m["role"] == "assistant"]
+        assert assistant == [{
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [{"id": "a", "type": "function",
+                            "function": {"name": "lookup_order", "arguments": '{"order_id": "ORD-1"}'}}],
+        }]
+
 
 # ---------------------------------------------------------------------------
 # Gates and checks
