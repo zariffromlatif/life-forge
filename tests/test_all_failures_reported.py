@@ -112,3 +112,13 @@ def test_a_secondary_violation_in_the_same_simulation_gets_its_own_finding():
     # every observed violation type is reported, the critical one first
     assert set(categories) == set(metrics.violation_breakdown)
     assert categories[0] == "UNAUTHORIZED_TOOL_EXECUTION"
+
+
+def test_baseline_recording_reports_progress_for_every_scenario(tmp_path):
+    domain, engine, agent, summary = _audit(generations=4)
+    seen = []
+    write_regression_kit(tmp_path, summary, agent, engine.runner, domain="customer_support", scenarios=4, seed=11,
+                         repeats=2, progress=lambda i, n, r: seen.append((i, n, r)))
+    entries = json.loads((tmp_path / "regression_baseline.json").read_text(encoding="utf-8"))["corpus"]["entries"]
+    assert [i for i, _, _ in seen] == list(range(1, len(entries) + 1))
+    assert {(n, r) for _, n, r in seen} == {(len(entries), 2)}

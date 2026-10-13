@@ -26,7 +26,9 @@ jobs:
   audit:
     if: github.repository == 'zariffromlatif/life-forge'
     runs-on: ubuntu-latest
-    timeout-minutes: 180
+    # Free-tier rate limits make this slow (about 1 minute per episode, and LLM agents
+    # get every failing scenario replayed 3x for the baseline). GitHub's maximum is 360.
+    timeout-minutes: 350
     steps:
       - uses: actions/checkout@v4
 
@@ -41,6 +43,8 @@ jobs:
           pip install -e ".[all]"
 
       - name: Run the audit through the rate-limit proxy
+        # Stop before the job limit so the steps below still upload what was written.
+        timeout-minutes: 330
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           LF_GROQ_MODEL: ${{ github.event.inputs.model }}
@@ -65,6 +69,9 @@ jobs:
           fi
 
       - name: Refuse to upload anything containing the API key
+        id: keycheck
+        # always(): a run that timed out has still written its reports, and they are worth keeping.
+        if: always()
         env:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
         run: |
@@ -73,6 +80,8 @@ jobs:
           fi
 
       - uses: actions/upload-artifact@v4
+        # Upload even after a failure or timeout, but never if the key check failed.
+        if: always() && steps.keycheck.outcome != 'failure'
         with:
           name: sample-audit
           path: sample_audit/

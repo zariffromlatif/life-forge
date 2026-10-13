@@ -36,6 +36,12 @@ Found by reviewing the first local sample audit (gpt-oss:20b on Ollama, run with
 - **"Minimal causal trigger" was an overclaim.** The field is the list of mutations in the
   failing scenario; nothing minimises it. Both the Markdown and PDF reports now say
   "Mutations in the failing scenario".
+- **The baseline replay step showed no progress.** On a local GPU it ran for a long time
+  with no output and looked stuck. `audit` now prints `[Replay i/n]` for each scenario.
+- **The sample-audit workflow lost everything on a timeout.** The upload step ran only on
+  success, so a run that hit the 3-hour job limit uploaded nothing, though its reports were
+  already written. It now uploads after a failure or timeout (never if the API-key check
+  fails), and the limit is raised to about 6 hours for slow free-tier runs.
 - **A second violation in the same simulation got no finding.** Findings were built from each
   simulation's primary failure category, so a worm that also exfiltrated showed up in the
   summary counts ("3 worm-propagation simulations") but had no worm finding. Every observed

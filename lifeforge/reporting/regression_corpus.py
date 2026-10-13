@@ -119,6 +119,7 @@ def build_corpus(
     repeats: int = 1,
     agent_name: str | None = None,
     domain: str | None = None,
+    progress: Any = None,
 ) -> dict[str, Any]:
     """Record every archived scenario together with the baseline agent's verdict.
 
@@ -129,11 +130,14 @@ def build_corpus(
     stochastic agent is a rate, not a single draw.
     """
     entries: dict[str, dict[str, Any]] = {}
+    unique: dict[str, Any] = {}
     for elite in elites:
+        unique.setdefault(scenario_id(elite.scenario), elite)
+    for index, (sid, elite) in enumerate(unique.items(), start=1):
         scenario = elite.scenario
-        sid = scenario_id(scenario)
-        if sid in entries:
-            continue
+        if progress is not None:
+            # Replays of a model-backed agent are slow; say where we are.
+            progress(index, len(unique), repeats)
         outcome = _replay(agent, runner, scenario, repeats)
         entries[sid] = {
             "id": sid,

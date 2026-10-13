@@ -153,6 +153,7 @@ def write_regression_kit(
     frontier: bool = False,
     repeats: int = 1,
     reset_endpoint: str | None = None,
+    progress: Any = None,
 ) -> dict[str, Path]:
     """Save the regression baseline (surface + corpus) and the CI workflow."""
     out = Path(out_dir)
@@ -173,7 +174,7 @@ def write_regression_kit(
             seen.add(id(elite.trace))
             scenarios.append(elite)
     snapshot["corpus"] = build_corpus(
-        scenarios, agent, runner, repeats=repeats, agent_name=snapshot["agent_name"], domain=domain
+        scenarios, agent, runner, repeats=repeats, agent_name=snapshot["agent_name"], domain=domain, progress=progress
     )
     baseline = save_surface(snapshot, out / BASELINE_FILE)
 

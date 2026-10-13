@@ -805,6 +805,7 @@ def cmd_audit(args: argparse.Namespace) -> None:
                 seed=args.seed,
                 frontier=getattr(args, "frontier", False),
                 repeats=repeats,
+                progress=lambda i, n, r: print(f"  [Replay {i}/{n}] scenario x{r}", flush=True),
             )
         )
         for policy in runner.goal_spec.policies:
