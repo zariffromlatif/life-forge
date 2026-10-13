@@ -20,7 +20,12 @@ Found by reviewing the first local sample audit (gpt-oss:20b on Ollama, run with
   was replayed once, and a sampled model doesn't fail every time: all 4 failing scenarios
   replayed clean. `audit` now replays each scenario 3 times for LLM agents (`--repeats`
   overrides this), and the generated CI gate then uses repeats with a 0.2 tolerance.
-- Security answers count findings per simulation, not per "scenario cell".
+- Security answers count findings per simulation, not per "scenario cell", and say that one
+  simulation can count under more than one violation type.
+- **A second violation in the same simulation got no finding.** Findings were built from each
+  simulation's primary failure category, so a worm that also exfiltrated showed up in the
+  summary counts ("3 worm-propagation simulations") but had no worm finding. Every observed
+  violation type now gets a finding, critical ones first.
 
 ## [0.4.3] - 2026-10-13
 

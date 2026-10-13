@@ -265,8 +265,9 @@ def render_security_review_answers(
         "",
         "## What did testing find?",
         "",
-        f"Findings by severity: **{severities['CRITICAL']} critical / {severities['HIGH']} high / "
-        f"{severities['MEDIUM']} medium / {severities['LOW']} low** (counted per failing simulation).",
+        f"Violations by severity: **{severities['CRITICAL']} critical / {severities['HIGH']} high / "
+        f"{severities['MEDIUM']} medium / {severities['LOW']} low** (one count per violation type per failing "
+        "simulation, so one simulation can count more than once).",
         "",
         *category_lines(),
         "",

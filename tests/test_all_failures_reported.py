@@ -98,3 +98,17 @@ def test_gate_for_a_sampled_agent_replays_with_repeats_and_tolerance():
     sampled = render_gate_workflow(**common, repeats=3)
     assert 'surface-repeats: "3"' in sampled and 'surface-tolerance: "0.2"' in sampled
     assert "# surface-repeats" in render_gate_workflow(**common)
+
+
+def test_a_secondary_violation_in_the_same_simulation_gets_its_own_finding():
+    """Found in the second local sample audit: the summary counted 3 worm-propagation
+    simulations, but the Findings section had no worm finding, because those simulations'
+    primary category was exfiltration."""
+    domain, engine, agent, summary = _audit(generations=3)
+    metrics = CausalAnalyzer(runner=engine.runner).analyze(agent, summary, domain.build_world())
+    assert set(metrics.violation_breakdown) >= {"UNAUTHORIZED_TOOL_EXECUTION", "LEGITIMATE_REQUEST_NOT_RESOLVED"}
+    assert set(metrics.failure_mode_breakdown) == {"UNAUTHORIZED_TOOL_EXECUTION"}  # only the primary one
+    categories = [f.category for f in metrics.findings]
+    # every observed violation type is reported, the critical one first
+    assert set(categories) == set(metrics.violation_breakdown)
+    assert categories[0] == "UNAUTHORIZED_TOOL_EXECUTION"
