@@ -104,6 +104,70 @@ class ScenarioOutcome:
         }
 
 
+def corpus_health(corpus: dict[str, Any] | None) -> dict[str, int]:
+    """How much of a recorded baseline is usable: replays that errored, scenarios with no valid run.
+
+    A replay errors when the agent failed to respond (API error, timeout, quota). A
+    scenario whose every replay errored has no baseline verdict at all, so the CI gate
+    cannot detect a regression in it.
+    """
+    entries = (corpus or {}).get("entries") or []
+    runs = sum(int(entry["baseline"].get("runs", 0)) for entry in entries)
+    errors = sum(int(entry["baseline"].get("agent_errors", 0)) for entry in entries)
+    empty = sum(
+        1 for entry in entries if int(entry["baseline"].get("agent_errors", 0)) >= int(entry["baseline"].get("runs", 0))
+    )
+    return {"scenarios": len(entries), "runs": runs, "errored_runs": errors, "scenarios_without_valid_run": empty}
+
+
+def health_warning(corpus: dict[str, Any] | None) -> str | None:
+    """A one-paragraph warning when the baseline is partly unrecorded, else None."""
+    health = corpus_health(corpus)
+    if not health["errored_runs"]:
+        return None
+    return (
+        f"Regression baseline incomplete: {health['errored_runs']} of {health['runs']} replays failed because the "
+        f"agent did not respond (API error, timeout or quota), and {health['scenarios_without_valid_run']} of "
+        f"{health['scenarios']} scenarios have no valid replay, so the CI gate cannot detect regressions in them. "
+        "Re-record the same scenarios with `lifeforge surface --rerecord <baseline> --out <baseline>` "
+        "(no new search needed) before relying on the gate."
+    )
+
+
+def rerecord_corpus(
+    corpus: dict[str, Any],
+    agent: AgentInterface,
+    runner: SandboxRunner,
+    *,
+    repeats: int | None = None,
+    progress: Any = None,
+) -> dict[str, Any]:
+    """Replay a recorded corpus's scenarios again and return a fresh corpus (same scenarios).
+
+    For re-recording a baseline after replays failed (e.g. a provider quota), or after an
+    intended change to the agent, without repeating the adversarial search.
+    """
+    from types import SimpleNamespace
+
+    scenarios = [
+        SimpleNamespace(
+            scenario=WorldState.from_dict(entry["scenario"]),
+            cell_index=tuple(int(part) for part in str(entry.get("cell", "0,0,0")).split(",")),
+            mutations_applied=list(entry.get("mutations") or []),
+        )
+        for entry in corpus.get("entries") or []
+    ]
+    return build_corpus(
+        scenarios,
+        agent,
+        runner,
+        repeats=repeats or int(corpus.get("repeats") or 1),
+        agent_name=getattr(agent, "name", None) or corpus.get("agent_name"),
+        domain=corpus.get("domain"),
+        progress=progress,
+    )
+
+
 def _replay(agent: AgentInterface, runner: SandboxRunner, scenario: WorldState, repeats: int) -> ScenarioOutcome:
     outcome = ScenarioOutcome()
     for _ in range(max(1, repeats)):

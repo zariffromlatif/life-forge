@@ -821,6 +821,14 @@ def cmd_audit(args: argparse.Namespace) -> None:
         has_regression_gate=live_run is not None,
     )
 
+    baseline_warning = None
+    if "regression_baseline" in written:
+        from lifeforge.reporting.regression_corpus import health_warning
+
+        baseline_warning = health_warning(json.loads(Path(written["regression_baseline"]).read_text(encoding="utf-8")).get("corpus"))
+        if baseline_warning:
+            print(f"\n  [WARN] {baseline_warning}")
+
     manifest = Path(args.out) / "MANIFEST.md"
     if manifest.exists():
         kit_lines = ["", "## Engagement kit", ""]
@@ -832,6 +840,8 @@ def cmd_audit(args: argparse.Namespace) -> None:
         for key, label in descriptions.items():
             if key in written:
                 kit_lines.append(f"- `{Path(written[key]).relative_to(Path(args.out)).as_posix()}` - {label}")
+        if baseline_warning:
+            kit_lines += ["", f"> **{baseline_warning}**"]
         manifest.write_text(manifest.read_text(encoding="utf-8").rstrip() + "\n" + "\n".join(kit_lines) + "\n", encoding="utf-8")
 
     print()
@@ -893,6 +903,17 @@ def cmd_gateway(args: argparse.Namespace) -> None:
     print("  Load it in production with:")
     print(f"    gateway = PolicyGateway.from_config('{out_path.as_posix()}')")
     print("    guarded = gateway.wrap_executor(original_executor)")
+
+
+def _elites_and_failures(summary: Any) -> list[Any]:
+    """Every archived elite plus every failing simulation (failures often share a cell)."""
+    seen: set[int] = set()
+    out = []
+    for elite in [*summary.elites, *(getattr(summary, "failures", None) or [])]:
+        if id(elite.trace) not in seen:
+            seen.add(id(elite.trace))
+            out.append(elite)
+    return out
 
 
 def cmd_surface(args: argparse.Namespace) -> None:
@@ -959,6 +980,30 @@ def cmd_surface(args: argparse.Namespace) -> None:
         frontier_mutators=getattr(args, "frontier", False),
     )
 
+    # Mode 4: re-record a baseline's scenarios (no search), e.g. after replays hit a quota.
+    if getattr(args, "rerecord", None):
+        from lifeforge.reporting.regression_corpus import health_warning, rerecord_corpus
+
+        if out_path is None:
+            print("  [FAIL] --rerecord requires --out PATH for the new baseline.")
+            sys.exit(1)
+        snapshot = load_surface(args.rerecord)
+        if not snapshot.get("corpus"):
+            print("  [FAIL] That baseline has no regression corpus to re-record.")
+            sys.exit(1)
+        entries = len(snapshot["corpus"].get("entries") or [])
+        print(f"  Re-recording {entries} scenarios from {args.rerecord} (no search)...")
+        snapshot["corpus"] = rerecord_corpus(
+            snapshot["corpus"], agent, engine.runner, repeats=getattr(args, "repeats", None),
+            progress=lambda i, n, r: print(f"  [Replay {i}/{n}] scenario x{r}", flush=True),
+        )
+        saved = save_surface(snapshot, out_path)
+        warning = health_warning(snapshot["corpus"])
+        print(f"\n  [WARN] {warning}" if warning else f"\n  [OK] Baseline re-recorded: {saved}")
+        if warning:
+            sys.exit(1)
+        return
+
     print("=" * 64)
     print("  LIFE FORGE -- Failure Surface Campaign")
     print("=" * 64)
@@ -1000,9 +1045,11 @@ def cmd_surface(args: argparse.Namespace) -> None:
         if out_path is None:
             print("  [FAIL] --record requires --out PATH for the snapshot file.")
             sys.exit(1)
-        print(f"  Recording regression corpus ({len(summary.elites)} scenarios x {record_repeats} run(s))...")
+        recorded = _elites_and_failures(summary)
+        print(f"  Recording regression corpus ({len(recorded)} scenarios x {record_repeats} run(s))...")
         snapshot["corpus"] = build_corpus(
-            summary.elites, agent, engine.runner, repeats=record_repeats, agent_name=agent.name, domain=domain_name
+            recorded, agent, engine.runner, repeats=record_repeats, agent_name=agent.name, domain=domain_name,
+            progress=lambda i, n, r: print(f"  [Replay {i}/{n}] scenario x{r}", flush=True),
         )
         saved = save_surface(snapshot, out_path)
         print(f"\n  [OK] Surface snapshot + {len(snapshot['corpus']['entries'])}-scenario corpus saved: {saved}")
@@ -1019,7 +1066,8 @@ def cmd_surface(args: argparse.Namespace) -> None:
 
     if getattr(args, "save_current", None):
         snapshot["corpus"] = build_corpus(
-            summary.elites, agent, engine.runner, repeats=record_repeats, agent_name=agent.name, domain=domain_name
+            _elites_and_failures(summary), agent, engine.runner, repeats=record_repeats, agent_name=agent.name,
+            domain=domain_name,
         )
         saved = save_surface(snapshot, args.save_current)
         print(f"  [OK] Current surface saved: {saved}")
@@ -1451,6 +1499,7 @@ def main() -> None:
     surface_parser = subparsers.add_parser("surface", help="Capture or diff an agent's failure surface (MAP-Elites topography) for CI")
     surface_parser.add_argument("--baseline", type=str, default=None, help="Path to the baseline surface snapshot to diff against")
     surface_parser.add_argument("--against", type=str, default=None, help="Diff two stored snapshots without running a campaign")
+    surface_parser.add_argument("--rerecord", type=str, default=None, help="Replay the scenarios of an existing baseline again and save a fresh baseline to --out (no search)")
     surface_parser.add_argument("--record", action="store_true", help="Only capture and save a snapshot (no diff)")
     surface_parser.add_argument("--save-current", type=str, default=None, help="Also save the current snapshot to this path in diff mode")
     surface_parser.add_argument("--label", type=str, default=None, help="Optional label recorded in the snapshot (e.g. a commit SHA)")

@@ -36,6 +36,21 @@ Found by reviewing the first local sample audit (gpt-oss:20b on Ollama, run with
 - **"Minimal causal trigger" was an overclaim.** The field is the list of mutations in the
   failing scenario; nothing minimises it. Both the Markdown and PDF reports now say
   "Mutations in the failing scenario".
+- **A baseline whose replays failed was handed over silently.** In the gpt-oss-120b sample
+  audit, Groq's daily quota ran out during the 3x baseline replays: 18 of 24 failed, and 6 of
+  8 scenarios had no valid replay. The CI gate could not have detected regressions in them,
+  and nothing said so.
+  - `audit` and the MANIFEST now warn whenever replays errored.
+  - New `lifeforge surface --rerecord BASELINE --out NEW` replays a baseline's own scenarios
+    again without a new search. The sample-audit workflow can do the same for an earlier run
+    (`rerecord_run_id`).
+- **`surface --record` dropped failures that shared a cell,** the same bug as `audit`, fixed
+  the same way. It now also shows replay progress.
+- **Worm findings named one tool and paired it with an unrelated event.** The evidence line now
+  shows each event's own tool, and the recommendation names every tool that carried the
+  payload.
+- **Reports showed LiteLLM routing prefixes.** The example agent's report name showed
+  `openai/openai/gpt-oss-120b`; it now shows the model name (`LF_AGENT_NAME` overrides it).
 - **The baseline replay step showed no progress.** On a local GPU it ran for a long time
   with no output and looked stuck. `audit` now prints `[Replay i/n]` for each scenario.
 - **The sample-audit workflow lost everything on a timeout.** The upload step ran only on

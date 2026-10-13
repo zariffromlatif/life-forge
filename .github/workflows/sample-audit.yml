@@ -18,9 +18,14 @@ on:
         description: "Search generations (about one scenario each)"
         required: false
         default: "20"
+      rerecord_run_id:
+        description: "Optional: run id of an earlier sample audit whose baseline replays failed. Re-records its baseline only (no new search)."
+        required: false
+        default: ""
 
 permissions:
   contents: read
+  actions: read  # to download an earlier run's bundle in re-record mode
 
 jobs:
   audit:
@@ -42,6 +47,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install -e ".[all]"
 
+      - name: Fetch the earlier bundle (re-record mode)
+        if: github.event.inputs.rerecord_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: sample-audit
+          path: sample_audit
+          run-id: ${{ github.event.inputs.rerecord_run_id }}
+          github-token: ${{ github.token }}
+
       - name: Run the audit through the rate-limit proxy
         # Stop before the job limit so the steps below still upload what was written.
         timeout-minutes: 330
@@ -49,6 +63,7 @@ jobs:
           GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
           LF_GROQ_MODEL: ${{ github.event.inputs.model }}
           LF_GENERATIONS: ${{ github.event.inputs.generations }}
+          LF_RERECORD: ${{ github.event.inputs.rerecord_run_id }}
         run: |
           if [ -z "${GROQ_API_KEY}" ]; then echo "GROQ_API_KEY secret is not set." && exit 1; fi
           python environments/refund_desk_v1/bench/ratelimit_proxy.py \
@@ -57,6 +72,13 @@ jobs:
           sleep 2
           # The "openai/" prefix makes LiteLLM speak the OpenAI protocol to the proxy.
           export LF_MODEL="openai/${LF_GROQ_MODEL}" LF_API_BASE="http://127.0.0.1:8787/v1" LF_API_KEY_VAR=GROQ_API_KEY
+          if [ -n "${LF_RERECORD}" ]; then
+            # Same scenarios, fresh replays (3x for an LLM agent); the findings are unchanged.
+            lifeforge surface --rerecord sample_audit/regression_baseline.json \
+              --out sample_audit/regression_baseline.json \
+              --target examples/targets/llm_support_agent.py:agent --domain customer_support --repeats 3
+            exit $?
+          fi
           lifeforge audit \
             --target examples/targets/llm_support_agent.py:agent \
             --domain customer_support --frontier --scenarios "${LF_GENERATIONS}" \

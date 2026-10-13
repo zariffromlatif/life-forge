@@ -68,19 +68,24 @@ class DiagnosticMetrics:
     invalid_scenarios: int = 0
 
 
-def _tool_from_evidence(evidence: dict[str, Any] | None) -> str | None:
-    """The tool a violation's own evidence names, if any (propagation sites, adopted tools, tool)."""
+def _tools_from_evidence(evidence: dict[str, Any] | None) -> list[str]:
+    """Every tool a violation's own evidence names (tool, propagation sites, adopted tools), in order."""
     if not isinstance(evidence, dict):
-        return None
-    if isinstance(evidence.get("tool"), str) and evidence["tool"]:
-        return evidence["tool"]
-    for site in evidence.get("propagation_sites") or []:
-        if isinstance(site, dict) and isinstance(site.get("tool"), str) and site["tool"]:
-            return site["tool"]
-    adopted = evidence.get("adopted_tools")
-    if isinstance(adopted, list) and adopted and isinstance(adopted[0], str):
-        return adopted[0]
-    return None
+        return []
+    found: list[str] = []
+    candidates = [evidence.get("tool")]
+    candidates += [site.get("tool") for site in evidence.get("propagation_sites") or [] if isinstance(site, dict)]
+    candidates += list(evidence.get("adopted_tools") or [])
+    for tool in candidates:
+        if isinstance(tool, str) and tool and tool not in found:
+            found.append(tool)
+    return found
+
+
+def _tool_from_evidence(evidence: dict[str, Any] | None) -> str | None:
+    """The first tool a violation's evidence names, if any."""
+    tools = _tools_from_evidence(evidence)
+    return tools[0] if tools else None
 
 
 def _failing_evaluations(elites: list[EliteScenario], failures: list[EliteScenario] | None) -> list[EliteScenario]:
@@ -534,31 +539,33 @@ class CausalAnalyzer:
             # Build trace snippet
             snippet: list[dict[str, Any]] = []
             tool_name = "unknown"
-            evidence_tool = _tool_from_evidence(viol.evidence if viol else None)
+            # The tools the violation itself names (a worm spreads through every tool that
+            # carried the payload, which is not necessarily the call at ``step``).
+            evidence_tools = _tools_from_evidence(viol.evidence if viol else None)
             if viol and 0 <= viol.step < len(worst_elite.trace.events):
                 ev = worst_elite.trace.events[viol.step]
                 action = ev.get("action", {}) or {}
-                # Prefer the tool the violation itself names (a worm spreads through the
-                # tool that carried the payload, which is not always the call at ``step``).
-                tool_name = evidence_tool or action.get("tool_name", "unknown")
+                tool_name = action.get("tool_name") or "unknown"
                 snippet.append({
                     "step": ev.get("step", viol.step),
                     "action": action.get("action_type"),
-                    "tool": tool_name,
+                    "tool": action.get("tool_name"),
                     "thought": action.get("thought"),
                     "arguments": action.get("arguments"),
                 })
             elif worst_elite.trace.events:
                 last_ev = worst_elite.trace.events[-1]
                 action = last_ev.get("action", {}) or {}
-                tool_name = evidence_tool or action.get("tool_name", "unknown")
+                tool_name = action.get("tool_name") or "unknown"
                 snippet.append({
                     "step": last_ev.get("step", 0),
                     "action": action.get("action_type"),
-                    "tool": tool_name,
+                    "tool": action.get("tool_name"),
                     "thought": action.get("thought"),
                 })
 
+            if evidence_tools:
+                tool_name = evidence_tools[0]
             if viol and viol.evidence:
                 # What the oracle actually saw (recipient, arguments, amounts), so the
                 # finding can be checked rather than taken on trust.
@@ -573,6 +580,11 @@ class CausalAnalyzer:
                 rec = (
                     "Fix the agent's prompt or workflow so the legitimate task is completed, then re-test; "
                     "a tool guard blocks actions and cannot add missing work."
+                )
+            elif len(evidence_tools) > 1:
+                rec = (
+                    f"Apply @tool_guard at the boundary of every tool that carried it ({', '.join(evidence_tools)}) "
+                    f"to deterministically block '{cat}'."
                 )
             else:
                 rec = f"Apply @tool_guard at the tool boundary for '{tool_name}' to deterministically block '{cat}'."

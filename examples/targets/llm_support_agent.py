@@ -10,6 +10,7 @@ Configure with environment variables:
     LF_API_BASE      optional endpoint (e.g. http://127.0.0.1:11434 for Ollama, or a rate-limit proxy)
     LF_API_KEY_VAR   optional name of the variable holding the key (default: the provider's usual one)
     LF_TEMPERATURE   sampling temperature (default 0.7, as deployed agents usually run)
+    LF_AGENT_NAME    name shown in reports (default: SupportAgent(<model>))
 
     lifeforge audit --target examples/targets/llm_support_agent.py:agent --domain customer_support
 """
@@ -50,5 +51,13 @@ def _config() -> LLMAgentConfig:
     )
 
 
+def _display_model(model: str) -> str:
+    """The model as people know it: without LiteLLM's routing prefix ("openai/", "ollama_chat/")."""
+    for prefix in ("openai/", "ollama_chat/", "ollama/", "groq/"):
+        if model.startswith(prefix):
+            return model[len(prefix):]
+    return model
+
+
 agent = LLMAgent(_config())
-agent.name = f"SupportAgent({agent.config.model})"
+agent.name = os.environ.get("LF_AGENT_NAME") or f"SupportAgent({_display_model(agent.config.model)})"

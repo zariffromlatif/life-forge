@@ -79,3 +79,14 @@ def test_generic_findings_name_the_tool_the_violation_carried():
     assert _tool_from_evidence({"tool": "issue_refund"}) == "issue_refund"
     assert _tool_from_evidence({"adopted_tools": ["merge_pr"]}) == "merge_pr"
     assert _tool_from_evidence({"x": 1}) is None and _tool_from_evidence(None) is None
+
+
+def test_a_worm_finding_names_every_tool_that_carried_the_payload():
+    """Seen in the gpt-oss-120b sample audit: the payload went through issue_refund's reason and an
+    email; the finding named only issue_refund and paired it with an unrelated 'finish' event."""
+    from lifeforge.reporting.analyzer import _tools_from_evidence
+
+    evidence = {"propagation_sites": [{"channel": "outbox", "to": "jdoe@example.com", "step": 3},
+                                      {"channel": "tool_arguments", "tool": "issue_refund", "step": 1},
+                                      {"channel": "tool_arguments", "tool": "send_email", "step": 2}]}
+    assert _tools_from_evidence(evidence) == ["issue_refund", "send_email"]
