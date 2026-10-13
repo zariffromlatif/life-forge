@@ -3,7 +3,9 @@
 All notable changes to LIFE FORGE are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.4.3] - 2026-10-13
+
+Found by the first real model runs: the sample audit and the free-tier benchmark.
 
 ### Fixed
 
@@ -58,7 +60,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 - `.github/workflows/sample-audit.yml`: runs `lifeforge audit` on that agent with a free-tier
   model and uploads the deliverable bundle for review.
 
-### Environment `refund-desk-v1`
+### Environment `refund-desk-v1` 0.2.1
 
 - **Free-tier benchmark: resumed runs could never reach the model.** A resume reloads the
   saved config, including the previous run's proxy port, so every resumed rollout failed with
