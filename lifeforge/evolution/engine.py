@@ -44,6 +44,8 @@ class EvolutionaryRunSummary:
     seed: int | None = None
     #: Episodes that were neither pass nor fail (the agent failed to respond).
     invalid_evaluations: int | None = None
+    #: Every failing evaluation (``elites`` keeps only the worst one per cell).
+    failures: list[EliteScenario] = field(default_factory=list)
 
 
 #: Lineage marker recorded on the unmutated baseline elite.  It is not a
@@ -255,4 +257,5 @@ class EvolutionEngine:
             critical_evaluations=getattr(self.archive, "critical_evaluations", None),
             seed=self.seed,
             invalid_evaluations=getattr(self.archive, "invalid_evaluations", None),
+            failures=list(getattr(self.archive, "failures", [])),
         )

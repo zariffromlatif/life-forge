@@ -9,6 +9,10 @@ from lifeforge.sandbox.oracle import SimulationTrace, is_invalid_episode
 from lifeforge.sandbox.world_state import WorldState
 
 
+#: Failing evaluations kept for reporting (memory bound for very long searches).
+MAX_FAILURE_LOG = 1000
+
+
 @dataclass
 class EliteScenario:
     """An elite scenario occupying a specific behavioral niche in the MAP-Elites grid."""
@@ -43,6 +47,9 @@ class MapElitesArchive:
         # Episodes whose only findings are about the run (the agent's API failed):
         # neither passes nor failures.
         self.invalid_evaluations: int = 0
+        # Every failing (valid) evaluation, not only the elite kept per cell: many
+        # failures can land in one cell, and an audit must report all of them.
+        self.failures: list[EliteScenario] = []
         self.novel_failure_modes_discovered: set[str] = set()
 
     def get_cell_index(self, coords: tuple[float, float, float]) -> tuple[int, int, int]:
@@ -101,14 +108,26 @@ class MapElitesArchive:
         Returns True if the scenario was added or updated an existing elite.
         """
         self.total_evaluations += 1
+        cell = self.get_cell_index(coords)
+        fitness = self.calculate_fitness(trace)
         if is_invalid_episode(trace.violations):
             self.invalid_evaluations += 1
         elif not trace.success:
             self.failed_evaluations += 1
+            if len(self.failures) < MAX_FAILURE_LOG:
+                self.failures.append(
+                    EliteScenario(
+                        scenario=scenario,
+                        mutations_applied=list(mutations),
+                        trace=trace,
+                        fitness=fitness,
+                        coords=coords,
+                        cell_index=cell,
+                        generation=generation,
+                    )
+                )
         if trace.critical_failure:
             self.critical_evaluations += 1
-        cell = self.get_cell_index(coords)
-        fitness = self.calculate_fitness(trace)
 
         if trace.failure_category:
             self.novel_failure_modes_discovered.add(trace.failure_category)

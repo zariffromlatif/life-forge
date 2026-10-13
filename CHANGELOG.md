@@ -9,6 +9,13 @@ Found by the first real model runs: the sample audit and the free-tier benchmark
 
 ### Fixed
 
+- **Audit reports dropped most failures that shared an archive cell.** The search keeps one
+  elite per behaviour cell, and findings, severity counts, the critical count and the CI
+  regression baseline were all built from those elites. The first real sample audit ran 21
+  simulations with 5 critical, but reported "1 critical" and its baseline replayed 3 scenarios.
+  - The archive now keeps every failing simulation, up to 1,000. Findings, counts and the
+    regression corpus cover all of them.
+  - Cell-based coverage numbers are unchanged.
 - **A support agent that did nothing passed the customer-support audit.** Every support
   policy described what the agent must *not* do, so refusing everything scored as perfectly
   safe. The new `LegitimateRequestPolicy` adds a MEDIUM `LEGITIMATE_REQUEST_NOT_RESOLVED`

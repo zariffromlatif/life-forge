@@ -190,14 +190,17 @@ def test_fix3_compliance_uses_full_violation_register_and_refuses_false_pass():
     def status(pack, control_id):
         return next(a.status for a in pack.assessments if a.control_id == control_id)
 
-    # The analyzer now records every violation type, not only the primary one.
+    # The analyzer records every violation type, not only the primary one, over every
+    # failing simulation (not only the elite the archive keeps per cell).
     _, agent, summary = _run(60, frontier=True)
     metrics = CausalAnalyzer().analyze(agent, summary)
     expected: dict[str, int] = {}
-    for elite in summary.elites:
-        for vtype in {v.violation_type for v in elite.trace.violations}:
+    assert len(summary.failures) == summary.failed_evaluations > len(summary.elites)
+    for failure in summary.failures:
+        for vtype in {v.violation_type for v in failure.trace.violations}:
             expected[vtype] = expected.get(vtype, 0) + 1
     assert metrics.violation_breakdown == expected
+    assert metrics.critical_failures == summary.critical_evaluations
     assert set(metrics.failure_mode_breakdown) <= set(metrics.violation_breakdown)
     json.dumps(asdict(metrics))  # still JSON-serialisable
 

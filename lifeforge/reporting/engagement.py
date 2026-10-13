@@ -153,8 +153,16 @@ def write_regression_kit(
         domain=domain,
         label="audit baseline",
     )
+    # Every failing simulation goes into the corpus, not only the elite kept per cell,
+    # so the gate replays each failure the audit found.
+    seen: set[int] = set()
+    scenarios = []
+    for elite in [*summary.elites, *(getattr(summary, "failures", None) or [])]:
+        if id(elite.trace) not in seen:
+            seen.add(id(elite.trace))
+            scenarios.append(elite)
     snapshot["corpus"] = build_corpus(
-        summary.elites, agent, runner, repeats=repeats, agent_name=snapshot["agent_name"], domain=domain
+        scenarios, agent, runner, repeats=repeats, agent_name=snapshot["agent_name"], domain=domain
     )
     baseline = save_surface(snapshot, out / BASELINE_FILE)
 
@@ -246,7 +254,7 @@ def render_security_review_answers(
         "## What did testing find?",
         "",
         f"Findings by severity: **{severities['CRITICAL']} critical / {severities['HIGH']} high / "
-        f"{severities['MEDIUM']} medium / {severities['LOW']} low** (counted per scenario cell).",
+        f"{severities['MEDIUM']} medium / {severities['LOW']} low** (counted per failing simulation).",
         "",
         *category_lines(),
         "",
