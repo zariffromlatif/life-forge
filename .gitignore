@@ -37,3 +37,6 @@ test_venv/
 # Private business research (never publish)
 monetization_research/
 scripts/verify_monetization_math.py
+
+sample_audit_local*
+*.zip

@@ -478,7 +478,9 @@ def build_technical_report(
                 lines.extend(["**Evidence from the recorded trace**", ""])
                 for event in snippet[:12]:
                     if isinstance(event, dict):
-                        rendered = ", ".join(f"{key}={value}" for key, value in event.items())
+                        rendered = ", ".join(
+                            f"{key}={' / '.join(str(value).splitlines())}" for key, value in event.items()
+                        )
                         lines.append(f"- {rendered}")
                     else:
                         lines.append(f"- {event}")

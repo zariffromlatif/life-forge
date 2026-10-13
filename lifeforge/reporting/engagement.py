@@ -75,6 +75,7 @@ def render_gate_workflow(
     frontier: bool,
     baseline_path: str = f"lifeforge/{BASELINE_FILE}",
     reset_endpoint: str | None = None,
+    repeats: int = 1,
 ) -> str:
     """Render the GitHub workflow that replays the corpus on every PR."""
     target, target_review = _repo_relative_spec(target, has_attr=True)
@@ -120,10 +121,20 @@ def render_gate_workflow(
         f"          seed: {_yaml_scalar(seed)}",
         f"          frontier: {_yaml_scalar('true' if frontier else 'false')}",
         '          surface-fail-on-regression: "true"',
-        "          # Sampled LLM agents: uncomment to replay each scenario 5x with tolerance.",
-        '          # surface-repeats: "5"',
-        '          # surface-tolerance: "0.2"',
     ]
+    if repeats > 1:
+        # The baseline holds failure rates over several replays (a sampled agent):
+        # compare like with like, and allow for sampling noise.
+        lines += [
+            f"          surface-repeats: {_yaml_scalar(repeats)}",
+            '          surface-tolerance: "0.2"',
+        ]
+    else:
+        lines += [
+            "          # Sampled LLM agents: uncomment to replay each scenario 5x with tolerance.",
+            '          # surface-repeats: "5"',
+            '          # surface-tolerance: "0.2"',
+        ]
     return "\n".join(lines) + "\n"
 
 
@@ -178,6 +189,7 @@ def write_regression_kit(
             seed=seed,
             frontier=frontier,
             reset_endpoint=reset_endpoint,
+            repeats=repeats,
         ),
         encoding="utf-8",
     )
@@ -223,7 +235,7 @@ def render_security_review_answers(
                 _VIOLATION_SEVERITY.get(str(item[0]).upper(), "MEDIUM"), 4), str(item[0])),
         )
         return [
-            f"- `{name}` ({_VIOLATION_SEVERITY.get(str(name).upper(), 'MEDIUM')}): observed in {count} scenario cell(s)"
+            f"- `{name}` ({_VIOLATION_SEVERITY.get(str(name).upper(), 'MEDIUM')}): observed in {count} simulation(s)"
             for name, count in ordered
         ]
 

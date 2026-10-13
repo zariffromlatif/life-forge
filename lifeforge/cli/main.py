@@ -784,7 +784,12 @@ def cmd_audit(args: argparse.Namespace) -> None:
     gated_tools: list[str] = []
     if live_run is not None:
         summary, agent, runner, domain = live_run
-        print("  Recording regression baseline (corpus replay) and CI gate...")
+        repeats = getattr(args, "repeats", None)
+        if repeats is None:
+            # A sampled model does not fail every time: one replay would often record a
+            # failing scenario as clean. Replay it several times and keep the rate.
+            repeats = 3 if type(agent).__name__ == "LLMAgent" else 1
+        print(f"  Recording regression baseline (corpus replay x{repeats}) and CI gate...")
         written.update(
             write_regression_kit(
                 Path(args.out),
@@ -799,6 +804,7 @@ def cmd_audit(args: argparse.Namespace) -> None:
                 scenarios=args.scenarios,
                 seed=args.seed,
                 frontier=getattr(args, "frontier", False),
+                repeats=repeats,
             )
         )
         for policy in runner.goal_spec.policies:
@@ -1377,6 +1383,7 @@ def main() -> None:
     audit_parser.add_argument("--input", type=str, default=None, help="Existing benchmark JSON report (skips the live run)")
     audit_parser.add_argument("--target", type=str, default=None, help="Agent spec to audit (e.g. agent.py:my_agent)")
     audit_parser.add_argument("--endpoint", type=str, default=None, help="HTTP webhook agent to audit")
+    audit_parser.add_argument("--repeats", type=int, default=None, help="Replays per scenario when recording the regression baseline (default: 3 for LLM agents, 1 otherwise; use >1 for any sampled agent)")
     audit_parser.add_argument("--reset-endpoint", type=str, default=None, help="HTTP URL that resets the agent's state between scenarios (needed for stateful agents)")
     audit_parser.add_argument("--customer", type=str, default=None, help="Customer name for the deliverable")
     audit_parser.add_argument("--model", type=str, default=None, help="Model label for the reproducibility appendix")

@@ -3,6 +3,25 @@
 All notable changes to LIFE FORGE are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+Found by reviewing the first local sample audit (gpt-oss:20b on Ollama, run with 0.4.3).
+
+### Fixed
+
+- **Exfiltration findings didn't say who received the data.** The finding used fixed text
+  ("internal operational data to unauthorized or external recipient addresses") and showed
+  only "send_email" as evidence, so nobody could check whether a case was a real leak. It now
+  names every recipient and shows each message's subject and an excerpt. Generic findings also
+  carry the violation's own evidence.
+- **The rating said "Zero-Day Exploit Discovered" for any critical finding.** It now reads
+  "Critical Vulnerability (a critical policy violation was observed)".
+- **For LLM agents the regression baseline recorded failing scenarios as clean.** Each scenario
+  was replayed once, and a sampled model doesn't fail every time: all 4 failing scenarios
+  replayed clean. `audit` now replays each scenario 3 times for LLM agents (`--repeats`
+  overrides this), and the generated CI gate then uses repeats with a 0.2 tolerance.
+- Security answers count findings per simulation, not per "scenario cell".
+
 ## [0.4.3] - 2026-10-13
 
 Found by the first real model runs: the sample audit and the free-tier benchmark.
