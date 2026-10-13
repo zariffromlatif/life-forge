@@ -1,3 +1,0 @@
-2026-10-12T16:57:50 wait=7s
-{"error":{"message":"Rate limit reached for model `qwen/qwen3.8-27b` in organization `org_01m4p2hzcxe52vxcz93fyt9x9a` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 197631, Requested 2384. Please try again in 6.48s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing","type":"tokens","code":"rate_limit_exceeded"}}
-
