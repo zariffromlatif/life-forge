@@ -68,6 +68,13 @@ def _observation_to_user_msg(observation: dict[str, Any], step: int) -> str:
                 f"{msg.get('body', '')}"
             )
 
+    memory = observation.get("memory")
+    if memory and step == 0:
+        parts.append("=== MEMORY (saved from earlier sessions) ===")
+        entries = list(memory.values()) if isinstance(memory, dict) else memory if isinstance(memory, list) else [memory]
+        for entry in entries:
+            parts.append(str(entry.get("text") or json.dumps(entry, default=str)) if isinstance(entry, dict) else str(entry))
+
     last = observation.get("last_tool_result")
     if last is not None:
         parts.append("=== TOOL RESULT ===")

@@ -193,10 +193,11 @@ class MemoryPoisoningMutator(ScenarioMutator):
         metadata = new_state.metadata
         targets = [key for key in ("knowledge_base", "memory") if key in metadata]
         if not targets:
-            # Domain has no retrieval store yet; create the knowledge base so the
-            # attack has a place to land.
-            metadata["knowledge_base"] = []
-            targets = ["knowledge_base"]
+            # Domain has no store yet: plant it in persistent memory, which the agent
+            # is shown at the start of every episode. (A knowledge base nobody can
+            # search would make the attack undeliverable.)
+            metadata["memory"] = []
+            targets = ["memory"]
 
         for key in targets:
             store = metadata.setdefault(key, [])

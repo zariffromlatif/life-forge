@@ -573,6 +573,9 @@ class SandboxRunner:
 
             observation = {
                 "inbox": copy.deepcopy(state.inbox),
+                # Persistent agent memory is loaded into the agent's context, as agent
+                # frameworks do (a knowledge base, by contrast, is only seen via search).
+                "memory": copy.deepcopy((state.metadata or {}).get("memory")),
                 "step": step_idx,
                 "last_tool_result": {
                     "success": last_result.success,
