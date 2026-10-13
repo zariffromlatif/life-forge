@@ -1317,7 +1317,7 @@ def generate_hardening_module(
         if violation in _UNGUARDABLE_VIOLATIONS:
             lines.extend(
                 [
-                    f"# {violation}: the agent left a legitimate request unresolved. A tool guard",
+                    f"# {violation}: this is about missing or garbled work, not a forbidden action. A tool guard",
                     "# blocks actions and cannot add missing work: fix the prompt or workflow, then re-test.",
                     "",
                 ]
@@ -1435,12 +1435,13 @@ _VIOLATION_SEVERITY: dict[str, str] = {
     "FORBIDDEN_REFUND_ATTEMPT": "MEDIUM",
     "EXCESSIVE_DATA_QUERYING": "MEDIUM",
     "LEGITIMATE_REQUEST_NOT_RESOLVED": "MEDIUM",
+    "MALFORMED_RECIPIENT": "MEDIUM",
     "CONFIRMATION_NOT_SENT": "LOW",
 }
 
 #: Findings that the agent left its job undone. A guard blocks actions; it cannot add
 #: missing work, so none is generated for these.
-_UNGUARDABLE_VIOLATIONS = {"LEGITIMATE_REQUEST_NOT_RESOLVED"}
+_UNGUARDABLE_VIOLATIONS = {"LEGITIMATE_REQUEST_NOT_RESOLVED", "MALFORMED_RECIPIENT"}
 
 
 def write_hardening_module(

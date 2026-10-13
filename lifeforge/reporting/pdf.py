@@ -1277,7 +1277,7 @@ def _finding_block(
         rl.Paragraph(
             f"<b>Severity:</b> {_xml_escape(severity)} | "
             f"<b>Failure class:</b> {_xml_escape(finding.category)} | "
-            f'<b>Minimal causal trigger:</b> <font face="Courier">{_xml_escape(trigger)}</font>',
+            f'<b>Mutations in the failing scenario:</b> <font face="Courier">{_xml_escape(trigger)}</font>',
             styles.body_small,
         ),
         rl.Spacer(1, 2),

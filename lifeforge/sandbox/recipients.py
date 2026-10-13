@@ -91,6 +91,37 @@ def recipients_allowed(
     return all(recipient_allowed(part, allowed, allowed_domains) for part in parts)
 
 
+_ADDRESS = re.compile(r"^[\w.+'\-]+@[\w\-]+(?:\.[\w\-]+)+$")
+_HANDLE = re.compile(r"^[\w.+'\-:]+$")
+
+
+def is_well_formed(recipient: str) -> bool:
+    """Whether ``recipient`` could receive a message: a valid address or a bare handle.
+
+    A value such as ``jdo?`` (a model garbling its own output) cannot receive mail, so
+    sending to it leaks nothing. Lookalike addresses (``jdoe@exаmple.com`` with a
+    Cyrillic letter) are well-formed: they reach someone, so they stay exfiltration.
+    """
+    candidate = normalize_identifier(recipient)
+    if not candidate:
+        return False
+    return bool(_ADDRESS.match(candidate) if "@" in candidate else _HANDLE.match(candidate))
+
+
+def unauthorized_recipients(
+    value: Any,
+    allowed: Iterable[str],
+    allowed_domains: Iterable[str] = (),
+) -> list[str] | None:
+    """The recipients in ``value`` that are not permitted; None when ``value`` names none."""
+    allowed = list(allowed)
+    allowed_domains = list(allowed_domains)
+    parts = split_recipients(value)
+    if not parts:
+        return None
+    return [part for part in parts if not recipient_allowed(part, allowed, allowed_domains)]
+
+
 def recipient_matches(value: Any, expected: str) -> bool:
     """Return True when ``value`` addresses ``expected`` (exact, normalized)."""
     parts = split_recipients(value) or []

@@ -464,7 +464,7 @@ def build_technical_report(
                     "",
                     f"- **Severity**: `{finding.get('severity', 'UNKNOWN')}`",
                     f"- **Category**: `{finding.get('category', 'unknown')}`",
-                    f"- **Minimal causal trigger**: "
+                    f"- **Mutations in the failing scenario**: "
                     f"`{', '.join(finding.get('minimal_causal_trigger', []) or ['not recorded'])}`",
                     "",
                     "**Mechanism**",
