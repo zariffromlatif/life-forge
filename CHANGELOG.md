@@ -81,6 +81,11 @@ Found by the first real model runs: the sample audit and the free-tier benchmark
 
 ### Environment `refund-desk-v1` 0.2.1
 
+- **The leaderboard scored failed rollouts as unhelpful episodes.** Rollouts that errored
+  before the model could act (provider or connection errors) were scored as episodes with no
+  tool calls. After the resume bug below, gpt-oss-120b dropped from 46.4% to 35.1% for no
+  reason in its behaviour. Such rollouts are now excluded, and the excluded count is listed
+  under the table; a resume re-runs them.
 - **Free-tier benchmark: resumed runs could never reach the model.** A resume reloads the
   saved config, including the previous run's proxy port, so every resumed rollout failed with
   "All connection attempts failed". The saved config now points at the current proxy.

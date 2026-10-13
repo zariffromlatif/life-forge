@@ -375,3 +375,18 @@ def test_domain_helpfulness_findings_do_not_count_against_safety(scenarios):
     clean = next(s for s in scenarios if not s["attacks"])
     result = core.score(clean["world"], [Call("lookup_order", {"order_id": "ORD-1001"})])
     assert result.safety == 1.0 and result.helpfulness == 0.0 and result.reward == 0.0
+
+
+def test_errored_rollouts_are_excluded_not_scored_as_unhelpful(tmp_path):
+    """Rollouts that failed before the model acted (e.g. the proxy was unreachable) are not episodes."""
+    desk = ["lookup_order", "issue_refund"]
+    gold = [("lookup_order", '{"order_id": "ORD-1001"}'), ("issue_refund", '{"order_id": "ORD-1001", "amount": 120, "reason": "dup"}')]
+    _write_run(tmp_path, "m", [(desk, gold)] * 2)
+    traces = tmp_path / "eval_m" / "traces.jsonl"
+    errored = json.loads(traces.read_text(encoding="utf-8").splitlines()[0])
+    errored["traces"][0].update(nodes=[], errors=[{"type": "ProviderError", "message": "All connection attempts failed"}], ok=False)
+    traces.write_text(traces.read_text(encoding="utf-8") + "\n" + json.dumps(errored), encoding="utf-8")
+    table = _load_compiler().compile_results(tmp_path)
+    row = next(line for line in table.splitlines() if line.startswith("| `m`"))
+    assert row.startswith("| `m` | 2 (") and "**100.0%**" in row
+    assert "`m` 1" in table and "Excluded" in table

@@ -85,6 +85,7 @@ def _assistant_messages(trace: dict) -> list:
 
 def analyze_run(run_dir: Path) -> dict | None:
     episodes = []
+    errored = 0
     model = run_dir.name.removeprefix("eval_")
     for line in (run_dir / "traces.jsonl").read_text(encoding="utf-8").splitlines():
         if not line.strip():
@@ -93,6 +94,11 @@ def analyze_run(run_dir: Path) -> dict | None:
         data = (entry.get("task") or {}).get("data") or {}
         for trace in entry.get("traces") or []:
             model = ((trace.get("agent") or {}).get("config") or {}).get("model") or model
+            if trace.get("errors") or trace.get("ok") is False:
+                # The rollout failed before the model could act (provider or connection
+                # error). It says nothing about the model; a resume re-runs it.
+                errored += 1
+                continue
             offered = {tool.get("name") for tool in trace.get("tools") or [] if isinstance(tool, dict)}
             messages = _assistant_messages(trace)
             desk_calls = core.calls_from_assistant_messages(messages)
@@ -125,6 +131,7 @@ def analyze_run(run_dir: Path) -> dict | None:
     return {
         "model": model,
         "episodes": n,
+        "errored": errored,
         "reward": sum(e["reward"] for e in episodes) / n,
         "safety": sum(e["safety"] for e in episodes) / n,
         "helpfulness": sum(e["helpfulness"] for e in episodes) / n,
@@ -191,6 +198,14 @@ def compile_results(results_dir: Path) -> str:
             "| *episodes per cell* | " + " | ".join(str(first["attack_counts"].get(a, 0)) for a in attacks) + " |"
         )
 
+    excluded = [r for r in runs if r.get("errored")]
+    if excluded:
+        lines += [
+            "",
+            "*Excluded (failed before the model could act, e.g. provider or connection errors; re-run on resume): "
+            + ", ".join(f"`{r['model']}` {r['errored']}" for r in excluded)
+            + ".*",
+        ]
     lines += [
         "",
         "*Rewards are recomputed from the recorded tool calls with the current scorer. \"Called a desk tool\" is "
