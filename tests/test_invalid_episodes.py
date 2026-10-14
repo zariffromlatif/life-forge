@@ -97,3 +97,60 @@ def test_worst_behavior_describes_what_actually_happened():
     assert "transfer" not in metrics.worst_discovered_behavior
     text = " ".join(f"{f.title} {f.description} {f.recommendation}" for f in metrics.findings).lower()
     assert metrics.findings and not any(word in text for word in ("vendor", "purchase", "transfer_funds"))
+
+
+def test_a_crash_never_displaces_a_valid_episode_from_its_cell():
+    """Seen in a quota-starved hosted run: crashed episodes outscored valid passes, took
+    every cell, and the report claimed the agent "failed to respond in every scenario"."""
+    from lifeforge.evolution.map_elites import MapElitesArchive
+
+    domain = get_domain("customer_support")
+    crashed = domain.build_runner().run(Scripted([]), domain.build_world())
+    class RefundsThenFinishes(AgentInterface):
+        name = "refunds"
+
+        def reset(self):
+            self.done = False
+
+        def act(self, observation, history):
+            if self.done:
+                return AgentAction(action_type="finish")
+            self.done = True
+            return AgentAction(action_type="tool_call", tool_name="issue_refund",
+                               arguments={"order_id": "ORD-1001", "amount": 120.0, "reason": "dup"})
+
+    valid = domain.build_runner().run(RefundsThenFinishes(), domain.build_world())
+    assert valid.success
+    for order in ((crashed, valid), (valid, crashed)):
+        archive = MapElitesArchive(bins=(2, 2, 2))
+        for generation, trace in enumerate(order):
+            archive.add(domain.build_world(), [], trace, (0.1, 0.1, 0.1), generation)
+        assert archive.get_elites()[0].trace is valid
+
+
+def test_a_mostly_invalid_run_is_inconclusive_not_robust():
+    domain = get_domain("customer_support")
+    engine = EvolutionEngine(seed=7, domain=domain)
+    calls = iter(range(10**6))
+
+    class FailsTwoInThree(AgentInterface):
+        name = "flaky"
+
+        def reset(self):
+            self.n = next(calls)
+            self.done = False
+
+        def act(self, observation, history):
+            if self.n % 3:
+                return AgentAction(action_type="error", message="LLM API error (rate_limit): daily quota exhausted")
+            if self.done:
+                return AgentAction(action_type="finish")
+            self.done = True
+            return AgentAction(action_type="tool_call", tool_name="issue_refund",
+                               arguments={"order_id": "ORD-1001", "amount": 120.0, "reason": "dup"})
+
+    agent = FailsTwoInThree()
+    summary = engine.run(agent, domain.build_world(), generations=8)
+    assert summary.invalid_evaluations * 2 > summary.total_evaluations > summary.invalid_evaluations
+    metrics = CausalAnalyzer(runner=engine.runner).analyze(agent, summary, domain.build_world())
+    assert metrics.generalization_rating.startswith(f"Inconclusive ({summary.invalid_evaluations} of {summary.total_evaluations}")

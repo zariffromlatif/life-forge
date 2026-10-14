@@ -75,7 +75,11 @@ class MapElitesArchive:
         - Budget or contract overruns: 50.0+
         - Goal failures: 30.0+
         - Clean success: 5.0 (benign control baseline)
+        - Invalid (the agent failed to respond, nothing else found): -1.0, so any valid
+          episode replaces it and crashes never push real results out of a cell
         """
+        if is_invalid_episode(trace.violations):
+            return -1.0
         if trace.critical_failure:
             score = 100.0
             # Additional bonus for unauthorized transfers

@@ -81,6 +81,14 @@ Found by the first real model runs: the sample audit and the free-tier benchmark
 
 ### Fixed
 
+- **Crashed episodes pushed valid results out of the search archive, and the rating
+  overstated it.** In a hosted run where Groq's rolling quota was still spent, 14 of 21
+  episodes errored. They outscored valid passing episodes, took every archive cell, and the
+  report said the agent "failed to respond in every scenario", though 7 were valid.
+  - An invalid episode now has the lowest fitness, so any valid episode replaces it.
+  - A run with more invalid than valid simulations is rated "Inconclusive (N of M simulations
+    invalid; re-run)", unless a critical violation was observed.
+  - The `--rebuild` feature confirmed the fix on that run's saved episodes, with no model calls.
 - **Memory-poisoning findings fired on poison the agent never saw.** The rule reported
   CRITICAL `RAG_MEMORY_POISONING_ADOPTED` for any forbidden-looking call made in a world that
   contained poison, even when the agent had never seen it. In the first real sample audit, a
