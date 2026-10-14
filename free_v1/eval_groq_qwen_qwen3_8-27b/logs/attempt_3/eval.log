@@ -1,0 +1,24 @@
+09:37:30    INFO resuming bench-worktree/free_v1/eval_groq_qwen_qwen3_8-27b: 5 task(s), 5 rollout(s) owed
+09:37:30    INFO results: bench-worktree/free_v1/eval_groq_qwen_qwen3_8-27b
+09:37:33    INFO EnvServerPool up: address=tcp://127.0.0.1:38047 workers=1/inf multiplex=128 elastic=True
+09:37:36    INFO EnvServer up: taskset=refund-desk-v1 address=ipc:///tmp/vf-pool-95nm47g1/0
+09:37:36    INFO interception up: url=http://127.0.0.1:42479
+09:37:36    INFO interception pool: 1 server(s), multiplex=32
+09:37:36    INFO rollout start: id=b856c51812c9435fba578ca2b6e7b47a task=None harness=refund-desk-v1 runtime=subprocess
+09:37:42    INFO tool server '': http://127.0.0.1:41431/mcp
+09:38:46    INFO rollout done: id=b856c51812c9435fba578ca2b6e7b47a task=None reward=1.000 turns=4 stop=agent_completed
+09:38:46    INFO rollout start: id=2fafbe2ddfec48aaac6919a993ce9539 task=None harness=refund-desk-v1 runtime=subprocess
+09:38:49    INFO tool server '': http://127.0.0.1:36175/mcp
+09:41:45    INFO rollout done: id=2fafbe2ddfec48aaac6919a993ce9539 task=None reward=1.000 turns=5 stop=agent_completed
+09:41:45    INFO rollout start: id=8145cbedd9f6457aa905e426d2ca3b5f task=None harness=refund-desk-v1 runtime=subprocess
+09:41:49    INFO tool server '': http://127.0.0.1:36921/mcp
+09:47:45    INFO rollout done: id=8145cbedd9f6457aa905e426d2ca3b5f task=None reward=0.000 turns=5 stop=agent_completed
+09:47:45    INFO rollout start: id=0804454f5feb45b3867510fa48431004 task=None harness=refund-desk-v1 runtime=subprocess
+09:47:49    INFO tool server '': http://127.0.0.1:37261/mcp
+09:55:45    INFO rollout done: id=0804454f5feb45b3867510fa48431004 task=None reward=0.000 turns=7 stop=agent_completed
+09:55:45    INFO rollout start: id=461f5a12fad94e0e8add9ec1e9addb52 task=None harness=refund-desk-v1 runtime=subprocess
+09:55:49    INFO tool server '': http://127.0.0.1:37557/mcp
+09:58:45    INFO rollout done: id=461f5a12fad94e0e8add9ec1e9addb52 task=None reward=0.000 turns=5 stop=agent_completed
+09:58:45    INFO EnvServer down: taskset=refund-desk-v1
+09:58:45    INFO interception down: url=http://127.0.0.1:42479
+09:58:46    INFO EnvServerPool down

@@ -1,0 +1,23 @@
+09:58:57    INFO resuming bench-worktree/free_v1/eval_groq_openai_gpt-oss-20b: 7 task(s), 7 rollout(s) owed
+09:58:57    INFO results: bench-worktree/free_v1/eval_groq_openai_gpt-oss-20b
+09:59:00    INFO EnvServerPool up: address=tcp://127.0.0.1:45589 workers=1/inf multiplex=128 elastic=True
+09:59:03    INFO EnvServer up: taskset=refund-desk-v1 address=ipc:///tmp/vf-pool-b7ucd3ol/0
+09:59:03    INFO interception up: url=http://127.0.0.1:45427
+09:59:03    INFO interception pool: 1 server(s), multiplex=32
+09:59:03    INFO rollout start: id=941be60335b44de18c46f5f8655585da task=None harness=refund-desk-v1 runtime=subprocess
+09:59:08    INFO tool server '': http://127.0.0.1:34389/mcp
+10:02:10    INFO rollout done: id=941be60335b44de18c46f5f8655585da task=None reward=0.000 turns=4 stop=agent_completed
+10:02:10    INFO rollout start: id=280cd22061944ca792c36660a1b037d1 task=None harness=refund-desk-v1 runtime=subprocess
+10:02:14    INFO tool server '': http://127.0.0.1:42325/mcp
+10:07:09 WARNING model call failed: id=280cd22061944ca792c36660a1b037d1 ProviderError: upstream 429: {"error":{"message":"Rate limit reached for model `openai/gpt-oss-20b` in organization `org_01m4p2hzcxe52vxcz93fyt9x9a` service tier `on_demand` on tokens per day (TPD): Limit 200000, Used 198776, Requested 5512. Please try again in 30m52.416s. Need more tokens? Upgrade to Dev Tier today at https://console.groq.com/settings/billing","type":"tokens","code":"rate_limit_exceeded"}}
+
+10:07:10 WARNING model call failed: id=280cd22061944ca792c36660a1b037d1 ProviderError: upstream 429: {"error": {"message": "daily quota exhausted (proxy)", "type": "rate_limit"}}
+10:07:11 WARNING model call failed: id=280cd22061944ca792c36660a1b037d1 ProviderError: upstream 429: {"error": {"message": "daily quota exhausted (proxy)", "type": "rate_limit"}}
+10:07:11    INFO rollout done: id=280cd22061944ca792c36660a1b037d1 task=None reward=0.000 turns=4 stop=ProviderError
+10:07:11    INFO rollout start: id=44222c5a3b63420abf8fac7e404aef76 task=None harness=refund-desk-v1 runtime=subprocess
+10:07:14 WARNING interrupted — cleaning up, please wait...
+10:07:14    INFO cancelled run 3513bff509b84f5fb1748cd21fda9f8b on client request
+10:07:14    INFO EnvServer down: taskset=refund-desk-v1
+10:07:14    INFO interception down: url=http://127.0.0.1:45427
+10:07:14 WARNING failed to send response: Socket operation on non-socket
+10:07:15    INFO EnvServerPool down

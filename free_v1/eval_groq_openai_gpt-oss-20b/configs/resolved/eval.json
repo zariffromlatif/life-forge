@@ -75,7 +75,7 @@
   },
   "model": "openai/gpt-oss-20b",
   "client": {
-    "base_url": "http://127.0.0.1:40631/v1",
+    "base_url": "http://127.0.0.1:35277/v1",
     "api_key_var": "GROQ_API_KEY",
     "headers": {},
     "type": "eval"
