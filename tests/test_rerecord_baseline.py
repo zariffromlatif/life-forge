@@ -9,7 +9,12 @@ import sys
 from pathlib import Path
 
 from lifeforge.evolution.engine import EvolutionEngine
-from lifeforge.reporting.regression_corpus import build_corpus, corpus_health, health_warning, rerecord_corpus
+from lifeforge.reporting.regression_corpus import (
+    build_corpus,
+    corpus_health,
+    health_warning,
+    rerecord_corpus,
+)
 from lifeforge.sandbox.agent import AgentAction, AgentInterface
 from lifeforge.sandbox.domains import get_domain
 
@@ -65,7 +70,7 @@ def test_rerecording_fills_the_same_scenarios_without_a_search():
 def test_surface_rerecord_cli(tmp_path: Path):
     def run(*args):
         return subprocess.run([sys.executable, "-m", "lifeforge.cli", "surface", *args], cwd=tmp_path,
-                              capture_output=True, text=True, encoding="utf-8", timeout=300)
+                              capture_output=True, text=True, encoding="utf-8", timeout=300, check=False)
 
     assert run("--record", "--hardened", "--scenarios", "6", "--out", "base.json").returncode == 0
     result = run("--rerecord", "base.json", "--hardened", "--repeats", "2", "--out", "again.json")

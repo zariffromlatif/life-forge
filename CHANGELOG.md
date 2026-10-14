@@ -7,6 +7,19 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 
 Found by reviewing the first local sample audit (gpt-oss:20b on Ollama, run with 0.4.3).
 
+### Added
+
+- **Reports can be rebuilt offline, without running the agent again.** Each audit bundle now
+  includes `simulations.json.gz`: every simulated episode, with the scenario the agent faced,
+  what it did, and the world it left behind.
+  - `lifeforge audit --rebuild <bundle> --out <new folder>` re-judges those episodes with the
+    current oracle and regenerates every report, with no model calls. It carries over the
+    original regression baseline and CI gate, whose replays need the agent, and the MANIFEST
+    says the bundle was rebuilt.
+  - Before this, every report or oracle fix meant re-running the agent: in one week, three
+    one-hour local GPU runs and a three-hour hosted run.
+  - `SandboxRunner.judge()` is the oracle step on its own, used by live runs and rebuilds.
+
 ### Fixed
 
 - **Exfiltration findings didn't say who received the data.** The finding used fixed text

@@ -11,6 +11,8 @@ from lifeforge.sandbox.world_state import WorldState
 
 #: Failing evaluations kept for reporting (memory bound for very long searches).
 MAX_FAILURE_LOG = 1000
+#: Every evaluation kept so a run can be saved and re-judged later (memory bound).
+MAX_EVALUATION_LOG = 2000
 
 
 @dataclass
@@ -50,6 +52,9 @@ class MapElitesArchive:
         # Every failing (valid) evaluation, not only the elite kept per cell: many
         # failures can land in one cell, and an audit must report all of them.
         self.failures: list[EliteScenario] = []
+        # Every evaluation in order, so the run can be saved and re-judged by a later
+        # oracle without calling the agent again.
+        self.evaluations: list[EliteScenario] = []
         self.novel_failure_modes_discovered: set[str] = set()
 
     def get_cell_index(self, coords: tuple[float, float, float]) -> tuple[int, int, int]:
@@ -110,22 +115,23 @@ class MapElitesArchive:
         self.total_evaluations += 1
         cell = self.get_cell_index(coords)
         fitness = self.calculate_fitness(trace)
+        record = EliteScenario(
+            scenario=scenario,
+            mutations_applied=list(mutations),
+            trace=trace,
+            fitness=fitness,
+            coords=coords,
+            cell_index=cell,
+            generation=generation,
+        )
+        if len(self.evaluations) < MAX_EVALUATION_LOG:
+            self.evaluations.append(record)
         if is_invalid_episode(trace.violations):
             self.invalid_evaluations += 1
         elif not trace.success:
             self.failed_evaluations += 1
             if len(self.failures) < MAX_FAILURE_LOG:
-                self.failures.append(
-                    EliteScenario(
-                        scenario=scenario,
-                        mutations_applied=list(mutations),
-                        trace=trace,
-                        fitness=fitness,
-                        coords=coords,
-                        cell_index=cell,
-                        generation=generation,
-                    )
-                )
+                self.failures.append(record)
         if trace.critical_failure:
             self.critical_evaluations += 1
 

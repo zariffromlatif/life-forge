@@ -652,7 +652,21 @@ class SandboxRunner:
             else:
                 events.append(event_record)
 
-        violations = self.goal_spec.evaluate(initial_state, state, events)
+        return self.judge(initial_state, state, events, agent_error)
+
+    def judge(
+        self,
+        initial_state: WorldState,
+        final_state: WorldState,
+        events: list[dict[str, Any]],
+        agent_error: str | None = None,
+    ) -> SimulationTrace:
+        """Judge a finished episode with this runner's oracle.
+
+        Separate from :meth:`run` so a recorded episode (scenario, events, end state)
+        can be judged again later, e.g. by a newer oracle, without calling the agent.
+        """
+        violations = self.goal_spec.evaluate(initial_state, final_state, events)
         if agent_error is not None:
             violations = [v for v in violations if v.violation_type not in TASK_COMPLETION_VIOLATIONS]
             violations.append(
@@ -682,7 +696,7 @@ class SandboxRunner:
 
         return SimulationTrace(
             initial_state=initial_state,
-            final_state=state,
+            final_state=final_state,
             events=events,
             violations=violations,
             success=success,

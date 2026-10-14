@@ -703,6 +703,7 @@ def cmd_audit(args: argparse.Namespace) -> None:
     print("=" * 68)
 
     live_run = None
+    rebuilt = None
     if getattr(args, "input", None):
         input_path = Path(args.input)
         if not input_path.exists():
@@ -711,6 +712,35 @@ def cmd_audit(args: argparse.Namespace) -> None:
         with input_path.open("r", encoding="utf-8") as handle:
             report = json.load(handle)
         print(f"  Source report: {input_path}")
+    elif getattr(args, "rebuild", None):
+        # Re-judge a saved audit's episodes with the current oracle: no agent calls.
+        from dataclasses import asdict
+        from types import SimpleNamespace
+
+        from lifeforge.reporting.analyzer import CausalAnalyzer
+        from lifeforge.reporting.simulations import SIMULATIONS_FILE, load_simulations, rejudge
+        from lifeforge.sandbox.world_state import WorldState
+
+        source = Path(args.rebuild)
+        sim_path = source / SIMULATIONS_FILE if source.is_dir() else source
+        if not sim_path.exists():
+            print(f"  [FAIL] No {SIMULATIONS_FILE} in {source} (bundles from lifeforge 0.4.3 and earlier have none).")
+            sys.exit(1)
+        record = load_simulations(sim_path)
+        summary, engine, domain = rejudge(record)
+        # The reports keep the original run's labels unless given on the command line.
+        for key, value in (record.get("settings") or {}).items():
+            if getattr(args, key, None) in (None, False) and value is not None:
+                setattr(args, key, value)
+        args.scenarios = record.get("generations") or args.scenarios
+        args.seed = record.get("seed") if record.get("seed") is not None else args.seed
+        agent = SimpleNamespace(name=record.get("agent_name") or "agent")
+        seed_state = domain.build_world() if domain else WorldState.default_purchasing_world()
+        report = asdict(CausalAnalyzer(runner=engine.runner).analyze(agent, summary, seed_state))
+        rebuilt = (source if source.is_dir() else source.parent, sim_path, record, engine.runner)
+        print(f"  Rebuilding from: {sim_path} ({len(record.get('evaluations') or [])} episodes, "
+              f"recorded with lifeforge {record.get('lifeforge_version')}, oracle {record.get('oracle_version')})")
+        print(f"  Critical findings: {report.get('critical_failures', 0)}")
     else:
         # Run a fresh audit against the requested target.
         from lifeforge.evolution.engine import EvolutionEngine
@@ -730,7 +760,7 @@ def cmd_audit(args: argparse.Namespace) -> None:
                 endpoint=args.endpoint, reset_endpoint=getattr(args, "reset_endpoint", None), name="RemoteHTTPAgent"
             )
         else:
-            print("  [FAIL] Provide either --input report.json or --target agent.py:my_agent")
+            print("  [FAIL] Provide --target agent.py:my_agent, --endpoint URL, --input report.json or --rebuild BUNDLE")
             sys.exit(1)
 
         domain = _resolve_domain_or_spec(args)
@@ -760,6 +790,21 @@ def cmd_audit(args: argparse.Namespace) -> None:
         print(f"  Critical findings: {report.get('critical_failures', 0)}")
         live_run = (summary, agent, engine.runner, domain)
 
+        # Keep every episode, so reports can be rebuilt by a later oracle without the agent.
+        from lifeforge.reporting.simulations import SIMULATIONS_FILE, save_simulations
+
+        simulations_path = save_simulations(
+            Path(args.out) / SIMULATIONS_FILE,
+            summary,
+            agent_name=agent.name,
+            domain=domain,
+            settings={
+                key: getattr(args, key, None)
+                for key in ("customer", "model", "target", "endpoint", "reset_endpoint", "domain", "domain_spec",
+                            "hardware", "frontier")
+            },
+        )
+
     written = build_audit_bundle(
         report,
         Path(args.out),
@@ -782,6 +827,31 @@ def cmd_audit(args: argparse.Namespace) -> None:
     from lifeforge.reporting.engagement import write_regression_kit, write_security_review_answers
 
     gated_tools: list[str] = []
+    if live_run is not None:
+        written["simulations"] = simulations_path
+    if rebuilt is not None:
+        import shutil
+
+        source_dir, sim_path, record, runner = rebuilt
+        out_dir = Path(args.out)
+        carried = {
+            "regression_baseline": Path("regression_baseline.json"),
+            "ci_workflow": Path("ci") / "lifeforge-gate.yml",
+            "simulations": Path(sim_path.name),
+        }
+        for key, relative in carried.items():
+            src = source_dir / relative if key != "simulations" else sim_path
+            dst = out_dir / relative
+            if src.exists():
+                if src.resolve() != dst.resolve():
+                    dst.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(src, dst)
+                written[key] = dst
+        for policy in runner.goal_spec.policies:
+            for requirement in getattr(policy, "requirements", []) or []:
+                tool = requirement.get("tool")
+                if tool and tool not in gated_tools:
+                    gated_tools.append(str(tool))
     if live_run is not None:
         summary, agent, runner, domain = live_run
         repeats = getattr(args, "repeats", None)
@@ -818,7 +888,7 @@ def cmd_audit(args: argparse.Namespace) -> None:
         Path(args.out),
         customer=getattr(args, "customer", None),
         approval_gated_tools=gated_tools or None,
-        has_regression_gate=live_run is not None,
+        has_regression_gate=live_run is not None or "regression_baseline" in written,
     )
 
     baseline_warning = None
@@ -836,12 +906,24 @@ def cmd_audit(args: argparse.Namespace) -> None:
             "regression_baseline": "failure surface + replayable regression corpus (commit to the agent's repo)",
             "ci_workflow": "GitHub workflow that replays the corpus on every pull request",
             "security_review_answers": "draft answers for enterprise security reviews (edit before sending)",
+            "simulations": "every simulated episode; `lifeforge audit --rebuild <this folder> --out <new folder>` "
+            "regenerates the reports with the current oracle, without the agent",
         }
         for key, label in descriptions.items():
             if key in written:
                 kit_lines.append(f"- `{Path(written[key]).relative_to(Path(args.out)).as_posix()}` - {label}")
         if baseline_warning:
             kit_lines += ["", f"> **{baseline_warning}**"]
+        if rebuilt is not None:
+            from lifeforge.sandbox.oracle import ORACLE_VERSION
+
+            record = rebuilt[2]
+            kit_lines += [
+                "",
+                f"> Rebuilt offline from the saved episodes (recorded with lifeforge {record.get('lifeforge_version')}, "
+                f"oracle {record.get('oracle_version')}; re-judged with oracle {ORACLE_VERSION}). The regression "
+                "baseline is the original run's: its replays need the agent and were not repeated.",
+            ]
         manifest.write_text(manifest.read_text(encoding="utf-8").rstrip() + "\n" + "\n".join(kit_lines) + "\n", encoding="utf-8")
 
     print()
@@ -1432,6 +1514,7 @@ def main() -> None:
     audit_parser.add_argument("--input", type=str, default=None, help="Existing benchmark JSON report (skips the live run)")
     audit_parser.add_argument("--target", type=str, default=None, help="Agent spec to audit (e.g. agent.py:my_agent)")
     audit_parser.add_argument("--endpoint", type=str, default=None, help="HTTP webhook agent to audit")
+    audit_parser.add_argument("--rebuild", type=str, default=None, help="Rebuild the reports of a saved audit (its folder or simulations.json.gz) with the current oracle; no agent calls")
     audit_parser.add_argument("--repeats", type=int, default=None, help="Replays per scenario when recording the regression baseline (default: 3 for LLM agents, 1 otherwise; use >1 for any sampled agent)")
     audit_parser.add_argument("--reset-endpoint", type=str, default=None, help="HTTP URL that resets the agent's state between scenarios (needed for stateful agents)")
     audit_parser.add_argument("--customer", type=str, default=None, help="Customer name for the deliverable")

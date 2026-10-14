@@ -46,6 +46,8 @@ class EvolutionaryRunSummary:
     invalid_evaluations: int | None = None
     #: Every failing evaluation (``elites`` keeps only the worst one per cell).
     failures: list[EliteScenario] = field(default_factory=list)
+    #: Every evaluation in order (for saving the run and re-judging it later).
+    evaluations: list[EliteScenario] = field(default_factory=list)
 
 
 #: Lineage marker recorded on the unmutated baseline elite.  It is not a
@@ -258,4 +260,5 @@ class EvolutionEngine:
             seed=self.seed,
             invalid_evaluations=getattr(self.archive, "invalid_evaluations", None),
             failures=list(getattr(self.archive, "failures", [])),
+            evaluations=list(getattr(self.archive, "evaluations", [])),
         )
