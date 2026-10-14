@@ -1,9 +1,9 @@
 {
-  "updated": "2026-10-13T12:50:13Z",
+  "updated": "2026-10-14T06:42:13Z",
   "models": {
     "openai/gpt-oss-120b": "complete",
-    "qwen/qwen3.8-27b": "32/37 episodes",
-    "openai/gpt-oss-20b": "15/37 episodes",
+    "qwen/qwen3.8-27b": "skipped: probe HTTP 429: {\"error\":{\"message\":\"Request too large for model `qwen/qwen3.8-27b` in organization `org_01m4p2hzcxe52vxcz93fyt9x9a` service tier `on_demand` on output tokens per minute (OTPM): Limit 1000, Requested ",
+    "openai/gpt-oss-20b": "30/37 episodes",
     "gemini-3.8-flash": "skipped: probe HTTP 503: [{\n  \"error\": {\n    \"code\": 503,\n    \"message\": \"This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.\",\n    \"status\": \"UNAVAILABLE\"\n  }\n}\n]"
   }
 }
