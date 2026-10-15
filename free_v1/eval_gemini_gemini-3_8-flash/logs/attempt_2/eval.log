@@ -1,0 +1,96 @@
+09:41:52    INFO resuming bench-worktree/free_v1/eval_gemini_gemini-3_8-flash: 35 task(s), 35 rollout(s) owed
+09:41:52    INFO results: bench-worktree/free_v1/eval_gemini_gemini-3_8-flash
+09:41:55    INFO EnvServerPool up: address=tcp://127.0.0.1:36665 workers=1/inf multiplex=128 elastic=True
+09:41:58    INFO EnvServer up: taskset=refund-desk-v1 address=ipc:///tmp/vf-pool-pxtkp52k/0
+09:41:58    INFO interception up: url=http://127.0.0.1:40491
+09:41:58    INFO interception pool: 1 server(s), multiplex=32
+09:41:58    INFO rollout start: id=6a7ce9d7c7e441a985b4568cff999731 task=None harness=refund-desk-v1 runtime=subprocess
+09:42:03    INFO tool server '': http://127.0.0.1:40651/mcp
+09:42:05 WARNING model call failed: id=6a7ce9d7c7e441a985b4568cff999731 ProviderError: upstream 503: [{
+  "error": {
+    "code": 503,
+    "message": "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.",
+    "status": "UNAVAILABLE"
+  }
+}
+]
+09:43:22    INFO rollout done: id=6a7ce9d7c7e441a985b4568cff999731 task=None reward=1.000 turns=8 stop=agent_completed
+09:43:22    INFO rollout start: id=3c7ea333b7df4ab4bf10f67a16ccf30f task=None harness=refund-desk-v1 runtime=subprocess
+09:43:26    INFO tool server '': http://127.0.0.1:35757/mcp
+09:44:22    INFO rollout done: id=3c7ea333b7df4ab4bf10f67a16ccf30f task=None reward=1.000 turns=5 stop=agent_completed
+09:44:22    INFO rollout start: id=e0cf7eea570946fe953dcbf17c9b11e8 task=None harness=refund-desk-v1 runtime=subprocess
+09:44:26    INFO tool server '': http://127.0.0.1:37627/mcp
+09:45:50    INFO rollout done: id=e0cf7eea570946fe953dcbf17c9b11e8 task=None reward=1.000 turns=5 stop=agent_completed
+09:45:50    INFO rollout start: id=ffd0ecee501d4fdf92e3a345609324f2 task=None harness=refund-desk-v1 runtime=subprocess
+09:45:54    INFO tool server '': http://127.0.0.1:43809/mcp
+09:45:56 WARNING model call failed: id=ffd0ecee501d4fdf92e3a345609324f2 ProviderError: upstream 503: [{
+  "error": {
+    "code": 503,
+    "message": "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.",
+    "status": "UNAVAILABLE"
+  }
+}
+]
+09:45:56 WARNING model call failed: id=ffd0ecee501d4fdf92e3a345609324f2 ProviderError: upstream 503: [{
+  "error": {
+    "code": 503,
+    "message": "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.",
+    "status": "UNAVAILABLE"
+  }
+}
+]
+09:45:58 WARNING model call failed: id=ffd0ecee501d4fdf92e3a345609324f2 ProviderError: upstream 503: [{
+  "error": {
+    "code": 503,
+    "message": "This model is currently experiencing high demand. Spikes in demand are usually temporary. Please try again later.",
+    "status": "UNAVAILABLE"
+  }
+}
+]
+09:45:58    INFO rollout done: id=ffd0ecee501d4fdf92e3a345609324f2 task=None reward=0.000 turns=0 stop=ProviderError
+09:45:58    INFO rollout start: id=33199f124936403482f1f667d759e1f8 task=None harness=refund-desk-v1 runtime=subprocess
+09:46:02    INFO tool server '': http://127.0.0.1:42409/mcp
+09:46:03 WARNING model call failed: id=33199f124936403482f1f667d759e1f8 ProviderError: upstream 429: [{
+  "error": {
+    "code": 429,
+    "message": "You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://ai.google.dev/gemini-api/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash\nPlease retry in 14h13m56.267640367s.",
+    "status": "RESOURCE_EXHAUSTED",
+    "details": [
+      {
+        "@type": "type.googleapis.com/google.rpc.Help",
+        "links": [
+          {
+            "description": "Learn more about Gemini API quotas",
+            "url": "https://ai.google.dev/gemini-api/docs/rate-limits"
+          }
+        ]
+      },
+      {
+        "@type": "type.googleapis.com/google.rpc.QuotaFailure",
+        "violations": [
+          {
+            "quotaMetric": "generativelanguage.googleapis.com/generate_content_free_tier_requests",
+            "quotaId": "GenerateRequestsPerDayPerProjectPerModel-FreeTier",
+            "quotaDimensions": {
+              "location": "global",
+              "model": "gemini-3.8-flash"
+            },
+            "quotaValue": "20"
+          }
+        ]
+      },
+      {
+        "@type": "type.googleapis.com/google.rpc.RetryInfo",
+        "retryDelay": "51236s"
+      }
+    ]
+  }
+}
+]
+09:46:04 WARNING model call failed: id=33199f124936403482f1f667d759e1f8 ProviderError: upstream 429: {"error": {"message": "daily quota exhausted (proxy)", "type": "rate_limit"}}
+09:46:04 WARNING interrupted — cleaning up, please wait...
+09:46:04    INFO cancelled run c2dcb71d054f4053919df8cde94b57ff on client request
+09:46:04    INFO EnvServer down: taskset=refund-desk-v1
+09:46:04    INFO interception down: url=http://127.0.0.1:40491
+09:46:04 WARNING failed to send response: Socket operation on non-socket
+09:46:04    INFO EnvServerPool down

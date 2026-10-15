@@ -75,7 +75,7 @@
   },
   "model": "gemini-3.8-flash",
   "client": {
-    "base_url": "http://127.0.0.1:48437/v1",
+    "base_url": "http://127.0.0.1:39571/v1",
     "api_key_var": "GEMINI_API_KEY",
     "headers": {},
     "type": "eval"

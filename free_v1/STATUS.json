@@ -1,9 +1,9 @@
 {
-  "updated": "2026-10-14T10:08:16Z",
+  "updated": "2026-10-15T09:46:05Z",
   "models": {
     "openai/gpt-oss-120b": "complete",
-    "qwen/qwen3.8-27b": "37/37 episodes",
-    "openai/gpt-oss-20b": "31/37 episodes",
-    "gemini-3.8-flash": "skipped: network error: The read operation timed out"
+    "qwen/qwen3.8-27b": "complete",
+    "openai/gpt-oss-20b": "36/37 episodes",
+    "gemini-3.8-flash": "5/37 episodes"
   }
 }

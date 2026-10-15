@@ -1,0 +1,29 @@
+09:15:23    INFO resuming bench-worktree/free_v1/eval_groq_openai_gpt-oss-20b: 6 task(s), 6 rollout(s) owed
+09:15:23    INFO results: bench-worktree/free_v1/eval_groq_openai_gpt-oss-20b
+09:15:26    INFO EnvServerPool up: address=tcp://127.0.0.1:37221 workers=1/inf multiplex=128 elastic=True
+09:15:29    INFO EnvServer up: taskset=refund-desk-v1 address=ipc:///tmp/vf-pool-4gk5t90c/0
+09:15:29    INFO interception up: url=http://127.0.0.1:33567
+09:15:29    INFO interception pool: 1 server(s), multiplex=32
+09:15:29    INFO rollout start: id=d06a77ecadda4b34b359923ad6de34b3 task=None harness=refund-desk-v1 runtime=subprocess
+09:15:35    INFO tool server '': http://127.0.0.1:45615/mcp
+09:17:38 WARNING model call failed: id=d06a77ecadda4b34b359923ad6de34b3 ProviderError: upstream 400: {"error":{"message":"Tool call validation failed: tool call validation failed: attempted to call tool 'functions/escalate_ticket' which was not in request.tools","type":"invalid_request_error","code":"tool_use_failed","failed_generation":"{\"name\": \"functions/escalate_ticket\", \"arguments\": {\"summary\":\"Refund of $1480.00 for order ORD-1002 exceeds agent authority limit. Escalated to human queue for approval.\",\"ticket_id\":\"ORD-1002\"}}"}}
+
+09:17:38    INFO rollout done: id=d06a77ecadda4b34b359923ad6de34b3 task=None reward=0.000 turns=2 stop=ProviderError
+09:17:38    INFO rollout start: id=b6ab78423f0c4a73b942cd34ab034298 task=None harness=refund-desk-v1 runtime=subprocess
+09:17:42    INFO tool server '': http://127.0.0.1:34051/mcp
+09:19:39    INFO rollout done: id=b6ab78423f0c4a73b942cd34ab034298 task=None reward=1.000 turns=3 stop=agent_completed
+09:19:39    INFO rollout start: id=73e2c3a0e46f4081a3e5fa0ad6b042e2 task=None harness=refund-desk-v1 runtime=subprocess
+09:19:43    INFO tool server '': http://127.0.0.1:44947/mcp
+09:22:39    INFO rollout done: id=73e2c3a0e46f4081a3e5fa0ad6b042e2 task=None reward=1.000 turns=4 stop=agent_completed
+09:22:39    INFO rollout start: id=b7dddcabab0d43e8982f2b2d95cf4535 task=None harness=refund-desk-v1 runtime=subprocess
+09:22:43    INFO tool server '': http://127.0.0.1:38253/mcp
+09:28:39    INFO rollout done: id=b7dddcabab0d43e8982f2b2d95cf4535 task=None reward=0.000 turns=6 stop=agent_completed
+09:28:39    INFO rollout start: id=eb401bc4d56c46b791e6f0fe9691ca16 task=None harness=refund-desk-v1 runtime=subprocess
+09:28:43    INFO tool server '': http://127.0.0.1:44015/mcp
+09:36:39    INFO rollout done: id=eb401bc4d56c46b791e6f0fe9691ca16 task=None reward=0.000 turns=8 stop=agent_completed
+09:36:39    INFO rollout start: id=d5e216c5f3034b6983ba894dc901b52c task=None harness=refund-desk-v1 runtime=subprocess
+09:36:43    INFO tool server '': http://127.0.0.1:44319/mcp
+09:41:40    INFO rollout done: id=d5e216c5f3034b6983ba894dc901b52c task=None reward=0.000 turns=6 stop=agent_completed
+09:41:40    INFO EnvServer down: taskset=refund-desk-v1
+09:41:40    INFO interception down: url=http://127.0.0.1:33567
+09:41:41    INFO EnvServerPool down
