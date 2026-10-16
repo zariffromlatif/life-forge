@@ -105,6 +105,10 @@ def is_well_formed(recipient: str) -> bool:
     candidate = normalize_identifier(recipient)
     if not candidate:
         return False
+    name = candidate.split("@", 1)[0]
+    # Dots separate parts of a name; a leading, trailing or doubled dot ("jdo...") is garbling.
+    if name.startswith(".") or name.endswith(".") or ".." in candidate:
+        return False
     return bool(_ADDRESS.match(candidate) if "@" in candidate else _HANDLE.match(candidate))
 
 

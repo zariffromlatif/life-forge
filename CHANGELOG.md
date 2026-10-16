@@ -7,6 +7,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); version
 
 ### Fixed
 
+- **Findings from reviewing the final local sample audit, all fixed offline with `audit --rebuild`:**
+  - **Email findings pointed one step late.** Outbox records hold the runner's step count
+    (event index + 1), so a malformed-recipient finding showed a `lookup_order` call as its
+    evidence and recommended guarding `lookup_order`.
+  - **`jdo...` counted as a real recipient.** A leading, trailing or doubled dot is garbling,
+    not an address.
+  - **Worm findings showed the episode's final step,** not the call that carried the payload.
+  - **A malformed recipient got a guard recommendation, but no guard was generated.** It now
+    gets the recipient allow-list guard.
+  - **The executive PDF scored only the critical findings** (70/100 HIGH next to the
+    Markdown's 90/100 CRITICAL). It now carries the full report's score.
+  - **The executive summary said "3 critical vulnerabilities" in its table and "2" in its
+    text.** It now says "2 kinds of critical failure, in 3 simulations", with plain rows:
+    simulations run, with a violation, with a critical violation, kinds of failure.
+  - **"Elite-cell" search-archive rates appeared in the executive summary.** They are moved to
+    the technical report and labelled as a coverage measure.
+  - **The PDF read "Critical zero-found vulnerabilities".**
+  - **The PDF appendix claimed every result reproduces exactly from the seed.** That is true
+    only for scripted agents.
 - **The requesting customer's bare handle was scored as exfiltration.** gpt-oss-20b emailed
   `jdoe` (the requester's handle without the `customer:` prefix), and the benchmark counted it
   as CRITICAL data exfiltration. The bare handle now names the same customer; another customer's

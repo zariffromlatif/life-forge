@@ -74,6 +74,23 @@ def validity_warning(report: dict[str, Any]) -> list[str]:
     ]
 
 
+def _executive_rows(report: dict[str, Any]) -> list[str]:
+    """The executive table: what was run and what was found, in plain terms."""
+    total = report.get("total_evaluations", 0) or 0
+    invalid = report.get("invalid_evaluations") or 0
+    valid = total - invalid
+    failed = report.get("failed_evaluations")
+    rate = report.get("evaluation_failure_rate")
+    rows = [f"| Simulations run | {total:,}" + (f" ({invalid} invalid, excluded)" if invalid else "") + " |"]
+    if failed is not None and rate is not None:
+        rows.append(f"| Simulations with a violation | **{failed} of {valid}** ({rate}%) |")
+    rows += [
+        f"| Simulations with a critical violation | **{report.get('critical_failures', 0)}** |",
+        f"| Kinds of failure found | {len(report.get('violation_breakdown') or report.get('failure_mode_breakdown') or {})} |",
+    ]
+    return rows
+
+
 def _rate_lines(report: dict[str, Any]) -> list[str]:
     """Markdown table rows for the evaluation and elite-cell failure rates."""
     eval_rate = report.get("evaluation_failure_rate")
@@ -89,8 +106,7 @@ def _rate_lines(report: dict[str, Any]) -> list[str]:
     return [
         f"| Evaluation failure rate (valid simulations) | {eval_cell} |",
         *invalid_row,
-        f"| Elite-cell failure rate (archive cells) | **{report.get('failure_rate', 0.0)}%** |",
-        f"| Elite-cell success rate | {report.get('success_rate', 0.0)}% |",
+        f"| Failure rate among the search archive's kept scenarios (coverage measure, biased toward failures) | {report.get('failure_rate', 0.0)}% |",
     ]
 
 
@@ -306,11 +322,7 @@ def build_executive_summary(
         "| Measure | Result |",
         "| :--- | :--- |",
         f"| Target agent | `{report.get('agent_name', 'unknown')}` |",
-        f"| Total adversarial simulations | {report.get('total_evaluations', 0):,} |",
-        f"| Distinct environments explored | {report.get('scenarios_generated', 0):,} |",
-        *_rate_lines(report),
-        f"| Critical vulnerabilities | **{report.get('critical_failures', 0)}** |",
-        f"| Distinct failure modes | {report.get('novel_failure_modes_count', 0)} |",
+        *_executive_rows(report),
         "",
     ]
 
@@ -319,9 +331,9 @@ def build_executive_summary(
             [
                 "## Critical Findings Requiring Immediate Action",
                 "",
-                f"{len(critical)} critical vulnerability(ies) were reproduced. Each one permits an "
-                "action the agent is not authorized to take, and none of them cause a crash - the "
-                "agent completes the forbidden action and reports success.",
+                f"{len(critical)} kind(s) of critical failure, in {report.get('critical_failures', 0)} "
+                "simulation(s). Each one is an action the agent was not authorized to take; none of them "
+                "is a crash - the agent completed the forbidden action and carried on.",
                 "",
             ]
         )
@@ -730,6 +742,8 @@ def _render_executive_pdf(
         command_line="lifeforge audit",
         title="LIFE FORGE Security Audit - Executive Summary",
         generated_utc=environment.get("generated_utc"),
+        # The summary lists only the critical findings; the score is the full report's.
+        risk_score_override=_risk_score(report)[0],
     )
 
 
@@ -750,7 +764,7 @@ def _build_manifest(
         f"**Generated**: {environment.get('generated_utc', _utc_now())}  ",
         f"**Target agent**: `{report.get('agent_name', 'unknown')}`  ",
         f"**Risk score**: {score}/100 ({band})  ",
-        f"**Critical vulnerabilities**: {report.get('critical_failures', 0)}",
+        f"**Simulations with a critical violation**: {report.get('critical_failures', 0)}",
         "",
         *validity_warning(report),
         "---",

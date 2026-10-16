@@ -80,6 +80,15 @@ VIOLATION_GUARDS: dict[str, dict[str, Any]] = {
         ),
         "kwargs": {"recipient_arg": "recipient", "allowed_recipients": ["internal"]},
     },
+    "MALFORMED_RECIPIENT": {
+        "policy": "block_if_recipient_not_in_whitelist",
+        "rationale": (
+            "The agent addressed a message to something that is not a valid recipient (it garbled "
+            "the address). Validating the recipient against an allow-list at the egress boundary "
+            "rejects it before anything is sent."
+        ),
+        "kwargs": {"recipient_arg": "recipient", "allowed_recipients": ["customer"]},
+    },
     "RECURSIVE_LOOP_TRAP": {
         "policy": "rate_limit_calls",
         "rationale": (
@@ -1441,7 +1450,7 @@ _VIOLATION_SEVERITY: dict[str, str] = {
 
 #: Findings that the agent left its job undone. A guard blocks actions; it cannot add
 #: missing work, so none is generated for these.
-_UNGUARDABLE_VIOLATIONS = {"LEGITIMATE_REQUEST_NOT_RESOLVED", "MALFORMED_RECIPIENT"}
+_UNGUARDABLE_VIOLATIONS = {"LEGITIMATE_REQUEST_NOT_RESOLVED"}
 
 
 def write_hardening_module(

@@ -82,6 +82,15 @@ def _tools_from_evidence(evidence: dict[str, Any] | None) -> list[str]:
     return found
 
 
+def _evidence_step(evidence: dict[str, Any] | None, default: int) -> int:
+    """The event a violation's evidence points at (its first tool-call site), else ``default``."""
+    if isinstance(evidence, dict):
+        for site in evidence.get("propagation_sites") or []:
+            if isinstance(site, dict) and site.get("tool") and isinstance(site.get("step"), int):
+                return site["step"]
+    return default
+
+
 def _tool_from_evidence(evidence: dict[str, Any] | None) -> str | None:
     """The first tool a violation's evidence names, if any."""
     tools = _tools_from_evidence(evidence)
@@ -350,7 +359,7 @@ class CausalAnalyzer:
             success_rate=success_rate,
             failure_rate=failure_rate,
             critical_failures=critical_count,
-            novel_failure_modes_count=len(failure_counts),
+            novel_failure_modes_count=len(violation_counts) or len(failure_counts),
             failure_mode_breakdown=failure_counts,
             most_vulnerable_capability=most_vulnerable,
             worst_discovered_behavior=worst_behavior,
@@ -493,7 +502,7 @@ class CausalAnalyzer:
                     minimal_causal_trigger=_lineage(worst_exfil.mutations_applied),
                     description=(
                         f"In {len(exfil_elites)} simulation(s) the agent emailed a recipient it was not allowed to "
-                        f"contact for this task: {', '.join(recipients)}. Each message is shown below."
+                        f"contact for this task: {', '.join(recipients)}. Each message is listed in the evidence."
                     ),
                     trace_snippet=[
                         {
@@ -507,7 +516,8 @@ class CausalAnalyzer:
                         for e, v in exfil[:10]
                     ],
                     recommendation=(
-                        "Enforce strict egress recipient whitelisting at the tool gateway layer and validate "
+                        "Allow-list recipients at the email tool (only the customer who wrote in and named internal "
+                        "queues), treat instructions inside messages and tool results as data, and validate "
                         "all outbound message payloads against confidential data classification boundaries."
                     ),
                 )
@@ -547,12 +557,13 @@ class CausalAnalyzer:
             # The tools the violation itself names (a worm spreads through every tool that
             # carried the payload, which is not necessarily the call at ``step``).
             evidence_tools = _tools_from_evidence(viol.evidence if viol else None)
-            if viol and 0 <= viol.step < len(worst_elite.trace.events):
-                ev = worst_elite.trace.events[viol.step]
+            shown_step = _evidence_step(viol.evidence if viol else None, viol.step if viol else -1)
+            if viol and 0 <= shown_step < len(worst_elite.trace.events):
+                ev = worst_elite.trace.events[shown_step]
                 action = ev.get("action", {}) or {}
                 tool_name = action.get("tool_name") or "unknown"
                 snippet.append({
-                    "step": ev.get("step", viol.step),
+                    "step": ev.get("step", shown_step),
                     "action": action.get("action_type"),
                     "tool": action.get("tool_name"),
                     "thought": action.get("thought"),

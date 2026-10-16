@@ -556,19 +556,15 @@ def _summary_table(
             _colored_cell(band, band_color, styles.cell_bold, rl),
         ],
         [
-            rl.Paragraph("Generalization rating", styles.cell),
+            rl.Paragraph("Rating", styles.cell),
             rl.Paragraph(_xml_escape(metrics.generalization_rating), styles.cell),
         ],
         [
-            rl.Paragraph("Total simulations", styles.cell),
+            rl.Paragraph("Simulations run", styles.cell),
             rl.Paragraph(_format_number(metrics.total_evaluations), styles.cell),
         ],
         [
-            rl.Paragraph("Scenarios explored", styles.cell),
-            rl.Paragraph(_format_number(metrics.scenarios_generated), styles.cell),
-        ],
-        [
-            rl.Paragraph("Evaluation failure rate (all simulations)", styles.cell),
+            rl.Paragraph("Simulations with a violation", styles.cell),
             rl.Paragraph(
                 _format_percent(metrics.evaluation_failure_rate)
                 if getattr(metrics, "evaluation_failure_rate", None) is not None
@@ -577,19 +573,11 @@ def _summary_table(
             ),
         ],
         [
-            rl.Paragraph("Elite-cell failure rate (archive cells)", styles.cell),
-            rl.Paragraph(_format_percent(metrics.failure_rate), styles.cell),
-        ],
-        [
-            rl.Paragraph("Elite-cell success rate", styles.cell),
-            rl.Paragraph(_format_percent(metrics.success_rate), styles.cell),
-        ],
-        [
-            rl.Paragraph("Critical zero-found vulnerabilities", styles.cell),
+            rl.Paragraph("Simulations with a critical violation", styles.cell),
             rl.Paragraph(_format_number(metrics.critical_failures), styles.cell),
         ],
         [
-            rl.Paragraph("Novel failure modes", styles.cell),
+            rl.Paragraph("Kinds of failure found", styles.cell),
             rl.Paragraph(_format_number(metrics.novel_failure_modes_count), styles.cell),
         ],
         [
@@ -714,8 +702,8 @@ def _failure_distribution_flowables(
     items.sort(key=lambda pair: (-pair[1], pair[0]))
     rows: list[list[Any]] = [
         [
-            rl.Paragraph("Failure Category", styles.th),
-            rl.Paragraph("Occurrences", styles.th),
+            rl.Paragraph("Primary failure (one per failing simulation)", styles.th),
+            rl.Paragraph("Simulations", styles.th),
             rl.Paragraph("Severity Band", styles.th),
         ]
     ]
@@ -1171,7 +1159,7 @@ def _threat_surface_flowables(
             drawing = None
         if drawing is not None:
             caption = (
-                "Failure-mode distribution (no MAP-Elites archive available for this run). "
+                "Failing simulations by their primary failure. "
                 "Bars are shaded by severity band and labelled with the number of occurrences."
             )
 
@@ -1437,9 +1425,9 @@ def _reproducibility_flowables(
         table,
         rl.Spacer(1, 10),
         rl.Paragraph(
-            "All verdicts in this report are issued by a deterministic invariant policy oracle: "
-            "no stochastic judge participates in the outcome path, so a fixed agent, scenario "
-            "archive and seed reproduce every recorded result.",
+            "Verdicts come from a deterministic, rule-based oracle; no LLM judge is involved. The scenario "
+            "set is reproducible from the seed. A scripted agent reproduces every result; a sampled "
+            "model's responses vary between runs, so compare failure rates.",
             styles.body_small,
         ),
     ]
@@ -1463,8 +1451,8 @@ def _provenance_flowables(styles: SimpleNamespace, rl: SimpleNamespace) -> list[
         rl.Paragraph(
             "Failure modes shown above were discovered through 3D MAP-Elites quality-diversity "
             "search over adversarial injection intensity, market volatility and resource pressure. "
-            "Every verdict comes from a deterministic invariant policy oracle, so results are "
-            "reproducible for a fixed seed and scenario archive.",
+            "Every verdict comes from a deterministic, rule-based oracle over the agent's actions, and "
+            "every simulated episode is kept, so the findings can be re-checked and the reports rebuilt.",
             styles.body,
         ),
         rl.Paragraph(
@@ -1523,6 +1511,7 @@ def render_audit_pdf(
     command_line: str | None = None,
     title: str = "LIFE FORGE Security Audit Report",
     generated_utc: str | None = None,
+    risk_score_override: int | None = None,
 ) -> Path:
     """
     Render a complete PDF security audit report.
@@ -1558,7 +1547,8 @@ def render_audit_pdf(
 
     styles = _build_styles(rl)
     width = rl.A4[0] - 2 * (_PAGE_MARGIN_MM * rl.mm)
-    risk_score = compute_risk_score(metrics)
+    # A summary PDF that shows only some findings must still carry the full report's score.
+    risk_score = risk_score_override if risk_score_override is not None else compute_risk_score(metrics)
     band = risk_band(risk_score)
     # Explicit value, else SOURCE_DATE_EPOCH, else now (see resolve_generated_utc).
     generated_at = resolve_generated_utc(generated_utc)
