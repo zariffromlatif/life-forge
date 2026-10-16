@@ -114,15 +114,15 @@ Context: an industry scan reported 33% of MCP servers with critical vulnerabilit
 
 ## Maintainer Engagement & Disclosure Status
 
-In accordance with responsible disclosure principles, findings were shared directly with maintainers prior to broad publicity. As of 2026-10-08, maintainer triage status is recorded below:
+In accordance with responsible disclosure principles, findings were shared directly with maintainers prior to broad publicity. As of 2026-10-16, maintainer triage status is recorded below. On 2026-10-16 a correction was posted on each open issue (see the revision note at the top):
 
 | Target | Repository & Issue | Status | Outcome / Maintainer Response |
 | :--- | :--- | :--- | :--- |
 | **Microsoft** | [microsoft/playwright-mcp#1784](https://github.com/microsoft/playwright-mcp/issues/1784) | **Closed (Completed)** | Reviewed and closed as completed by Playwright Lead Architect Pavel Feldman (`@pavelfeldman`). |
 | **Upstash** | [upstash/context7#3312](https://github.com/upstash/context7/issues/3312) | **Closed (Resolved)** | Acknowledged with thanks by core collaborator Enes Gules (`@enesgules`). Proactive correction of the description false positive validated; confirmed that upstream Context7 API validates and bounds inputs prior to execution. |
-| **Anthropic Reference** | [modelcontextprotocol/servers#4958](https://github.com/modelcontextprotocol/servers/issues/4958) | **Open (Discussion)** | Technical peer discussion with maintainer contributors regarding host UX hints (`destructiveHint: true`) versus server-side authorization contracts and out-of-band capability tokens. |
-| **Desktop Commander** | [wonderwhy-er/DesktopCommanderMCP#808](https://github.com/wonderwhy-er/DesktopCommanderMCP/issues/808) | **Open** | Awaiting maintainer triage. |
-| **Firecrawl** | [firecrawl/firecrawl-mcp-server#481](https://github.com/firecrawl/firecrawl-mcp-server/issues/481) | **Open** | Awaiting maintainer triage. |
+| **MCP reference servers** | [modelcontextprotocol/servers#4958](https://github.com/modelcontextprotocol/servers/issues/4958) | **Open (Discussion)** | A contributor review showed `write_file` already declares `destructiveHint: true` and is confined by `validatePath`, and that a `confirm` argument is self-attestation. Correction posted 2026-10-16: no HIGH finding under ruleset 1.2.0; the `confirm` suggestion withdrawn; only a documentation question remains. |
+| **Desktop Commander** | [wonderwhy-er/DesktopCommanderMCP#808](https://github.com/wonderwhy-er/DesktopCommanderMCP/issues/808) | **Open** | Correction posted 2026-10-16: the HIGH findings were false positives (annotations ignored); no HIGH finding under ruleset 1.2.0. Awaiting maintainer response. |
+| **Firecrawl** | [firecrawl/firecrawl-mcp-server#481](https://github.com/firecrawl/firecrawl-mcp-server/issues/481) | **Open** | Correction posted 2026-10-16: three false positives and the parameter count withdrawn. One point stands: `firecrawl_interact` declares `destructiveHint: false` although it can submit forms. Awaiting maintainer response. |
 
 ---
 
