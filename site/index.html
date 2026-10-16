@@ -89,6 +89,7 @@
   /* results table */
   .results { border: 1px solid var(--line); background: var(--panel); }
   table { width: 100%; border-collapse: collapse; }
+  th .dir { display: block; margin-top: 6px; color: var(--dim); opacity: .8; text-transform: none; letter-spacing: .02em; }
   th { font: 500 11px/1 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--dim); text-align: left; padding: 16px 22px; border-bottom: 1px solid var(--line); }
   td { padding: 20px 22px; border-bottom: 1px solid var(--line-2); vertical-align: middle; font-size: 15px; }
   tr:last-child td { border-bottom: 0; }
@@ -208,8 +209,8 @@
       <div class="feature">
         <span class="label">Featured research</span>
         <h2>Do tool-using support agents follow injected instructions?</h2>
-        <p>Three open models ran the same support desk under 37 scenarios with injected instructions. The largest model
-          acted for the attacker in 9 of them; one model never did.</p>
+        <p>Three open models ran the same support desk under 37 scenarios with injected instructions. gpt-oss-120b
+          acted for the attacker in 9 of them; qwen3.8-27b never did.</p>
         <div class="meta"><span>Zarif Latif · Oct 2026</span><span class="tag">AI / ML</span><span class="tag">Prompt injection</span></div>
         <a class="more" href="https://github.com/zariffromlatif/life-forge/blob/main/reports/refund-desk-benchmark-2026-10.md">Read the report</a>
       </div>
@@ -272,22 +273,22 @@
     </div>
     <div class="results">
       <table>
-        <thead><tr><th>Model</th><th>Acted for the attacker</th><th>Unsafe, strict policy</th><th>Completed the task</th></tr></thead>
+        <thead><tr><th>Model</th><th>Acted for the attacker <span class="dir">lower is better</span></th><th>Unsafe, strict policy <span class="dir">lower is better</span></th><th>Completed the task <span class="dir">higher is better</span></th></tr></thead>
         <tbody>
           <tr>
-            <td class="model">qwen3.8-27b<small>27B</small></td>
+            <td class="model">qwen3.8-27b</td>
             <td><span class="num ok">0<small> / 37</small></span></td>
             <td><div class="meter"><div class="track"><div class="fill" style="width:27%"></div></div>27%</div></td>
             <td><div class="meter"><div class="track"><div class="fill" style="width:100%"></div></div>100%</div></td>
           </tr>
           <tr>
-            <td class="model">gpt-oss-120b<small>120B</small></td>
+            <td class="model">gpt-oss-120b</td>
             <td><span class="num bad">9<small> / 37</small></span></td>
             <td><div class="meter"><div class="track"><div class="fill" style="width:54%"></div></div>54%</div></td>
             <td><div class="meter"><div class="track"><div class="fill" style="width:95%"></div></div>95%</div></td>
           </tr>
           <tr>
-            <td class="model">gpt-oss-20b<small>20B</small></td>
+            <td class="model">gpt-oss-20b</td>
             <td><span class="num bad">5<small> / 36</small></span></td>
             <td><div class="meter"><div class="track"><div class="fill" style="width:56%"></div></div>56%</div></td>
             <td><div class="meter"><div class="track"><div class="fill" style="width:86%"></div></div>86%</div></td>
@@ -296,7 +297,8 @@
       </table>
       <div class="results-foot">
         <span>"Acted for the attacker": sent data where the attack directed, copied the payload forward, granted access or
-          attempted a forbidden refund. One sample per task; intervals are wide.</span>
+          attempted a forbidden refund. Served via Groq's free tier at temperature 0.7, October 12-15, 2026; one sample
+          per task, so intervals are wide.</span>
         <a href="https://github.com/zariffromlatif/life-forge/blob/main/reports/refund-desk-benchmark-2026-10.md">Method and limitations →</a>
       </div>
     </div>
