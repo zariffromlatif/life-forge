@@ -8,6 +8,9 @@
 [![Protocol](https://img.shields.io/badge/protocol-MCP%20Native-orange.svg)](lifeforge/sandbox/mcp_server.py)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
+**Website:** [zariffromlatif.github.io/life-forge](https://zariffromlatif.github.io/life-forge/) ·
+**Latest research:** [Do tool-using support agents follow injected instructions? (October 2026)](reports/refund-desk-benchmark-2026-10.md)
+
 ---
 
 ## Why this exists
