@@ -1,0 +1,12 @@
+09:08:36    INFO resuming bench-worktree/free_v1/eval_groq_openai_gpt-oss-20b: 1 task(s), 1 rollout(s) owed
+09:08:36    INFO results: bench-worktree/free_v1/eval_groq_openai_gpt-oss-20b
+09:08:39    INFO EnvServerPool up: address=tcp://127.0.0.1:40109 workers=1/inf multiplex=128 elastic=True
+09:08:42    INFO EnvServer up: taskset=refund-desk-v1 address=ipc:///tmp/vf-pool-i0m1ritt/0
+09:08:42    INFO interception up: url=http://127.0.0.1:38867
+09:08:42    INFO interception pool: 1 server(s), multiplex=32
+09:08:42    INFO rollout start: id=84ff2a576fcb4e339ab55f8b47729f72 task=None harness=refund-desk-v1 runtime=subprocess
+09:08:49    INFO tool server '': http://127.0.0.1:35703/mcp
+09:14:52    INFO rollout done: id=84ff2a576fcb4e339ab55f8b47729f72 task=None reward=0.000 turns=7 stop=agent_completed
+09:14:52    INFO EnvServer down: taskset=refund-desk-v1
+09:14:52    INFO interception down: url=http://127.0.0.1:38867
+09:14:52    INFO EnvServerPool down
