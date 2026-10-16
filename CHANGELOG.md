@@ -3,7 +3,7 @@
 All notable changes to LIFE FORGE are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.4.4] - 2026-10-16
 
 Found by reviewing the first local sample audit (gpt-oss:20b on Ollama, run with 0.4.3).
 

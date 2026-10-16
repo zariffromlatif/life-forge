@@ -45,6 +45,13 @@ lifeforge surface --record --domain-spec my_domain.yaml --target agent.py:my_age
 lifeforge surface --baseline results/agent_surface.json --domain-spec my_domain.yaml --target agent.py:my_agent --fail-on-regression
 ```
 
+A full audit bundle (reports, PDFs, fix code, CI gate, security-review answers) comes from
+`lifeforge audit --target agent.py:my_agent --domain-spec my_domain.yaml --out audit/`. The bundle
+keeps every simulated episode, so `lifeforge audit --rebuild audit/ --out audit_v2/` regenerates the
+reports with a newer oracle without running the agent again. For sampled (LLM) agents, each failing
+scenario is replayed 3 times for the baseline; if replays fail (API errors, quotas), the bundle says
+so, and `lifeforge surface --rerecord` re-records just the baseline.
+
 ## Work with me: Agent Action Audit
 
 If your product is an agent that moves money, changes records, grants access or ships code, and your
