@@ -7,6 +7,22 @@
 
 > **Revision 2026-10-10 - read first.** This report was first published (2026-10-03) with **40% of servers in the CRITICAL band**. That figure was wrong. The 1.0.0 scorer banded servers by raw finding *volume*, so a server with many MEDIUM "unbounded parameter" findings and **no CRITICAL finding** was labelled CRITICAL; the scan contained **zero CRITICAL-severity findings**. Bands are now anchored on the most severe finding (mcpsec 1.1.0), and the stored findings were re-scored without re-collecting them. Two further 1.0.0 defects mean the findings themselves need a fresh scan: (1) static extraction dropped every parameter of tools declared as JSON-schema constants, so **`brave-search`, `google-maps`, and `slack` were never actually scanned** (their 0-finding results are invalid); (2) live scans collapsed per-parameter findings, undercounting MEDIUM findings on live-probed servers. Original scores are preserved in each per-server JSON under `original_scoring`.
 
+> **Revision 2026-10-16 (ruleset 1.2.0) - the destructive-tool findings below were overstated.** `MCP_DESTRUCTIVE_UNCONSTRAINED` produced false positives. It matched verbs anywhere in a description, including adjectives ("merged pull requests", "purchased credits") and usage notes ("do not send both fields"), and it ignored the MCP `readOnlyHint` / `destructiveHint` annotations. The static extractor also misread `//` comments containing an apostrophe, which hid tools and arguments. Ruleset 1.2.0 fixes all three:
+>
+> - `readOnlyHint: true` means the tool is not destructive.
+> - A destructive tool that declares `destructiveHint: true` is **MEDIUM**, not HIGH: a host can ask the user first, and what remains is that the server enforces no limit of its own.
+> - A read-named tool is judged by its name, and only a description's first sentence is matched.
+>
+> In the per-server findings below, these HIGH flags are false positives: desktop-commander `get_prompts`, `list_sessions`, `start_search`; firecrawl `firecrawl_search`, `firecrawl_developer_search`, `firecrawl_credit_usage`. The three servers with open disclosures were re-checked against current source (static extraction; no server was launched):
+>
+> | Server | Source checked | Tools | In this report (1.1.0) | Ruleset 1.2.0 |
+> | :--- | :--- | ---: | :--- | :--- |
+> | `desktop-commander` | DesktopCommanderMCP `f508e52` (2026-10-14) | 25 | HIGH, 8 HIGH findings | **MODERATE, no HIGH finding**. Every state-changing tool declares `destructiveHint: true` and every read tool `readOnlyHint: true`; 9 MEDIUM "host-side approval only" findings remain. |
+> | `firecrawl` | firecrawl-mcp-server `e895e94` (2026-10-15) | 28 | HIGH, 7 HIGH findings | **HIGH, 3 HIGH findings**: `firecrawl_interact`, `firecrawl_agent`, `firecrawl_monitor_run` (see below). 61 parameters without bounds (MEDIUM). |
+> | `filesystem` | modelcontextprotocol/servers `bbb701e` (2026-10-11), annotations read from source | 14 | HIGH (`write_file`) | **No HIGH finding**. `write_file`, `edit_file` and `move_file` declare `destructiveHint: true` (MEDIUM under 1.2.0); not fully re-scored, because the static extractor does not parse this server's registration pattern. |
+>
+> The firecrawl HIGH findings are tools that declare `destructiveHint: false` but start work or act outside the server. `firecrawl_interact`'s own description says form submissions "can create persistent external side effects", so a client that trusts the hint will not ask the user first. `firecrawl_agent` and `firecrawl_monitor_run` start credit-consuming jobs. The rest of this report (other servers, headline numbers) still reflects ruleset 1.1.0 until a full re-scan.
+
 ---
 
 ## Headline Numbers

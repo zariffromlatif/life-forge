@@ -83,9 +83,9 @@ def _balanced_braces(src: str, open_index: int) -> int:
     length = len(src)
     while index < length:
         char = src[index]
-        if char in "\"'`/":
-            index = _skip_string(src, index)
-            continue
+        # Comments first: a "//" read as a regex token left the comment's
+        # text in play, and an apostrophe in it ("server's") opened a string
+        # that swallowed the rest of the file.
         if src.startswith("//", index):
             end = src.find("\n", index)
             index = length if end == -1 else end + 1
@@ -93,6 +93,9 @@ def _balanced_braces(src: str, open_index: int) -> int:
         if src.startswith("/*", index):
             end = src.find("*/", index + 2)
             index = length if end == -1 else end + 2
+            continue
+        if char in "\"'`/":
+            index = _skip_string(src, index)
             continue
         if char == "{":
             depth += 1
@@ -117,9 +120,9 @@ def _balanced_parens(src: str, open_index: int) -> int:
     length = len(src)
     while index < length:
         char = src[index]
-        if char in "\"'`/":
-            index = _skip_string(src, index)
-            continue
+        # Comments first: a "//" read as a regex token left the comment's
+        # text in play, and an apostrophe in it ("server's") opened a string
+        # that swallowed the rest of the file.
         if src.startswith("//", index):
             end = src.find("\n", index)
             index = length if end == -1 else end + 1
@@ -127,6 +130,9 @@ def _balanced_parens(src: str, open_index: int) -> int:
         if src.startswith("/*", index):
             end = src.find("*/", index + 2)
             index = length if end == -1 else end + 2
+            continue
+        if char in "\"'`/":
+            index = _skip_string(src, index)
             continue
         if char in "({[":
             depth += 1
@@ -158,6 +164,16 @@ def _split_top_level(body: str) -> list[str]:
             elif char == quote:
                 in_string = False
             index += 1
+            continue
+        if body.startswith("//", index):
+            # Comments are dropped: their text is not code, and a quote in
+            # one would otherwise open a string.
+            end = body.find("\n", index)
+            index = len(body) if end == -1 else end
+            continue
+        if body.startswith("/*", index):
+            end = body.find("*/", index + 2)
+            index = len(body) if end == -1 else end + 2
             continue
         if char in "\"'`":
             in_string = True
@@ -314,10 +330,23 @@ def _zod_to_schema(expr: str) -> dict[str, Any]:
     return schema
 
 
+_LEADING_COMMENTS = re.compile(r"^(?:\s*(?://[^\n]*|/\*.*?\*/))+", re.DOTALL)
+
+
+def _strip_leading_comments(text: str) -> str:
+    """Drop the comments that precede an entry in a split object or array body.
+
+    Section comments ("// Editing tools") and per-field notes belong to no
+    entry; left in place they hid the tool or argument that follows them.
+    """
+    return _LEADING_COMMENTS.sub("", text)
+
+
 def _props_body_to_schema(body: str) -> dict[str, Any]:
     """Convert a zod properties object body into a JSON-schema properties map."""
     properties: dict[str, Any] = {}
     for part in _split_top_level(body):
+        part = _strip_leading_comments(part)
         if not part or ":" not in part:
             continue
         name, expr = part.split(":", 1)
@@ -422,6 +451,32 @@ _TS_ZOD_OBJECT = re.compile(
 _TS_IMPORT_STAR = re.compile(
     r"import\s+\*\s+as\s+(\w+)\s+from\s+[\"']([^\"']+)[\"']",
 )
+_TS_IMPORT_NAMED = re.compile(
+    r"import\s*(?:type\s+)?\{([^}]*)\}\s*from\s+[\"']([^\"']+)[\"']",
+)
+_ANNOTATION_HINTS = ("readOnlyHint", "destructiveHint", "idempotentHint", "openWorldHint")
+
+
+def _annotations_from_body(body: str) -> dict[str, Any]:
+    """Read the boolean MCP hints from a tool's ``annotations: { ... }`` literal.
+
+    Only literal ``true``/``false`` values count; a hint computed at runtime is
+    left out rather than guessed.
+    """
+    match = re.search(r"\bannotations\s*:\s*\{", body)
+    if not match:
+        return {}
+    open_index = body.index("{", match.end() - 1)
+    close_index = _balanced_braces(body, open_index)
+    if close_index == -1:
+        return {}
+    block = body[open_index + 1: close_index]
+    hints: dict[str, Any] = {}
+    for hint in _ANNOTATION_HINTS:
+        hint_match = re.search(r"\b" + hint + r"\s*:\s*(true|false)\b", block)
+        if hint_match:
+            hints[hint] = hint_match.group(1) == "true"
+    return hints
 
 
 def _resolve_ts_import(file_path: Path, relative: str) -> Path | None:
@@ -613,7 +668,17 @@ def extract_listtools_tools(
         identifier_match = re.match(r"(\w+)", handler_body[value_start:])
         if not identifier_match:
             return []
-        referred = object_consts.get(identifier_match.group(1))
+        identifier = identifier_match.group(1)
+        referred = object_consts.get(identifier)
+        if referred is None:
+            # A filtered view of a literal array, e.g.
+            # ``const filtered = allTools.filter(...)``: scan the full array.
+            derived = re.search(
+                r"\bconst\s+" + re.escape(identifier) + r"\s*=\s*(\w+)\s*\.\s*(?:filter|slice|map)\s*\(",
+                handler_body,
+            )
+            if derived:
+                referred = object_consts.get(derived.group(1))
         if referred is None:
             return []
         # Re-express the array body in the same coordinates as a literal.
@@ -637,6 +702,21 @@ def extract_listtools_tools(
         resolved = _resolve_ts_import(file_path, alias_match.group(2))
         if resolved is not None:
             aliases[alias_match.group(1)] = resolved
+    # Named imports (``import { FooArgsSchema } from './schemas.js'``) map each
+    # imported schema name to its module, honouring ``as`` renames.
+    named_imports: dict[str, tuple[Path, str]] = {}
+    for named_match in _TS_IMPORT_NAMED.finditer(source):
+        resolved = _resolve_ts_import(file_path, named_match.group(2))
+        if resolved is None:
+            continue
+        for item in named_match.group(1).split(","):
+            parts = item.strip().split()
+            if not parts or parts[0] == "type":
+                parts = parts[1:]
+            if not parts:
+                continue
+            original, local = parts[0], parts[-1]
+            named_imports[local] = (resolved, original)
 
     # Tool objects referenced by identifier from the tools array (some servers
     # declare them as typed consts rather than inline literals).
@@ -644,7 +724,7 @@ def extract_listtools_tools(
 
     tools: list[McpToolDefinition] = []
     for entry in _split_top_level(handler_body[array_open + 1: array_close]):
-        entry = entry.strip().rstrip(",")
+        entry = _strip_leading_comments(entry).strip().rstrip(",")
         if not entry:
             continue
         if entry.startswith("{"):
@@ -672,13 +752,19 @@ def extract_listtools_tools(
 
         schema_props: dict[str, Any] = {}
         json_required: list[str] | None = None
-        zod_ref = re.search(r"zodToJsonSchema\s*\(\s*(\w+)\s*\.\s*(\w+)\s*\)", body)
+        zod_ref = re.search(r"zodToJsonSchema\s*\(\s*(?:(\w+)\s*\.\s*)?(\w+)\s*[,)]", body)
         input_schema = re.search(r"inputSchema\s*:\s*\{", body)
         if zod_ref:
-            module_path = aliases.get(zod_ref.group(1))
-            zod_body = (zod_objects.get(module_path) or {}).get(zod_ref.group(2))
+            if zod_ref.group(1):
+                module_path = aliases.get(zod_ref.group(1))
+                zod_body = (zod_objects.get(module_path) or {}).get(zod_ref.group(2))
+            else:
+                module_path, original = named_imports.get(zod_ref.group(2), (file_path, zod_ref.group(2)))
+                zod_body = (zod_objects.get(module_path) or {}).get(original)
             if zod_body is not None:
                 schema_props = _props_body_to_schema(zod_body)
+            else:
+                stats.pattern_misses += 1
         elif input_schema:
             # _json_schema_from_inputschema returns a WHOLE schema
             # ({type, properties, required}); only its properties map is the
@@ -720,7 +806,13 @@ def extract_listtools_tools(
             schema["required"] = required
 
         tools.append(
-            McpToolDefinition(name=name, description=description, input_schema=schema, server=server)
+            McpToolDefinition(
+                name=name,
+                description=description,
+                input_schema=schema,
+                server=server,
+                annotations=_annotations_from_body(body),
+            )
         )
         stats.pattern_hits += 1
 
@@ -763,6 +855,7 @@ def extract_tools_typescript(source: str, *, server: str = "default", stats: Ext
                 description=description,
                 input_schema=schema,
                 server=server,
+                annotations=_annotations_from_body(args_body),
             )
         )
         stats.pattern_hits += 1

@@ -23,7 +23,7 @@ from .manifest import McpToolDefinition
 #: 1.1.0: NFKC-normalized, whole-schema poisoning/hidden-character scans;
 #: category-based invisible detection; any non-ASCII identifier flagged;
 #: token-exact authorization arguments; camelCase/kebab destructive names.
-RULESET_VERSION = "1.1.0"
+RULESET_VERSION = "1.2.0"
 
 _SEVERITY_ORDER = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3}
 
@@ -256,24 +256,55 @@ def _identifier_tokens(name: str) -> set[str]:
     """Set form of :func:`_identifier_token_list`."""
     return set(_identifier_token_list(name))
 
-#: Verb matcher over natural-language descriptions: whole words with common
-#: inflections only, so "purchase_orders" (a table name) never matches the
-#: verb "purchase" - substring matching flagged every database query tool.
+#: Verb matcher over natural-language descriptions: whole words with present
+#: and progressive inflections only, so "purchase_orders" (a table name) never
+#: matches the verb "purchase" - substring matching flagged every database
+#: query tool. Past forms are excluded: in tool descriptions they are almost
+#: always adjectives ("merged pull requests", "purchased credits").
 _VERB_PATTERN = re.compile(
-    r"\b(" + "|".join(verb + r"(?:s|es|d|ed|ing)?" for verb in _DESTRUCTIVE_VERBS) + r")\b"
+    r"\b(" + "|".join(verb + r"(?:s|es|ing)?" for verb in _DESTRUCTIVE_VERBS) + r")\b"
 )
+
+#: Name tokens that mark a read or query tool. A read-named tool is judged by
+#: its name, not its description: a search tool that mentions another tool
+#: which "executes" something does not execute anything itself.
+_READ_ONLY_VERBS = frozenset({
+    "get", "list", "read", "search", "find", "fetch", "query", "view", "show",
+    "describe", "lookup", "inspect", "retrieve", "browse",
+})
 
 
 def _is_destructive(tool: McpToolDefinition) -> bool:
-    """Return True when the tool's name or description signals a mutating capability.
+    """Return True when the tool's annotations, name or description signal a mutating capability.
 
-    Name matching uses identifier tokens split on ``_``/``-``/``.`` and
-    camelCase (``deleteRepository`` contains "delete"); description matching
-    uses whole-word inflection-aware boundaries.
+    A ``readOnlyHint: true`` annotation settles it (the server declares the
+    tool read-only; the rule judges authorization surfaces, not honesty of
+    hints), as does ``destructiveHint: true``. Otherwise name matching uses
+    identifier tokens split on ``_``/``-``/``.`` and camelCase
+    (``deleteRepository`` contains "delete"); a read-named tool is not
+    destructive; description matching uses whole-word inflection boundaries.
     """
-    if _identifier_tokens(tool.name) & set(_DESTRUCTIVE_VERBS):
+    annotations = tool.annotations or {}
+    if annotations.get("readOnlyHint") is True:
+        return False
+    if annotations.get("destructiveHint") is True:
         return True
-    return bool(_VERB_PATTERN.search(_normalize_for_matching(tool.description).lower()))
+    tokens = _identifier_tokens(tool.name)
+    if tokens & set(_DESTRUCTIVE_VERBS):
+        return True
+    if tokens & _READ_ONLY_VERBS:
+        return False
+    return bool(_VERB_PATTERN.search(_lead_sentence(_normalize_for_matching(tool.description)).lower()))
+
+
+def _lead_sentence(text: str) -> str:
+    """The description's first sentence: the one that says what the tool does.
+
+    Later sentences are usage notes ("do not send both fields", "a typical
+    research run takes minutes") whose verbs say nothing about the tool's own
+    capability.
+    """
+    return re.split(r"(?<=[.!?])\s+|\n\s*\n", text.strip(), maxsplit=1)[0]
 
 #: Argument-name tokens that constitute an authorization surface. Matching is
 #: token-exact: ``page_token`` or ``max_tokens`` are pagination/limits, not an
@@ -550,6 +581,34 @@ def detect_unconstrained_destructive(tool: McpToolDefinition) -> list[McpFinding
     mentions_authorization = any(auth in haystack for auth in ("authorization", "confirmation", "approved by", "requires approval"))
     if has_authorization or mentions_authorization:
         return []
+
+    if (tool.annotations or {}).get("destructiveHint") is True:
+        # The server already advertises the hint that lets a host ask the user
+        # first. What remains is that the server itself enforces nothing.
+        return [
+            McpFinding(
+                rule_id="MCP_DESTRUCTIVE_UNCONSTRAINED",
+                severity="MEDIUM",
+                title="Destructive tool relies on host-side approval only",
+                tool=tool.name,
+                server=tool.server,
+                description=(
+                    "The tool advertises destructiveHint, so a host can ask the user before "
+                    "running it, but the server enforces no limit of its own. Whether a "
+                    "manipulated model's call is stopped depends entirely on the client."
+                ),
+                evidence={
+                    "arguments": sorted(arguments)[:12],
+                    "required": tool.required_arguments(),
+                    "destructive_hint": True,
+                },
+                remediation=(
+                    "Keep destructiveHint. For deployments where the host may not prompt, add a "
+                    "server-side limit the model cannot change: an allowlist or scope limit, or an "
+                    "approval token issued outside the model's context."
+                ),
+            )
+        ]
 
     return [
         McpFinding(

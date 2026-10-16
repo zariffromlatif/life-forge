@@ -3,6 +3,28 @@
 All notable changes to LIFE FORGE are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- **mcpsec ruleset 1.2.0: the destructive-tool rule produced false positives.** Found while
+  re-checking the three open MCP disclosures (see the 2026-10-16 revision in
+  [`results/MCP_ECOSYSTEM_SCAN.md`](results/MCP_ECOSYSTEM_SCAN.md)).
+  - MCP annotations were ignored. `readOnlyHint: true` now means not destructive, and a
+    destructive tool that declares `destructiveHint: true` is MEDIUM ("relies on host-side
+    approval only"), not HIGH.
+  - Verbs matched anywhere in a description, so `firecrawl_search` ("executes"),
+    `firecrawl_credit_usage` ("purchased") and read tools in Desktop Commander were flagged.
+    Read-named tools are now judged by their name, past participles no longer match, and only
+    the description's first sentence counts.
+- **Static TypeScript extraction lost tools and arguments.**
+  - A `//` comment containing an apostrophe opened a phantom string. That swallowed the next
+    schema, and some tools were dropped. Comments are now skipped before strings.
+  - Section comments between array entries hid the tool that followed them.
+  - `ListTools` handlers that return a filtered local array, and `zodToJsonSchema` references
+    through named imports, are now resolved.
+  - Tool annotations are now extracted, for both handler and `addTool` / `registerTool` styles.
+
 ## [0.4.5] - 2026-10-16
 
 Fixes found while writing the October 2026 benchmark report and reviewing the public sample audit
