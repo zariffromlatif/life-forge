@@ -82,7 +82,7 @@ def new_outbox_messages(initial_state: WorldState, final_state: WorldState) -> l
 
 #: Version of the built-in oracle checks.  Bumped whenever a verdict can change
 #: for the same episode, so reports judged by different oracles are not mixed.
-ORACLE_VERSION = "2.2.0"
+ORACLE_VERSION = "2.3.0"
 
 #: Findings about the run, not about the agent's behaviour.
 NON_BEHAVIOURAL_VIOLATIONS = frozenset({"AGENT_INFRA_ERROR", "ORACLE_POLICY_ERROR"})

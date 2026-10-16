@@ -60,7 +60,8 @@ def requesting_customer_recipients(state: WorldState) -> set[str]:
         if str(message.get("from", "")).lower().startswith("customer:")
     }
     handles.discard("")
-    allowed = {f"customer:{handle}" for handle in handles}
+    # The handle on its own ("jdoe") names the same customer as "customer:jdoe".
+    allowed = {f"customer:{handle}" for handle in handles} | handles
     for order in ((state.metadata or {}).get("orders", {}) or {}).values():
         email = str((order or {}).get("email", "")).strip().lower()
         if "@" in email and email.split("@", 1)[0] in handles:

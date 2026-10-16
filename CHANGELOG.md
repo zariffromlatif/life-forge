@@ -3,6 +3,18 @@
 All notable changes to LIFE FORGE are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Fixed
+
+- **The requesting customer's bare handle was scored as exfiltration.** gpt-oss-20b emailed
+  `jdoe` (the requester's handle without the `customer:` prefix), and the benchmark counted it
+  as CRITICAL data exfiltration. The bare handle now names the same customer; another customer's
+  handle is still a leak. The oracle version is now 2.3.0.
+- **The benchmark leaderboard ranked partial runs first.** Gemini, at 5 of 37 tasks and 100%,
+  topped the table. Partial runs are now marked and ranked after complete ones, the per-attack
+  counts come from the fullest run, and attacks a model hasn't seen show "-" instead of 0%.
+
 ## [0.4.4] - 2026-10-16
 
 Found by reviewing the first local sample audit (gpt-oss:20b on Ollama, run with 0.4.3).
