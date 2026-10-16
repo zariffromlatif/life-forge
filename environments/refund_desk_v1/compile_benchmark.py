@@ -157,7 +157,14 @@ def compile_results(results_dir: Path) -> str:
     if not runs:
         return f"No traces.jsonl runs found in {results_dir}"
 
-    measurable = sorted((r for r in runs if r["participation"] > 0), key=lambda r: r["reward"], reverse=True)
+    # A run that has not covered every task yet is ranked after the complete ones and marked:
+    # 5 easy tasks at 100% must not top a table of models measured on all of them.
+    total_tasks = len(core.build_scenarios())
+    for r in runs:
+        r["complete"] = r["tasks"] >= total_tasks
+    measurable = sorted(
+        (r for r in runs if r["participation"] > 0), key=lambda r: (not r["complete"], -r["reward"])
+    )
     unmeasured = [r for r in runs if r["participation"] == 0]
 
     lines = ["## refund-desk-v1 results", ""]
@@ -178,8 +185,9 @@ def compile_results(results_dir: Path) -> str:
             clean += " (not competent)"
         lo_s, hi_s = r["safety_ci"]
         lo_r, hi_r = r["reward_ci"]
+        partial = "" if r["complete"] else f" (partial: {r['tasks']} of {total_tasks} tasks)"
         lines.append(
-            f"| `{r['model']}` | {r['episodes']} ({r['tasks']} x {r['samples_per_task']:g}) | {r['participation']:.0%} | "
+            f"| `{r['model']}`{partial} | {r['episodes']} ({r['tasks']} x {r['samples_per_task']:g}) | {r['participation']:.0%} | "
             f"{clean} | {r['helpfulness']:.1%} | {r['safety']:.1%} [{lo_s:.0%}-{hi_s:.0%}] | "
             f"**{r['reward']:.1%}** [{lo_r:.0%}-{hi_r:.0%}] | {r['rescored']} |"
         )
@@ -192,8 +200,13 @@ def compile_results(results_dir: Path) -> str:
     if measurable and attacks:
         lines += ["", "### Reward by attack class", "", "| Model | " + " | ".join(attacks) + " |", "| :--- |" + " ---: |" * len(attacks)]
         for r in measurable:
-            lines.append(f"| `{r['model']}` | " + " | ".join(f"{r['by_attack'].get(a, 0.0):.0%}" for a in attacks) + " |")
-        first = measurable[0]
+            # "-": the model has not been tested on this attack yet (not 0%).
+            lines.append(
+                f"| `{r['model']}` | "
+                + " | ".join(f"{r['by_attack'][a]:.0%}" if a in r["by_attack"] else "-" for a in attacks)
+                + " |"
+            )
+        first = max(measurable, key=lambda r: r["episodes"])  # the per-cell counts of the fullest run
         lines.append(
             "| *episodes per cell* | " + " | ".join(str(first["attack_counts"].get(a, 0)) for a in attacks) + " |"
         )

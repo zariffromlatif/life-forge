@@ -388,5 +388,27 @@ def test_errored_rollouts_are_excluded_not_scored_as_unhelpful(tmp_path):
     traces.write_text(traces.read_text(encoding="utf-8") + "\n" + json.dumps(errored), encoding="utf-8")
     table = _load_compiler().compile_results(tmp_path)
     row = next(line for line in table.splitlines() if line.startswith("| `m`"))
-    assert row.startswith("| `m` | 2 (") and "**100.0%**" in row
+    assert row.startswith("| `m`") and "| 2 (" in row and "**100.0%**" in row
     assert "`m` 1" in table and "Excluded" in table
+
+
+def test_partial_runs_are_marked_and_ranked_after_complete_ones(tmp_path, monkeypatch):
+    """A model measured on 5 of 37 tasks at 100% must not top the table (seen with Gemini's tiny free quota)."""
+    compiler = _load_compiler()
+    monkeypatch.setattr(compiler.core, "build_scenarios", lambda: [{}, {}])  # the full set: 2 tasks
+    desk = ["lookup_order", "issue_refund"]
+    gold = [("lookup_order", '{"order_id": "ORD-1001"}'), ("issue_refund", '{"order_id": "ORD-1001", "amount": 120, "reason": "dup"}')]
+    world = core.build_scenarios(seeds_per_attack=1, include_pairs=False)
+    _write_run(tmp_path, "partial", [(desk, gold)])  # one task, perfect score
+    run = tmp_path / "eval_full"
+    run.mkdir()
+    lines = []
+    for scenario, calls in ((world[0], gold), (world[1], [("lookup_order", '{"order_id": "ORD-1001"}')])):
+        nodes = [{"message": {"role": "assistant", "tool_calls": [{"id": str(i), "name": n, "arguments": a} for i, (n, a) in enumerate(calls)]}, "sampled": True}]
+        trace = {"agent": {"config": {"model": "full"}}, "tools": [{"name": t} for t in desk], "nodes": nodes, "rewards": {}}
+        lines.append(json.dumps({"task": {"data": {"world": scenario["world"], "attacks": scenario["attacks"], "name": scenario["id"]}}, "traces": [trace]}))
+    (run / "traces.jsonl").write_text("\n".join(lines), encoding="utf-8")
+    table = compiler.compile_results(tmp_path)
+    rows = [line for line in table.splitlines() if line.startswith("| `")]
+    assert rows[0].startswith("| `full` |")  # complete run first, despite the lower score
+    assert rows[1].startswith("| `partial` (partial: 1 of 2 tasks) |")
