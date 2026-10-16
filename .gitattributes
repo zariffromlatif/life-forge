@@ -1,0 +1,6 @@
+# Never line-ending-convert binary deliverables.
+*.pdf binary
+*.gz binary
+*.png binary
+*.jpg binary
+*.zip binary
