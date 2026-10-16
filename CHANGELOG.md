@@ -3,7 +3,10 @@
 All notable changes to LIFE FORGE are documented here.
 Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/); versioning follows [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
+## [0.4.5] - 2026-10-16
+
+Fixes found while writing the October 2026 benchmark report and reviewing the public sample audit
+([`samples/sample-audit-gpt-oss-20b-2026-10`](samples/sample-audit-gpt-oss-20b-2026-10)). The oracle version is now 2.3.0.
 
 ### Fixed
 
