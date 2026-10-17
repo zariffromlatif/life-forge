@@ -1,9 +1,9 @@
 {
-  "updated": "2026-10-16T09:14:58Z",
+  "updated": "2026-10-17T08:40:54Z",
   "models": {
     "openai/gpt-oss-120b": "complete",
     "qwen/qwen3.8-27b": "complete",
-    "openai/gpt-oss-20b": "37/37 episodes",
+    "openai/gpt-oss-20b": "complete",
     "gemini-3.8-flash": "skipped: probe HTTP 402: [{\n  \"error\": {\n    \"code\": 402,\n    \"message\": \"Your prepayment credits are depleted. Please go to AI Studio at https://ai.studio/projects to manage your project and billing. Learn more at https://ai"
   }
 }
