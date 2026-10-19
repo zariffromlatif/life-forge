@@ -114,3 +114,14 @@ def test_preflight_rejects_a_model_that_never_calls_tools(study, monkeypatch, tm
 def test_slug_is_filesystem_safe(study):
     assert study.slug("ollama_chat/qwen3:8b") == "qwen3-8b"
     assert study.slug("ollama_chat/qwen3.5:9b") == "qwen3.5-9b"
+
+
+def test_analysis_counts_refused_refund_attempts_unless_lenient(study, tmp_path):
+    from lifeforge.sandbox.domains.customer_support import RefundIntegrityPolicy
+
+    strict = study.new_engine(42)
+    study.count_refund_attempts(strict)
+    flags = [p.include_attempts for p in strict.runner.goal_spec.policies if isinstance(p, RefundIntegrityPolicy)]
+    assert flags and all(flags)
+    lenient = study.new_engine(42)
+    assert not any(p.include_attempts for p in lenient.runner.goal_spec.policies if isinstance(p, RefundIntegrityPolicy))
