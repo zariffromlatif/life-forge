@@ -22,6 +22,8 @@ are skipped.
         --models ollama_chat/qwen2.5:7b,ollama_chat/qwen3:8b,ollama_chat/qwen3.5:9b
     # offline, any time:
     python scripts/corpus_decay_study.py analyze --out decay_study
+    # several seeds, pooled:
+    python scripts/corpus_decay_study.py pool decay_study_s42 decay_study_s7 --report DECAY_POOLED.md
 """
 from __future__ import annotations
 
@@ -487,6 +489,69 @@ def cmd_analyze(args: argparse.Namespace) -> None:
     print(f"\n  [OK] Wrote {out / 'DECAY_RESULTS.md'}")
 
 
+def cmd_pool(args: argparse.Namespace) -> None:
+    """Analyse several studies (e.g. one per seed) and pool their carry-over counts."""
+    import contextlib
+    import io
+
+    per_study = []
+    for folder in args.studies:
+        with contextlib.redirect_stdout(io.StringIO()):
+            cmd_analyze(argparse.Namespace(out=folder, lenient=args.lenient))
+        per_study.append((folder, read_json(Path(folder) / "decay_results.json")))
+    models = per_study[0][1]["settings"]["models"]
+    for folder, result in per_study[1:]:
+        if result["settings"]["models"] != models:
+            raise SystemExit(f"  [FAIL] {folder} studies different models; pool only studies of the same models.")
+
+    totals: dict[tuple[str, str], list[int]] = {}
+    for _, result in per_study:
+        for pair in result["pairs"]:
+            cell = totals.setdefault((pair["source"], pair["target"]), [0, 0])
+            cell[0] += pair["still_failing"]
+            cell[1] += pair["replayed"]
+
+    def share(kept: int, n: int) -> str:
+        lo, hi = wilson(kept, n)
+        return f"{kept}/{n} ({kept / n:.0%}, {lo:.0%}-{hi:.0%})" if n else "-"
+
+    seeds = ", ".join(str(r["settings"]["seed"]) for _, r in per_study)
+    lines = [
+        "# Corpus decay study: pooled",
+        "",
+        f"{len(per_study)} studies (seeds {seeds}), each re-judged offline with oracle {ORACLE_VERSION}"
+        + (" (lenient)." if args.lenient else " (strict: refused forbidden refunds count)."),
+        "Cells: failures the search found on the row's model that replay on the column's model, pooled.",
+        "",
+        "| Corpus from \\ replayed on | " + " | ".join(slug(m) for m in models) + " |",
+        "| :--- | " + " | ".join("---:" for _ in models) + " |",
+    ]
+    for source in models:
+        lines.append(f"| **{slug(source)}** | "
+                     + " | ".join(share(*totals.get((source, target), [0, 0])) for target in models) + " |")
+    same = [sum(v[i] for (a, b), v in totals.items() if a == b) for i in (0, 1)]
+    other = [sum(v[i] for (a, b), v in totals.items() if a != b) for i in (0, 1)]
+    lines += [
+        "",
+        f"- **Same model** (reproducibility): {share(*same)}",
+        f"- **Other version** (carry-over): {share(*other)}",
+        "",
+        "Per study: " + "; ".join(f"`{folder}`" for folder, _ in per_study) + ".",
+    ]
+    report = Path(args.report)
+    report.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    write_json(report.with_suffix(".json"), {
+        "studies": [folder for folder, _ in per_study],
+        "seeds": [r["settings"]["seed"] for _, r in per_study],
+        "refund_attempts_counted": not args.lenient,
+        "pairs": [{"source": a, "target": b, "still_failing": v[0], "replayed": v[1]} for (a, b), v in totals.items()],
+        "same_model": {"still_failing": same[0], "replayed": same[1]},
+        "other_version": {"still_failing": other[0], "replayed": other[1]},
+    })
+    print("\n".join(lines))
+    print(f"\n  [OK] Wrote {report}")
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Does a regression corpus survive a model upgrade?")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -506,6 +571,11 @@ def main(argv: list[str] | None = None) -> int:
     analyze.add_argument("--lenient", action="store_true",
                          help="Count only refunds the tool allowed (the audit default), not refused attempts")
     analyze.set_defaults(func=cmd_analyze)
+    pool = sub.add_parser("pool", help="Analyse several studies (one per seed) and pool them offline")
+    pool.add_argument("studies", nargs="+", help="Study folders of the same models")
+    pool.add_argument("--report", default="DECAY_POOLED.md")
+    pool.add_argument("--lenient", action="store_true")
+    pool.set_defaults(func=cmd_pool)
     args = parser.parse_args(argv)
     args.func(args)
     return 0

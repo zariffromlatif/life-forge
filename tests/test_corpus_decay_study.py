@@ -125,3 +125,20 @@ def test_analysis_counts_refused_refund_attempts_unless_lenient(study, tmp_path)
     assert flags and all(flags)
     lenient = study.new_engine(42)
     assert not any(p.include_attempts for p in lenient.runner.goal_spec.policies if isinstance(p, RefundIntegrityPolicy))
+
+
+def test_pool_sums_studies_of_the_same_models(study, monkeypatch, tmp_path):
+    folders = []
+    for seed in ("42", "7"):
+        folder = tmp_path / f"s{seed}"
+        _run(study, monkeypatch, folder, "--seed", seed)
+        folders.append(str(folder))
+    report = tmp_path / "POOLED.md"
+    study.main(["pool", *folders, "--report", str(report)])
+    pooled = json.loads(report.with_suffix(".json").read_text(encoding="utf-8"))
+    singles = [json.loads((Path(f) / "decay_results.json").read_text(encoding="utf-8")) for f in folders]
+    for key in ("still_failing", "replayed"):
+        expected = sum(p[key] for r in singles for p in r["pairs"] if p["source"] == p["target"])
+        assert pooled["same_model"][key] == expected
+    assert pooled["seeds"] == [42, 7]
+    assert "Same model" in report.read_text(encoding="utf-8")
