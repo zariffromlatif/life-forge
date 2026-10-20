@@ -175,6 +175,7 @@
       <a class="brand" href="#"><span class="brand-mark"><i></i></span>LIFE FORGE</a>
       <nav class="nav">
         <a href="#services">Services</a>
+        <a href="#pilot">Pilot</a>
         <a href="#research">Research</a>
         <a href="#sample">Sample audit</a>
         <a href="#open-source">Open source</a>
@@ -198,10 +199,11 @@
       <span class="label">Agent action audits</span>
       <h1>Adversarial testing for AI agents that take real actions.</h1>
       <p class="lede">If your agent can move money, change records, grant access or send data, it can be talked into
-        doing it for an attacker. I find the inputs that make that happen, prove it with replayable evidence, and deliver
-        the fix and a CI gate that keeps it fixed.</p>
+        doing it for an attacker. I find the inputs that make that happen before a customer's security review or a
+        certification does, prove it with replayable evidence, and deliver the fix and a CI gate that re-tests it on
+        every release and model upgrade.</p>
       <div class="btns">
-        <a class="btn primary" href="mailto:zarif.latif.biz@gmail.com?subject=Agent%20action%20audit"><span>Request an audit</span><span>→</span></a>
+        <a class="btn primary" href="#pilot"><span>Free design-partner pilot</span><span>→</span></a>
         <a class="btn" href="#research"><span>View research</span><span>→</span></a>
       </div>
     </div>
@@ -245,8 +247,8 @@
       <div class="svc">
         <svg viewBox="0 0 32 32" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 22h5l3-10 5 14 3-8h6"/><path d="M5 6h22"/></svg>
         <h3>Regression gate</h3>
-        <p>Every scenario that broke your agent replays on each pull request, sampled models several times, so a fixed
-          problem cannot quietly return.</p>
+        <p>Every scenario that broke your agent replays on each pull request and each model upgrade, sampled models
+          several times, so a fixed problem cannot quietly return.</p>
         <div class="foot">Retainer available</div>
       </div>
       <div class="svc">
@@ -257,6 +259,31 @@
         <div class="foot">Included</div>
       </div>
     </div>
+  </div>
+</section>
+
+<section id="pilot">
+  <div class="wrap">
+    <div class="head">
+      <div>
+        <span class="label">Design partners</span>
+        <h2>A free one-week pilot for three teams shipping agents to enterprises.</h2>
+      </div>
+      <a class="viewall" href="mailto:zarif.latif.biz@gmail.com?subject=Design%20partner%20pilot">Apply for a pilot</a>
+    </div>
+    <div class="grid3">
+      <div class="step"><span class="n">01 / BEFORE THE REVIEW</span><h3>Find failures before your customer does</h3><p>
+        Enterprise security reviews and certifications such as AIUC-1 now test what an agent's tools can be made to do.
+        The pilot shows you first, on a staging copy of your agent: nothing touches production.</p></div>
+      <div class="step"><span class="n">02 / ONE WEEK</span><h3>What you receive</h3><p>Every failure with the exact tool
+        calls as evidence, tool-boundary guards, a CI regression gate, and draft answers to the AI section of your
+        customers' security questionnaires.</p></div>
+      <div class="step"><span class="n">03 / EVERY UPGRADE</span><h3>Re-test when the model changes</h3><p>A new model
+        fails in new ways, and tests written for the old one can miss them. The gate re-runs on each release, and the
+        search runs again when you change models.</p></div>
+    </div>
+    <p style="color:var(--muted);font-weight:300;margin:22px 0 0">In return: a staging endpoint and your tool
+      specification, two short feedback calls, and permission to mention the engagement anonymously.</p>
   </div>
 </section>
 
@@ -429,8 +456,8 @@ $ lifeforge surface --baseline baseline.json \
     <div>
       <span class="label">Contact</span>
       <h2>Shipping an agent that takes actions?</h2>
-      <p>Describe what your agent can do. I will reply with how I would test it, what you would receive, and a fixed
-        price.</p>
+      <p>Describe what your agent can do. I will reply with how I would test it and what you would receive. Three
+        design-partner pilots are free.</p>
     </div>
     <div class="card">
       <div><span class="k">Email</span><a href="mailto:zarif.latif.biz@gmail.com">zarif.latif.biz@gmail.com</a></div>
