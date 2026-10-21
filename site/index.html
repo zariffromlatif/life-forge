@@ -279,8 +279,9 @@
         calls as evidence, tool-boundary guards, a CI regression gate, and draft answers to the AI section of your
         customers' security questionnaires.</p></div>
       <div class="step"><span class="n">03 / EVERY UPGRADE</span><h3>Re-test when the model changes</h3><p>A new model
-        fails in new ways, and tests written for the old one can miss them. The gate re-runs on each release, and the
-        search runs again when you change models.</p></div>
+        fails in new ways, and tests written for the old one can miss them (<a href="#research"
+        style="color:var(--text)">our measurements</a>). The gate re-runs on each release, and the search runs again
+        when you change models.</p></div>
     </div>
     <p style="color:var(--muted);font-weight:300;margin:22px 0 0">In return: a staging endpoint and your tool
       specification, two short feedback calls, and permission to mention the engagement anonymously.</p>
@@ -327,6 +328,36 @@
           attempted a forbidden refund. Served via Groq at temperature 0.7, October 12-15, 2026; one sample per task, so
           intervals are wide.</span>
         <a href="https://github.com/zariffromlatif/life-forge/blob/main/reports/refund-desk-benchmark-2026-10.md">Method and limitations →</a>
+      </div>
+    </div>
+
+    <div class="head" style="margin-top:72px">
+      <div>
+        <span class="label">Research · October 2026</span>
+        <h2>Do an agent's attack tests survive a model upgrade?</h2>
+        <p>We searched for failures on three versions of one open model family (qwen2.5, qwen3, qwen3.5), then replayed
+          every failure found on every version, three times each: 504 replayed episodes.</p>
+      </div>
+      <a class="viewall" href="https://github.com/zariffromlatif/life-forge/blob/main/reports/corpus-decay-2026-10.md">Full report</a>
+    </div>
+    <div class="results">
+      <table>
+        <thead><tr><th>A failure the search found, replayed on</th><th>Still reproduced <span class="dir">95% interval</span></th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="model">The same model</td>
+            <td><div class="meter"><div class="track"><div class="fill" style="width:61%"></div></div>61% <small>(40 / 66, 49-71%)</small></div></td>
+          </tr>
+          <tr>
+            <td class="model">Another version of it</td>
+            <td><div class="meter"><div class="track"><div class="fill" style="width:20%"></div></div>20% <small>(26 / 132, 14-27%)</small></div></td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="results-foot">
+        <span>In every run, a newer version also failed in ways the older version's tests never triggered. The gap is
+          strongest for one attack (a context flood); three runs, one model family, small corpora.</span>
+        <a href="https://github.com/zariffromlatif/life-forge/blob/main/reports/corpus-decay-2026-10.md">Method and limitations →</a>
       </div>
     </div>
   </div>

@@ -9,7 +9,8 @@
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 **Website:** [zariffromlatif.github.io/life-forge](https://zariffromlatif.github.io/life-forge/) ·
-**Latest research:** [Do tool-using support agents follow injected instructions? (October 2026)](reports/refund-desk-benchmark-2026-10.md)
+**Research:** [Do an agent's attack tests survive a model upgrade? (October 2026)](reports/corpus-decay-2026-10.md) ·
+[Do tool-using support agents follow injected instructions? (October 2026)](reports/refund-desk-benchmark-2026-10.md)
 
 ---
 

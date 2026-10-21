@@ -1,0 +1,22 @@
+{
+ "schema": "lifeforge.decay_study",
+ "started_utc": "2026-10-20T17:11:36+00:00",
+ "lifeforge_version": "0.4.5",
+ "oracle_version": "2.3.0",
+ "python": "3.13.15",
+ "platform": "Linux-6.18.48+-x86_64-with-glibc2.39",
+ "settings": {
+  "models": [
+   "ollama_chat/qwen2.5:7b",
+   "ollama_chat/qwen3:8b",
+   "ollama_chat/qwen3.5:9b"
+  ],
+  "generations": 25,
+  "repeats": 3,
+  "seed": 11,
+  "temperature": 0.7,
+  "domain": "customer_support",
+  "frontier": true,
+  "max_tokens": 8192
+ }
+}
