@@ -1,5 +1,5 @@
 {
-  "updated": "2026-11-09T13:06:40Z",
+  "updated": "2026-11-10T12:48:39Z",
   "models": {
     "openai/gpt-oss-120b": "complete",
     "qwen/qwen3.8-27b": "complete",
